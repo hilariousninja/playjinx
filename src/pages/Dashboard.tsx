@@ -1,18 +1,19 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Upload, Download, Search, ArrowLeft, FileSpreadsheet,
-  RefreshCw, Trash2, Tag, CheckCircle, Database, BarChart3
+  RefreshCw, Tag, CheckCircle, Database, BarChart3, Trash2, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  getWords, importWordsFromCSV, getImportSources, updateWord, saveWords, getWords as loadWords, getJinxScoreBreakdown
+  getWords, importWordsFromCSV, getImportSources, updateWord, bulkUpdateStatus, getJinxScoreBreakdown,
+  type DbWord, type DbImportSource
 } from '@/lib/store';
-import type { Word, WordStatus } from '@/lib/types';
+import type { WordStatus } from '@/lib/types';
 import WordDetail from '@/components/WordDetail';
 
 const STATUS_COLORS: Record<WordStatus, string> = {
@@ -25,14 +26,24 @@ const STATUS_COLORS: Record<WordStatus, string> = {
 const CATEGORIES = ['All', 'Abstract', 'Animals', 'Body Parts', 'Culture', 'Emotions', 'Food', 'Nature', 'Objects', 'People', 'Places', 'Science', 'Time', 'Weather'];
 
 export default function Dashboard() {
-  const [words, setWords] = useState<Word[]>(getWords());
+  const [words, setWords] = useState<DbWord[]>([]);
+  const [sources, setSources] = useState<DbImportSource[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<WordStatus | 'all'>('all');
   const [catFilter, setCatFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
+  const [selectedWord, setSelectedWord] = useState<DbWord | null>(null);
   const [tab, setTab] = useState('queue');
   const fileRef = useRef<HTMLInputElement>(null);
-  const sources = getImportSources();
+
+  const loadData = async () => {
+    const [w, s] = await Promise.all([getWords(), getImportSources()]);
+    setWords(w);
+    setSources(s);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const filteredWords = useMemo(() => {
     return words.filter(w => {
@@ -45,53 +56,53 @@ export default function Dashboard() {
 
   const statusCounts = useMemo(() => {
     const c = { all: words.length, unreviewed: 0, keep: 0, review: 0, cut: 0 };
-    words.forEach(w => { c[w.status]++; });
+    words.forEach(w => { c[w.status as keyof typeof c]++; });
     return c;
   }, [words]);
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      const count = importWordsFromCSV(text, file.name);
-      setWords(getWords());
-      alert(`Imported ${count} new words`);
-    };
-    reader.readAsText(file);
+    const text = await file.text();
+    const count = await importWordsFromCSV(text, file.name);
+    await loadData();
+    alert(`Imported ${count} new words`);
     e.target.value = '';
   };
 
-  const handleStatusChange = (id: string, status: WordStatus) => {
-    updateWord(id, { status });
-    setWords(getWords());
-    if (selectedWord?.id === id) setSelectedWord({ ...selectedWord, status });
+  const handleStatusChange = async (id: string, status: WordStatus) => {
+    const updated = await updateWord(id, { status });
+    if (updated) {
+      setWords(prev => prev.map(w => w.id === id ? updated : w));
+      if (selectedWord?.id === id) setSelectedWord(updated);
+    }
   };
 
-  const handleBulkUnreviewedToReview = () => {
-    const updated = words.map(w => w.status === 'unreviewed' ? { ...w, status: 'review' as WordStatus, updated_at: new Date().toISOString() } : w);
-    saveWords(updated);
-    setWords(updated);
+  const handleBulkUnreviewedToReview = async () => {
+    await bulkUpdateStatus('unreviewed', 'review');
+    await loadData();
   };
 
   const handleExport = () => {
     const csv = ['word,category,status,jinx_score,notes', ...words.map(w => `${w.word},${w.category},${w.status},${w.jinx_score},"${w.notes}"`)].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'jinx_deck_export.csv'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'jinx_deck_export.csv'; a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (loading) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
 
   if (selectedWord) {
     return (
       <div className="min-h-screen bg-background">
         <nav className="border-b border-border">
           <div className="container flex items-center h-14 gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedWord(null)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setSelectedWord(null)}><ArrowLeft className="h-4 w-4" /></Button>
             <span className="font-display text-lg font-bold">Dashboard</span>
           </div>
         </nav>
@@ -99,15 +110,13 @@ export default function Dashboard() {
           <WordDetail
             word={selectedWord}
             onStatusChange={(status) => handleStatusChange(selectedWord.id, status)}
-            onNotesChange={(notes) => {
-              updateWord(selectedWord.id, { notes });
-              setSelectedWord({ ...selectedWord, notes });
-              setWords(getWords());
+            onNotesChange={async (notes) => {
+              const updated = await updateWord(selectedWord.id, { notes });
+              if (updated) { setSelectedWord(updated); setWords(prev => prev.map(w => w.id === updated.id ? updated : w)); }
             }}
-            onScoreChange={(score) => {
-              updateWord(selectedWord.id, { jinx_score: score });
-              setSelectedWord({ ...selectedWord, jinx_score: score });
-              setWords(getWords());
+            onScoreChange={async (score) => {
+              const updated = await updateWord(selectedWord.id, { jinx_score: score });
+              if (updated) { setSelectedWord(updated); setWords(prev => prev.map(w => w.id === updated.id ? updated : w)); }
             }}
           />
         </div>
@@ -128,7 +137,6 @@ export default function Dashboard() {
       </nav>
 
       <div className="container py-6 space-y-6">
-        {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="game-card">
             <Database className="h-4 w-4 text-muted-foreground mb-1" />
@@ -152,7 +160,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Source panel */}
         {sources.length > 0 && (
           <div className="game-card">
             <div className="flex items-center gap-2 mb-2">
@@ -175,15 +182,10 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="queue" className="mt-4 space-y-4">
-            {/* Filters */}
             <div className="flex flex-wrap gap-2">
               {(['all', 'unreviewed', 'keep', 'review', 'cut'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`stat-pill transition-colors ${
-                    filter === f ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
-                  }`}
+                <button key={f} onClick={() => setFilter(f)}
+                  className={`stat-pill transition-colors ${filter === f ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                 >
                   {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
                   <span className="ml-1 opacity-60">{statusCounts[f]}</span>
@@ -191,49 +193,29 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* Category filters */}
             <div className="flex flex-wrap gap-1.5">
               {CATEGORIES.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setCatFilter(c)}
-                  className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
-                    catFilter === c ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {c}
-                </button>
+                <button key={c} onClick={() => setCatFilter(c)}
+                  className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${catFilter === c ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >{c}</button>
               ))}
             </div>
 
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search words..."
-                className="pl-9 rounded-2xl bg-secondary border-border"
-              />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search words..." className="pl-9 rounded-2xl bg-secondary border-border" />
             </div>
 
-            {/* Word list */}
             <div className="space-y-1">
               {filteredWords.map((w, i) => (
-                <motion.button
-                  key={w.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: Math.min(i * 0.02, 0.5) }}
+                <motion.button key={w.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.02, 0.5) }}
                   onClick={() => setSelectedWord(w)}
                   className="game-card w-full text-left flex items-center gap-3 py-3 hover:border-muted-foreground/30 transition-colors"
                 >
                   <span className="font-display font-semibold flex-1">{w.word}</span>
                   <span className="text-xs text-muted-foreground">{w.category}</span>
                   <span className="font-display text-xs">{w.jinx_score}</span>
-                  <Badge variant="outline" className={`${STATUS_COLORS[w.status]} text-[10px] px-1.5 py-0 border-0`}>
-                    {w.status}
-                  </Badge>
+                  <Badge variant="outline" className={`${STATUS_COLORS[w.status as WordStatus]} text-[10px] px-1.5 py-0 border-0`}>{w.status}</Badge>
                 </motion.button>
               ))}
               {filteredWords.length === 0 && (
