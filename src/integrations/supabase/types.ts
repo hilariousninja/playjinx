@@ -14,7 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      answers: {
+        Row: {
+          created_at: string
+          id: string
+          normalized_answer: string
+          prompt_id: string
+          raw_answer: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          normalized_answer: string
+          prompt_id: string
+          raw_answer: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          normalized_answer?: string
+          prompt_id?: string
+          raw_answer?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_sources: {
+        Row: {
+          created_at: string
+          id: string
+          last_sync: string
+          name: string
+          rows_imported: number
+          sheet_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_sync?: string
+          name: string
+          rows_imported?: number
+          sheet_name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_sync?: string
+          name?: string
+          rows_imported?: number
+          sheet_name?: string
+        }
+        Relationships: []
+      }
+      prompts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          mode: string
+          results_unlock_at: string | null
+          word_a: string
+          word_b: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          mode?: string
+          results_unlock_at?: string | null
+          word_a: string
+          word_b: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          mode?: string
+          results_unlock_at?: string | null
+          word_a?: string
+          word_b?: string
+        }
+        Relationships: []
+      }
+      words: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          jinx_score: number
+          notes: string
+          source: string
+          status: string
+          updated_at: string
+          word: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          jinx_score?: number
+          notes?: string
+          source?: string
+          status?: string
+          updated_at?: string
+          word: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          jinx_score?: number
+          notes?: string
+          source?: string
+          status?: string
+          updated_at?: string
+          word?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
