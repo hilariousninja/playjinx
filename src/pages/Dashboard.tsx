@@ -23,7 +23,7 @@ const STATUS_COLORS: Record<WordStatus, string> = {
   unreviewed: 'status-unreviewed',
 };
 
-const CATEGORIES = ['All', 'Abstract', 'Animals', 'Body Parts', 'Culture', 'Emotions', 'Food', 'Nature', 'Objects', 'People', 'Places', 'Science', 'Time', 'Weather'];
+const CATEGORIES = ['All', 'Abstract', 'Animals', 'Body Parts', 'Culture', 'Emotions', 'Events', 'Food', 'Materials', 'Nature', 'Objects', 'People', 'Places', 'Signals', 'Threat', 'Transport', 'Weather'];
 
 export default function Dashboard() {
   const [words, setWords] = useState<DbWord[]>([]);
