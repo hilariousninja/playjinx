@@ -18,7 +18,7 @@ const features = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Nav */}
       <nav className="border-b border-border">
         <div className="container flex items-center justify-between h-14">
@@ -35,29 +35,47 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="container py-20 md:py-32 text-center">
+      <section className="container flex-1 flex items-center justify-center py-16 md:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          className="text-center"
         >
-          <p className="text-sm font-display tracking-widest text-muted-foreground uppercase mb-4">Daily Word Game</p>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-4">
-            JINX<span className="text-muted-foreground font-light ml-2">Daily</span>
+          <p className="text-xs font-display tracking-[0.3em] text-muted-foreground uppercase mb-6">Daily Word Game</p>
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-4">
+            JINX<span className="text-muted-foreground/40 font-light ml-3">Daily</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-md mx-auto mb-2">
             Think the same. Rank higher.
           </p>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-10">
-            Find the bridge-word everyone else will pick.
+          <p className="text-sm text-muted-foreground/60 max-w-sm mx-auto mb-10">
+            See two words. Type the ONE bridge-word you think everyone else will pick.
           </p>
+
+          {/* Example */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="game-card inline-block px-8 py-5 mb-10"
+          >
+            <div className="flex items-center gap-4 font-display text-xl md:text-2xl font-bold">
+              <span>PIRATE</span>
+              <span className="text-muted-foreground text-base">+</span>
+              <span>SPACE</span>
+              <span className="text-muted-foreground text-base">→</span>
+              <span className="text-primary">Ship</span>
+            </div>
+          </motion.div>
+
           <div className="flex gap-3 justify-center">
-            <Button size="lg" className="rounded-2xl px-8" asChild>
+            <Button size="lg" className="rounded-2xl px-8 h-12" asChild>
               <Link to="/play">
                 Play today <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="rounded-2xl px-8" asChild>
+            <Button size="lg" variant="outline" className="rounded-2xl px-8 h-12" asChild>
               <Link to="/archive">Browse archive</Link>
             </Button>
           </div>
@@ -66,18 +84,18 @@ export default function Landing() {
 
       {/* Features */}
       <section className="container pb-16">
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-3">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + i * 0.1 }}
-              className="game-card text-center"
+              className="game-card text-center py-8"
             >
-              <f.icon className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
-              <h3 className="font-semibold mb-1">{f.title}</h3>
-              <p className="text-sm text-muted-foreground">{f.desc}</p>
+              <f.icon className="h-5 w-5 mx-auto mb-3 text-muted-foreground/60" />
+              <h3 className="font-semibold mb-1 text-sm">{f.title}</h3>
+              <p className="text-xs text-muted-foreground">{f.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -85,8 +103,8 @@ export default function Landing() {
 
       {/* How it works */}
       <section className="container pb-20">
-        <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
-        <div className="grid md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+        <h2 className="text-xl font-bold text-center mb-10 tracking-tight">How it works</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
           {steps.map((s, i) => (
             <motion.div
               key={s.num}
@@ -95,19 +113,19 @@ export default function Landing() {
               transition={{ delay: 0.4 + i * 0.1 }}
               className="text-center"
             >
-              <span className="font-display text-3xl font-bold text-muted-foreground/30">{s.num}</span>
-              <h3 className="font-semibold mt-2 mb-1">{s.title}</h3>
-              <p className="text-xs text-muted-foreground">{s.desc}</p>
+              <span className="font-display text-2xl font-bold text-muted-foreground/20">{s.num}</span>
+              <h3 className="font-semibold mt-2 mb-1 text-sm">{s.title}</h3>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{s.desc}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6">
-        <div className="container text-center text-xs text-muted-foreground">
-          JINX Daily · A word game experiment
-        </div>
+      <footer className="border-t border-border py-5 mt-auto">
+        <p className="text-center text-[10px] text-muted-foreground/40">
+          Prototype of JINX — a party word game in development
+        </p>
       </footer>
     </div>
   );
