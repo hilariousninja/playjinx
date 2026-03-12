@@ -80,13 +80,13 @@
 
 @layer components {
   .game-card {
-    @apply bg-card border border-border rounded-2xl p-6;
+    @apply bg-card border border-border rounded-2xl p-5;
   }
   .stat-pill {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
   }
   .cluster-bar {
-    @apply h-8 rounded-lg bg-primary/20 relative overflow-hidden;
+    @apply h-7 rounded-lg bg-secondary relative overflow-hidden;
   }
   .cluster-bar-fill {
     @apply absolute inset-y-0 left-0 rounded-lg bg-primary transition-all duration-700;
