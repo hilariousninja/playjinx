@@ -93,7 +93,10 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="text-center space-y-3">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mx-auto" />
+        <p className="text-xs text-muted-foreground">Loading deck…</p>
+      </div>
     </div>
   );
 
@@ -103,10 +106,12 @@ export default function Dashboard() {
         <nav className="border-b border-border">
           <div className="container flex items-center h-14 gap-3">
             <Button variant="ghost" size="icon" onClick={() => setSelectedWord(null)}><ArrowLeft className="h-4 w-4" /></Button>
-            <span className="font-display text-lg font-bold">Dashboard</span>
+            <span className="text-sm text-muted-foreground">Dashboard</span>
+            <span className="text-muted-foreground/30">/</span>
+            <span className="font-display text-sm font-semibold">{selectedWord.word}</span>
           </div>
         </nav>
-        <div className="container max-w-2xl py-8">
+        <div className="container max-w-2xl py-6">
           <WordDetail
             word={selectedWord}
             onStatusChange={(status) => handleStatusChange(selectedWord.id, status)}
@@ -130,114 +135,120 @@ export default function Dashboard() {
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
             <Link to="/" className="font-display text-lg font-bold tracking-tight">JINX</Link>
-            <span className="text-xs text-muted-foreground">/ Dashboard</span>
+            <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">Creator</span>
           </div>
-          <Button size="sm" asChild><Link to="/play">Play</Link></Button>
+          <Button size="sm" variant="outline" asChild><Link to="/play">Play →</Link></Button>
         </div>
       </nav>
 
-      <div className="container py-6 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="game-card">
-            <Database className="h-4 w-4 text-muted-foreground mb-1" />
-            <p className="text-2xl font-display font-bold">{words.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">Total Words</p>
-          </div>
-          <div className="game-card">
-            <CheckCircle className="h-4 w-4 text-keep mb-1" />
-            <p className="text-2xl font-display font-bold">{statusCounts.keep}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">Keep</p>
-          </div>
-          <div className="game-card">
-            <BarChart3 className="h-4 w-4 text-review mb-1" />
-            <p className="text-2xl font-display font-bold">{statusCounts.review}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">Review</p>
-          </div>
-          <div className="game-card">
-            <Trash2 className="h-4 w-4 text-cut mb-1" />
-            <p className="text-2xl font-display font-bold">{statusCounts.cut}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">Cut</p>
-          </div>
+      <div className="container py-5 space-y-5">
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { icon: Database, label: 'Total', value: words.length, color: 'text-muted-foreground' },
+            { icon: CheckCircle, label: 'Keep', value: statusCounts.keep, color: 'text-keep' },
+            { icon: BarChart3, label: 'Review', value: statusCounts.review, color: 'text-review' },
+            { icon: Trash2, label: 'Cut', value: statusCounts.cut, color: 'text-cut' },
+          ].map(s => (
+            <div key={s.label} className="bg-card border border-border rounded-xl p-3 text-center">
+              <s.icon className={`h-3.5 w-3.5 mx-auto mb-1 ${s.color}`} />
+              <p className="text-lg font-display font-bold">{s.value}</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
+            </div>
+          ))}
         </div>
 
+        {/* Import sources */}
         {sources.length > 0 && (
-          <div className="game-card">
+          <div className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">Import Sources</span>
+              <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground/60" />
+              <span className="text-xs font-medium text-muted-foreground">Import History</span>
             </div>
             {sources.map(s => (
-              <div key={s.id} className="flex items-center justify-between text-xs text-muted-foreground py-1">
+              <div key={s.id} className="flex items-center justify-between text-[11px] text-muted-foreground py-0.5">
                 <span>{s.name}</span>
-                <span>{s.rows_imported} rows · {new Date(s.last_sync).toLocaleDateString()}</span>
+                <span className="tabular-nums">{s.rows_imported} rows · {new Date(s.last_sync).toLocaleDateString()}</span>
               </div>
             ))}
           </div>
         )}
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="bg-secondary rounded-2xl">
-            <TabsTrigger value="queue" className="rounded-xl">Trimming Queue</TabsTrigger>
-            <TabsTrigger value="actions" className="rounded-xl">Actions</TabsTrigger>
+          <TabsList className="bg-secondary rounded-xl h-9">
+            <TabsTrigger value="queue" className="rounded-lg text-xs">Trimming Queue</TabsTrigger>
+            <TabsTrigger value="actions" className="rounded-lg text-xs">Actions</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="queue" className="mt-4 space-y-4">
-            <div className="flex flex-wrap gap-2">
+          <TabsContent value="queue" className="mt-4 space-y-3">
+            {/* Status filters */}
+            <div className="flex flex-wrap gap-1.5">
               {(['all', 'unreviewed', 'keep', 'review', 'cut'] as const).map(f => (
                 <button key={f} onClick={() => setFilter(f)}
-                  className={`stat-pill transition-colors ${filter === f ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                  className={`text-[11px] px-2.5 py-1 rounded-full transition-colors font-medium ${
+                    filter === f
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-accent'
+                  }`}
                 >
                   {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-                  <span className="ml-1 opacity-60">{statusCounts[f]}</span>
+                  <span className="ml-1 opacity-50">{statusCounts[f]}</span>
                 </button>
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            {/* Category filters */}
+            <div className="flex flex-wrap gap-1">
               {CATEGORIES.map(c => (
                 <button key={c} onClick={() => setCatFilter(c)}
-                  className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${catFilter === c ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${
+                    catFilter === c
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground/60 hover:text-muted-foreground'
+                  }`}
                 >{c}</button>
               ))}
             </div>
 
+            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search words..." className="pl-9 rounded-2xl bg-secondary border-border" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search words…" className="pl-9 rounded-xl bg-secondary border-border h-9 text-sm" />
             </div>
 
+            {/* Word list */}
             <div className="space-y-1">
               {filteredWords.map((w, i) => (
-                <motion.button key={w.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.02, 0.5) }}
+                <motion.button key={w.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.4) }}
                   onClick={() => setSelectedWord(w)}
-                  className="game-card w-full text-left flex items-center gap-3 py-3 hover:border-muted-foreground/30 transition-colors"
+                  className="bg-card border border-border rounded-xl w-full text-left flex items-center gap-2 px-4 py-2.5 hover:border-muted-foreground/30 transition-colors"
                 >
-                  <span className="font-display font-semibold flex-1">{w.word}</span>
-                  <span className="text-xs text-muted-foreground">{w.category}</span>
-                  <span className="font-display text-xs">{w.jinx_score}</span>
-                  <Badge variant="outline" className={`${STATUS_COLORS[w.status as WordStatus]} text-[10px] px-1.5 py-0 border-0`}>{w.status}</Badge>
+                  <span className="font-display text-sm font-semibold flex-1 truncate">{w.word}</span>
+                  <span className="text-[10px] text-muted-foreground/50 hidden sm:inline">{w.category}</span>
+                  <span className="font-display text-[10px] text-muted-foreground/40 tabular-nums w-6 text-right">{w.jinx_score}</span>
+                  <Badge variant="outline" className={`${STATUS_COLORS[w.status as WordStatus]} text-[9px] px-1.5 py-0 border-0 rounded-md`}>{w.status}</Badge>
                 </motion.button>
               ))}
               {filteredWords.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <p className="text-sm">{words.length === 0 ? 'No words imported yet. Use the Actions tab to import.' : 'No matching words.'}</p>
+                <div className="text-center py-10 text-muted-foreground">
+                  <p className="text-xs">{words.length === 0 ? 'No words imported yet. Use the Actions tab to import.' : 'No matching words.'}</p>
                 </div>
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="actions" className="mt-4 space-y-3">
+          <TabsContent value="actions" className="mt-4 space-y-2">
             <input ref={fileRef} type="file" accept=".csv,.json" className="hidden" onChange={handleImport} />
-            <Button variant="outline" className="w-full rounded-2xl justify-start" onClick={() => fileRef.current?.click()}>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4 mr-2" /> Import starting deck (CSV)
             </Button>
-            <Button variant="outline" className="w-full rounded-2xl justify-start" onClick={handleBulkUnreviewedToReview}>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleBulkUnreviewedToReview}>
               <RefreshCw className="h-4 w-4 mr-2" /> Bulk set Unreviewed → Review
             </Button>
-            <Button variant="outline" className="w-full rounded-2xl justify-start" disabled>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" disabled>
               <Tag className="h-4 w-4 mr-2" /> Tag synonym clusters (coming soon)
             </Button>
-            <Button variant="outline" className="w-full rounded-2xl justify-start" onClick={handleExport}>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" /> Export final deck snapshot
             </Button>
           </TabsContent>
