@@ -134,7 +134,8 @@ export default function Play() {
 
                 {/* Example */}
                 <p className="text-[11px] text-muted-foreground/60 mb-6">
-                  e.g. PIRATE + SPACE → <span className="font-display font-semibold text-muted-foreground">Ship</span>
+                  Example (not today's puzzle):<br />
+                  <span className="font-display">COW + SNOW</span> → <span className="font-display font-semibold text-muted-foreground">Milk</span>
                 </p>
 
                 {/* Input or submitted state */}
