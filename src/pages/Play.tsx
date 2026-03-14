@@ -18,6 +18,7 @@ export default function Play() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState<Record<string, Phase>>({});
+  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
