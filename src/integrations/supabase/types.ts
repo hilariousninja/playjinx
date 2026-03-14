@@ -78,6 +78,7 @@ export type Database = {
       }
       prompts: {
         Row: {
+          active: boolean
           created_at: string
           date: string
           id: string
@@ -87,6 +88,7 @@ export type Database = {
           word_b: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           date?: string
           id?: string
@@ -96,6 +98,7 @@ export type Database = {
           word_b: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           date?: string
           id?: string

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { getActivePrompts, hasSubmitted, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
 import ResultsView from '@/components/ResultsView';
 
 type Phase = 'input' | 'calculating' | 'results';
@@ -21,7 +21,7 @@ export default function Play() {
 
   useEffect(() => {
     (async () => {
-      const ps = await getDailyPrompts();
+      const ps = await getActivePrompts();
       setPrompts(ps);
       const subMap: Record<string, boolean> = {};
       const ansMap: Record<string, DbAnswer> = {};
