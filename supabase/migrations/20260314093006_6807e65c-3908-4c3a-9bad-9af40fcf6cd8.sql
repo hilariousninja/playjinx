@@ -1,0 +1,1 @@
+ALTER TABLE public.prompts ADD COLUMN active boolean NOT NULL DEFAULT false;
