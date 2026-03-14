@@ -17,13 +17,11 @@ export function getSessionId(): string {
 }
 
 // --- Prompts ---
-export async function getDailyPrompts(): Promise<DbPrompt[]> {
-  const today = new Date().toISOString().split('T')[0];
+export async function getActivePrompts(): Promise<DbPrompt[]> {
   const { data, error } = await supabase
     .from('prompts')
     .select('*')
-    .eq('mode', 'daily')
-    .eq('date', today)
+    .eq('active', true)
     .order('created_at');
   if (error) throw error;
   return data ?? [];
