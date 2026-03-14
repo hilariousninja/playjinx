@@ -27,15 +27,18 @@ export default function Play() {
       const subMap: Record<string, boolean> = {};
       const ansMap: Record<string, DbAnswer> = {};
       const phaseMap: Record<string, Phase> = {};
+      const countMap: Record<string, number> = {};
       await Promise.all(ps.map(async (p) => {
         subMap[p.id] = await hasSubmitted(p.id);
         const ua = await getUserAnswer(p.id);
         if (ua) ansMap[p.id] = ua;
         phaseMap[p.id] = subMap[p.id] ? 'results' : 'input';
+        countMap[p.id] = await getTotalSubmissions(p.id);
       }));
       setSubmitted(subMap);
       setUserAnswers(ansMap);
       setPhase(phaseMap);
+      setPlayerCounts(countMap);
       setLoading(false);
     })();
   }, []);
