@@ -188,16 +188,23 @@ export default function Play() {
                 </p>
               )}
 
-              {/* Calculating phase */}
+              {/* Calculating reveal phase */}
               {currentPhase === 'calculating' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="game-card text-center py-10"
+                  className="game-card text-center py-10 space-y-3"
                 >
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-display">Calculating results…</p>
-                  <p className="text-[11px] text-muted-foreground/50 mt-1">Comparing your answer with other players</p>
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-foreground font-display font-semibold">Finding answer clusters…</p>
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-[11px] text-muted-foreground/60"
+                  >
+                    Comparing your answer with other players
+                  </motion.p>
                 </motion.div>
               )}
 
