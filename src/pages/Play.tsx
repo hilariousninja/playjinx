@@ -78,12 +78,12 @@ export default function Play() {
       setUserAnswers(prev => ({ ...prev, [prompt.id]: answer }));
       setPlayerCounts(prev => ({ ...prev, [prompt.id]: (prev[prompt.id] || 0) + 1 }));
       setInputVal('');
-      // Show calculating phase
+      // Show calculating phase with short suspense delay
       setPhase(prev => ({ ...prev, [prompt.id]: 'calculating' }));
       setTimeout(() => {
         setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
-      }, 1800);
-    } finally {
+      }, 1300);
+    } catch {
       setSubmitting(false);
     }
   };
