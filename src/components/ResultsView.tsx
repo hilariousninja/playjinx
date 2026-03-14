@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Copy, Check, Users, Hash, TrendingUp } from 'lucide-react';
+import { Copy, Check, Users, Hash, TrendingUp, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
@@ -37,8 +37,9 @@ export default function ResultsView({ promptId }: Props) {
   }, [refresh]);
 
   if (loading) return (
-    <div className="game-card text-center py-8">
-      <p className="text-sm text-muted-foreground animate-pulse-soft">Loading results…</p>
+    <div className="game-card text-center py-10">
+      <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-3" />
+      <p className="text-sm text-muted-foreground">Loading results…</p>
     </div>
   );
 
@@ -47,10 +48,11 @@ export default function ResultsView({ promptId }: Props) {
   const topConcentration = stats.length > 0 ? stats[0].percentage : 0;
   const rank = userStat?.rank ?? 0;
   const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
+  const topPercent = Math.max(1, 100 - percentile);
   const isEarly = total < 5;
 
   const shareText = prompt
-    ? `JINX Daily — ${prompt.word_a} + ${prompt.word_b}\nMy answer: ${userAnswer?.raw_answer?.toUpperCase()}\nRank: #${rank} · Top ${Math.max(1, 100 - percentile)}%\nCan you beat it?`
+    ? `JINX Daily\n${prompt.word_a} + ${prompt.word_b}\n\nMy answer: ${userAnswer?.raw_answer?.toUpperCase()}\nRank: #${rank} · Top ${topPercent}%\n\nCan you beat it?`
     : '';
 
   const handleCopy = () => {
@@ -60,56 +62,58 @@ export default function ResultsView({ promptId }: Props) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Early bird message */}
       {isEarly && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-card text-center py-4">
-          <p className="text-xs text-muted-foreground">🌅 You're early! More answers will appear as players play.</p>
+          <p className="text-xs text-muted-foreground">🌅 You're early! Results will grow as more players answer.</p>
         </motion.div>
       )}
 
-      {/* Prompt health stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="game-card text-center py-3 px-2">
-          <Users className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground/60" />
-          <p className="text-xl font-display font-bold">{total}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Submissions</p>
-        </div>
-        <div className="game-card text-center py-3 px-2">
-          <Hash className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground/60" />
-          <p className="text-xl font-display font-bold">{unique}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Unique</p>
-        </div>
-        <div className="game-card text-center py-3 px-2">
-          <TrendingUp className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground/60" />
-          <p className="text-xl font-display font-bold">{topConcentration}%</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Top Answer</p>
-        </div>
-      </div>
-
-      {/* Your answer card */}
+      {/* Your answer highlight card */}
       {userStat && (
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="game-card text-center py-4">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Your answer</p>
-          <p className="font-display text-2xl font-bold mb-3">{userAnswer?.raw_answer}</p>
-          <div className="flex justify-center gap-3 text-xs">
-            <span className="bg-secondary px-2.5 py-1 rounded-full">
-              Rank <span className="font-display font-bold">#{rank}</span>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="game-card-elevated text-center py-6"
+        >
+          <Award className="h-5 w-5 text-primary mx-auto mb-2" />
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">Your Answer</p>
+          <p className="font-display text-3xl font-bold mb-4 jinx-gradient-text">{userAnswer?.raw_answer}</p>
+          <div className="flex justify-center gap-2 flex-wrap">
+            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
+              Rank <span className="font-bold text-foreground">#{rank}</span>
             </span>
-            <span className="bg-secondary px-2.5 py-1 rounded-full">
-              <span className="font-display font-bold">{userStat.count}</span> matches
+            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
+              <span className="font-bold text-foreground">{userStat.count}</span> {userStat.count === 1 ? 'match' : 'matches'}
             </span>
-            <span className="bg-secondary px-2.5 py-1 rounded-full">
-              Top <span className="font-display font-bold">{Math.max(1, 100 - percentile)}%</span>
+            <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-display font-bold">
+              Top {topPercent}%
             </span>
           </div>
         </motion.div>
       )}
 
+      {/* Prompt health stats */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { icon: Users, value: total, label: 'Players' },
+          { icon: Hash, value: unique, label: 'Unique' },
+          { icon: TrendingUp, value: `${topConcentration}%`, label: 'Top Answer' },
+        ].map((stat) => (
+          <div key={stat.label} className="game-card text-center py-3 px-2">
+            <stat.icon className="h-3.5 w-3.5 mx-auto mb-1.5 text-muted-foreground/40" />
+            <p className="text-lg font-display font-bold">{stat.value}</p>
+            <p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Answer clusters */}
       <div className="game-card">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-4">Answer Clusters</p>
-        <div className="space-y-2.5">
+        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.15em] mb-5 font-medium">Answer Clusters</p>
+        <div className="space-y-3">
           {stats.slice(0, 8).map((s, i) => {
             const isUser = s.normalized_answer === userAnswer?.normalized_answer;
             return (
@@ -117,34 +121,48 @@ export default function ResultsView({ promptId }: Props) {
                 key={s.normalized_answer}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
+                transition={{ delay: i * 0.07 }}
                 className="flex items-center gap-3"
               >
-                <span className="font-display text-[10px] text-muted-foreground/50 w-4 text-right">#{i + 1}</span>
-                <span className={`font-display text-xs w-20 text-right truncate ${isUser ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>
+                <span className={`font-display text-[10px] w-5 text-right tabular-nums ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/40'}`}>
+                  #{i + 1}
+                </span>
+                <span className={`font-display text-xs w-20 text-right truncate ${isUser ? 'text-primary font-bold' : 'text-foreground/80'}`}>
                   {s.normalized_answer}
                 </span>
-                <div className="flex-1 h-7 rounded-lg bg-secondary relative overflow-hidden">
+                <div className="flex-1 cluster-bar">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(s.percentage, 2)}%` }}
-                    transition={{ duration: 0.7, delay: i * 0.06 }}
-                    className={`absolute inset-y-0 left-0 rounded-lg ${isUser ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                    animate={{ width: `${Math.max(s.percentage, 3)}%` }}
+                    transition={{ duration: 0.8, delay: 0.15 + i * 0.07, ease: 'easeOut' }}
+                    className={`absolute inset-y-0 left-0 rounded-lg ${
+                      isUser
+                        ? 'bg-primary/80'
+                        : i === 0
+                          ? 'bg-primary/30'
+                          : 'bg-muted-foreground/15'
+                    }`}
                   />
                 </div>
-                <span className="font-display text-xs w-10 text-right tabular-nums">{s.percentage}%</span>
+                <span className={`font-display text-xs w-10 text-right tabular-nums ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/60'}`}>
+                  {s.percentage}%
+                </span>
               </motion.div>
             );
           })}
         </div>
         {stats.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-4">No answers yet — be the first!</p>
+          <p className="text-xs text-muted-foreground text-center py-6">No answers yet — be the first!</p>
         )}
       </div>
 
       {/* Share */}
-      <Button variant="outline" className="w-full rounded-2xl h-11" onClick={handleCopy}>
-        {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+      <Button
+        variant="outline"
+        className="w-full rounded-xl h-11 border-border/60 hover:bg-secondary/80 transition-all"
+        onClick={handleCopy}
+      >
+        {copied ? <Check className="h-4 w-4 mr-2 text-primary" /> : <Copy className="h-4 w-4 mr-2" />}
         {copied ? 'Copied!' : 'Share result'}
       </Button>
     </div>
