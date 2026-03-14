@@ -76,6 +76,7 @@ export default function Play() {
       const answer = await submitAnswer(prompt.id, trimmed);
       setSubmitted(prev => ({ ...prev, [prompt.id]: true }));
       setUserAnswers(prev => ({ ...prev, [prompt.id]: answer }));
+      setPlayerCounts(prev => ({ ...prev, [prompt.id]: (prev[prompt.id] || 0) + 1 }));
       setInputVal('');
       // Show calculating phase
       setPhase(prev => ({ ...prev, [prompt.id]: 'calculating' }));
