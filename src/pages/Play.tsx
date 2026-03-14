@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getActivePrompts, hasSubmitted, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { getActivePrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, type DbPrompt, type DbAnswer } from '@/lib/store';
 import ResultsView from '@/components/ResultsView';
 
 type Phase = 'input' | 'calculating' | 'results';
@@ -18,6 +18,7 @@ export default function Play() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState<Record<string, Phase>>({});
+  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -26,15 +27,18 @@ export default function Play() {
       const subMap: Record<string, boolean> = {};
       const ansMap: Record<string, DbAnswer> = {};
       const phaseMap: Record<string, Phase> = {};
+      const countMap: Record<string, number> = {};
       await Promise.all(ps.map(async (p) => {
         subMap[p.id] = await hasSubmitted(p.id);
         const ua = await getUserAnswer(p.id);
         if (ua) ansMap[p.id] = ua;
         phaseMap[p.id] = subMap[p.id] ? 'results' : 'input';
+        countMap[p.id] = await getTotalSubmissions(p.id);
       }));
       setSubmitted(subMap);
       setUserAnswers(ansMap);
       setPhase(phaseMap);
+      setPlayerCounts(countMap);
       setLoading(false);
     })();
   }, []);
@@ -72,6 +76,7 @@ export default function Play() {
       const answer = await submitAnswer(prompt.id, trimmed);
       setSubmitted(prev => ({ ...prev, [prompt.id]: true }));
       setUserAnswers(prev => ({ ...prev, [prompt.id]: answer }));
+      setPlayerCounts(prev => ({ ...prev, [prompt.id]: (prev[prompt.id] || 0) + 1 }));
       setInputVal('');
       // Show calculating phase
       setPhase(prev => ({ ...prev, [prompt.id]: 'calculating' }));
@@ -173,6 +178,14 @@ export default function Play() {
                   </motion.div>
                 )}
               </div>
+
+              {/* Player count */}
+              {(playerCounts[prompt.id] ?? 0) > 0 && (
+                <p className="text-[11px] text-muted-foreground/50 text-center mb-4 flex items-center justify-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {playerCounts[prompt.id]} {playerCounts[prompt.id] === 1 ? 'player' : 'players'} answered
+                </p>
+              )}
 
               {/* Calculating phase */}
               {currentPhase === 'calculating' && (
