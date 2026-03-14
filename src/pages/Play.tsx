@@ -144,7 +144,7 @@ export default function Play() {
                 </p>
 
                 {/* Input or submitted state */}
-                {!isSubmitted ? (
+                {currentPhase === 'input' && !isSubmitted ? (
                   <div className="space-y-3 max-w-xs mx-auto">
                     <div className="flex gap-2">
                       <Input
@@ -154,6 +154,7 @@ export default function Play() {
                         placeholder="Your answer…"
                         className="rounded-2xl text-center font-display bg-secondary border-border h-12 text-base"
                         maxLength={50}
+                        disabled={submitting}
                         autoFocus
                       />
                       <Button
