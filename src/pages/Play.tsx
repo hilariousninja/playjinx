@@ -21,7 +21,7 @@ export default function Play() {
 
   useEffect(() => {
     (async () => {
-      const ps = await getDailyPrompts();
+      const ps = await getActivePrompts();
       setPrompts(ps);
       const subMap: Record<string, boolean> = {};
       const ansMap: Record<string, DbAnswer> = {};
