@@ -179,6 +179,14 @@ export default function Play() {
                 )}
               </div>
 
+              {/* Player count */}
+              {(playerCounts[prompt.id] ?? 0) > 0 && (
+                <p className="text-[11px] text-muted-foreground/50 text-center mb-4 flex items-center justify-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {playerCounts[prompt.id]} {playerCounts[prompt.id] === 1 ? 'player' : 'players'} answered
+                </p>
+              )}
+
               {/* Calculating phase */}
               {currentPhase === 'calculating' && (
                 <motion.div
