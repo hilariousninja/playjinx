@@ -178,8 +178,11 @@ export default function Play() {
 
               {/* Prompt card */}
               <div className="game-card-elevated text-center mb-5">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] mb-8 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] mb-2 leading-relaxed">
                   Find the bridge-word
+                </p>
+                <p className="text-[10px] text-muted-foreground/50 mb-8 max-w-[260px] mx-auto leading-relaxed">
+                  Enter the ONE word you think the most other players will also submit. Match the crowd, rank higher.
                 </p>
 
                 <div className="flex flex-col items-center gap-1 mb-3">

@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Play from "./pages/Play";
 import Archive from "./pages/Archive";
 import Dashboard from "./pages/Dashboard";
+import TodayResults from "./pages/TodayResults";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/play" element={<Play />} />
+          <Route path="/results" element={<TodayResults />} />
           <Route path="/archive" element={<Archive />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
