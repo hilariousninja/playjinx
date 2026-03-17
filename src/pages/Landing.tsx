@@ -1,7 +1,16 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, BarChart3, Users, Trophy } from 'lucide-react';
+import { ArrowRight, BarChart3, Users, Trophy, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getActivePrompts, type DbPrompt } from '@/lib/store';
+
+function getCompletedPrompts(): Set<string> {
+  try {
+    const raw = localStorage.getItem('jinx_completed_prompts');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
 
 const steps = [
   { num: '01', title: 'See the prompt', desc: 'Two words appear. Find the bridge.' },
@@ -17,6 +26,22 @@ const features = [
 ];
 
 export default function Landing() {
+  const [prompts, setPrompts] = useState<DbPrompt[]>([]);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const ps = await getActivePrompts();
+      setPrompts(ps);
+      setCompletedIds(getCompletedPrompts());
+      setLoaded(true);
+    })();
+  }, []);
+
+  const allDone = loaded && prompts.length > 0 && prompts.every(p => completedIds.has(p.id));
+  const someStarted = loaded && prompts.some(p => completedIds.has(p.id));
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Nav */}
@@ -58,32 +83,62 @@ export default function Landing() {
             See two words. Type the ONE bridge-word you think everyone else will pick.
           </p>
 
-          {/* Example */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="game-card-elevated inline-block px-10 py-6 mb-12"
-          >
-            <div className="flex flex-col items-center gap-1 font-display">
-              <span className="text-2xl md:text-3xl font-bold">COW</span>
-              <span className="text-primary text-lg font-bold">+</span>
-              <span className="text-2xl md:text-3xl font-bold">SNOW</span>
-              <span className="text-muted-foreground/40 text-sm mt-2">→</span>
-              <span className="text-primary text-xl font-bold mt-1">Milk</span>
-            </div>
-          </motion.div>
+          {/* Completed state */}
+          {allDone ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="game-card-elevated inline-block px-8 py-6 mb-10"
+            >
+              <CheckCircle2 className="h-8 w-8 text-primary mx-auto mb-3" />
+              <p className="font-display font-bold text-lg mb-1">You've completed today's prompts!</p>
+              <p className="text-xs text-muted-foreground/60 mb-5">Results update live as more players answer.</p>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <Button size="lg" className="rounded-xl px-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
+                  <Link to="/results">
+                    <Eye className="h-4 w-4 mr-2" /> View today's results
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" className="rounded-xl px-6 h-12 border-border/60" asChild>
+                  <Link to="/archive">Play archive</Link>
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {/* Example */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="game-card-elevated inline-block px-10 py-6 mb-12"
+              >
+                <div className="flex flex-col items-center gap-1 font-display">
+                  <span className="text-2xl md:text-3xl font-bold">COW</span>
+                  <span className="text-primary text-lg font-bold">+</span>
+                  <span className="text-2xl md:text-3xl font-bold">SNOW</span>
+                  <span className="text-muted-foreground/40 text-sm mt-2">→</span>
+                  <span className="text-primary text-xl font-bold mt-1">Milk</span>
+                </div>
+              </motion.div>
 
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Button size="lg" className="rounded-xl px-8 h-13 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base" asChild>
-              <Link to="/play">
-                Play today <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="rounded-xl px-8 h-13 border-border/60 hover:bg-secondary/80 text-base" asChild>
-              <Link to="/archive">Browse archive</Link>
-            </Button>
-          </div>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <Button size="lg" className="rounded-xl px-8 h-13 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base" asChild>
+                  <Link to="/play">
+                    {someStarted ? 'Continue playing' : 'Play today'} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                {someStarted && (
+                  <Button size="lg" variant="outline" className="rounded-xl px-6 h-13 border-border/60 hover:bg-secondary/80" asChild>
+                    <Link to="/results">View results</Link>
+                  </Button>
+                )}
+                <Button size="lg" variant="outline" className="rounded-xl px-8 h-13 border-border/60 hover:bg-secondary/80 text-base" asChild>
+                  <Link to="/archive">Browse archive</Link>
+                </Button>
+              </div>
+            </>
+          )}
         </motion.div>
       </section>
 

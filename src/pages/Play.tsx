@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ function markPromptCompleted(promptId: string) {
 }
 
 export default function Play() {
+  const [searchParams] = useSearchParams();
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [inputVal, setInputVal] = useState('');
@@ -71,13 +72,21 @@ export default function Play() {
       setPhase(phaseMap);
       setPlayerCounts(countMap);
 
-      // Auto-navigate to first unanswered prompt
-      const firstUnanswered = ps.findIndex(p => !subMap[p.id]);
-      if (firstUnanswered >= 0) {
-        setCurrentIdx(firstUnanswered);
-      } else if (ps.length > 0) {
-        // All done — show last prompt results
-        setCurrentIdx(ps.length - 1);
+      // Check for ?prompt= query param first
+      const promptParam = searchParams.get('prompt');
+      if (promptParam !== null) {
+        const idx = parseInt(promptParam, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < ps.length) {
+          setCurrentIdx(idx);
+        }
+      } else {
+        // Auto-navigate to first unanswered prompt
+        const firstUnanswered = ps.findIndex(p => !subMap[p.id]);
+        if (firstUnanswered >= 0) {
+          setCurrentIdx(firstUnanswered);
+        } else if (ps.length > 0) {
+          setCurrentIdx(ps.length - 1);
+        }
       }
 
       setLoading(false);
@@ -178,8 +187,11 @@ export default function Play() {
 
               {/* Prompt card */}
               <div className="game-card-elevated text-center mb-5">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] mb-8 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] mb-2 leading-relaxed">
                   Find the bridge-word
+                </p>
+                <p className="text-[10px] text-muted-foreground/50 mb-8 max-w-[260px] mx-auto leading-relaxed">
+                  Enter the ONE word you think the most other players will also submit. Match the crowd, rank higher.
                 </p>
 
                 <div className="flex flex-col items-center gap-1 mb-3">
@@ -278,9 +290,14 @@ export default function Play() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-center mt-8 space-y-4">
                   <div className="text-3xl">🎉</div>
                   <p className="text-sm text-muted-foreground font-medium">You've completed today's set!</p>
-                  <Button variant="outline" className="rounded-xl border-border/60" asChild>
-                    <Link to="/">Back to home</Link>
-                  </Button>
+                  <div className="flex gap-3 justify-center flex-wrap">
+                    <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+                      <Link to="/results">View today's results</Link>
+                    </Button>
+                    <Button variant="outline" className="rounded-xl border-border/60" asChild>
+                      <Link to="/">Back to home</Link>
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </motion.div>
