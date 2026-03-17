@@ -72,13 +72,21 @@ export default function Play() {
       setPhase(phaseMap);
       setPlayerCounts(countMap);
 
-      // Auto-navigate to first unanswered prompt
-      const firstUnanswered = ps.findIndex(p => !subMap[p.id]);
-      if (firstUnanswered >= 0) {
-        setCurrentIdx(firstUnanswered);
-      } else if (ps.length > 0) {
-        // All done — show last prompt results
-        setCurrentIdx(ps.length - 1);
+      // Check for ?prompt= query param first
+      const promptParam = searchParams.get('prompt');
+      if (promptParam !== null) {
+        const idx = parseInt(promptParam, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < ps.length) {
+          setCurrentIdx(idx);
+        }
+      } else {
+        // Auto-navigate to first unanswered prompt
+        const firstUnanswered = ps.findIndex(p => !subMap[p.id]);
+        if (firstUnanswered >= 0) {
+          setCurrentIdx(firstUnanswered);
+        } else if (ps.length > 0) {
+          setCurrentIdx(ps.length - 1);
+        }
       }
 
       setLoading(false);
