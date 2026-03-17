@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users } from 'lucide-react';
@@ -8,6 +8,20 @@ import { getActivePrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSu
 import ResultsView from '@/components/ResultsView';
 
 type Phase = 'input' | 'calculating' | 'results';
+
+// Persist completed prompts in localStorage
+function getCompletedPrompts(): Set<string> {
+  try {
+    const raw = localStorage.getItem('jinx_completed_prompts');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function markPromptCompleted(promptId: string) {
+  const completed = getCompletedPrompts();
+  completed.add(promptId);
+  localStorage.setItem('jinx_completed_prompts', JSON.stringify([...completed]));
+}
 
 export default function Play() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
@@ -24,24 +38,76 @@ export default function Play() {
     (async () => {
       const ps = await getActivePrompts();
       setPrompts(ps);
+
+      const localCompleted = getCompletedPrompts();
       const subMap: Record<string, boolean> = {};
       const ansMap: Record<string, DbAnswer> = {};
       const phaseMap: Record<string, Phase> = {};
       const countMap: Record<string, number> = {};
+
       await Promise.all(ps.map(async (p) => {
-        subMap[p.id] = await hasSubmitted(p.id);
-        const ua = await getUserAnswer(p.id);
-        if (ua) ansMap[p.id] = ua;
-        phaseMap[p.id] = subMap[p.id] ? 'results' : 'input';
+        // Check both server and local storage
+        const serverSubmitted = await hasSubmitted(p.id);
+        const localSubmitted = localCompleted.has(p.id);
+        const didSubmit = serverSubmitted || localSubmitted;
+
+        subMap[p.id] = didSubmit;
+
+        if (didSubmit) {
+          const ua = await getUserAnswer(p.id);
+          if (ua) {
+            ansMap[p.id] = ua;
+            // Sync local storage if server knows but local doesn't
+            if (!localSubmitted) markPromptCompleted(p.id);
+          }
+        }
+
+        phaseMap[p.id] = didSubmit ? 'results' : 'input';
         countMap[p.id] = await getTotalSubmissions(p.id);
       }));
+
       setSubmitted(subMap);
       setUserAnswers(ansMap);
       setPhase(phaseMap);
       setPlayerCounts(countMap);
+
+      // Auto-navigate to first unanswered prompt
+      const firstUnanswered = ps.findIndex(p => !subMap[p.id]);
+      if (firstUnanswered >= 0) {
+        setCurrentIdx(firstUnanswered);
+      } else if (ps.length > 0) {
+        // All done — show last prompt results
+        setCurrentIdx(ps.length - 1);
+      }
+
       setLoading(false);
     })();
   }, []);
+
+  const handleSubmit = useCallback(async () => {
+    const prompt = prompts[currentIdx];
+    if (!prompt) return;
+    const trimmed = inputVal.trim();
+    if (!trimmed || submitted[prompt.id] || submitting) return;
+
+    setSubmitting(true);
+    try {
+      const answer = await submitAnswer(prompt.id, trimmed);
+      setSubmitted(prev => ({ ...prev, [prompt.id]: true }));
+      setUserAnswers(prev => ({ ...prev, [prompt.id]: answer }));
+      setPlayerCounts(prev => ({ ...prev, [prompt.id]: (prev[prompt.id] || 0) + 1 }));
+      setInputVal('');
+      markPromptCompleted(prompt.id);
+
+      setPhase(prev => ({ ...prev, [prompt.id]: 'calculating' }));
+      setTimeout(() => {
+        setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
+        setSubmitting(false);
+      }, 1300);
+    } catch {
+      setSubmitting(false);
+    }
+  }, [prompts, currentIdx, inputVal, submitted, submitting]);
 
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -69,27 +135,8 @@ export default function Play() {
   const allDone = prompts.every(p => submitted[p.id]);
   const completedCount = prompts.filter(p => submitted[p.id]).length;
 
-  const handleSubmit = async () => {
-    const trimmed = inputVal.trim();
-    if (!trimmed || isSubmitted || submitting) return;
-    setSubmitting(true);
-    try {
-      const answer = await submitAnswer(prompt.id, trimmed);
-      setSubmitted(prev => ({ ...prev, [prompt.id]: true }));
-      setUserAnswers(prev => ({ ...prev, [prompt.id]: answer }));
-      setPlayerCounts(prev => ({ ...prev, [prompt.id]: (prev[prompt.id] || 0) + 1 }));
-      setInputVal('');
-      setPhase(prev => ({ ...prev, [prompt.id]: 'calculating' }));
-      setTimeout(() => {
-        setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
-      }, 1300);
-    } catch {
-      setSubmitting(false);
-    }
-  };
-
-  const goNext = () => setCurrentIdx(i => Math.min(prompts.length - 1, i + 1));
-  const goPrev = () => setCurrentIdx(i => Math.max(0, i - 1));
+  const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); };
+  const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -98,10 +145,9 @@ export default function Play() {
         <div className="container flex items-center justify-between h-14 max-w-lg mx-auto">
           <Link to="/" className="font-display text-lg font-bold tracking-tight jinx-gradient-text">JINX</Link>
           <div className="flex items-center gap-4">
-            {/* Progress dots */}
             <div className="flex items-center gap-2">
               {prompts.map((p, i) => (
-                <button key={p.id} onClick={() => setCurrentIdx(i)}
+                <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); }}
                   className={`rounded-full transition-all duration-300 ${
                     i === currentIdx
                       ? 'w-6 h-2 bg-primary'
@@ -132,24 +178,21 @@ export default function Play() {
 
               {/* Prompt card */}
               <div className="game-card-elevated text-center mb-5">
-                {/* Instruction */}
                 <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] mb-8 leading-relaxed">
                   Find the bridge-word
                 </p>
 
-                {/* Prompt words — stacked vertically */}
                 <div className="flex flex-col items-center gap-1 mb-3">
                   <span className="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground">{prompt.word_a}</span>
                   <span className="text-primary text-xl font-display font-bold my-1">+</span>
                   <span className="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground">{prompt.word_b}</span>
                 </div>
 
-                {/* Example */}
                 <p className="text-[10px] text-muted-foreground/40 mb-8">
                   e.g. <span className="font-display">COW + SNOW</span> → <span className="font-display font-semibold text-muted-foreground/60">Milk</span>
                 </p>
 
-                {/* Input or submitted state */}
+                {/* Input — only if not submitted */}
                 {currentPhase === 'input' && !isSubmitted ? (
                   <div className="space-y-3 max-w-xs mx-auto">
                     <div className="flex gap-2">
@@ -174,7 +217,7 @@ export default function Play() {
                     </div>
                     <p className="text-[10px] text-muted-foreground/40">Single word answers work best</p>
                   </div>
-                ) : isSubmitted ? (
+                ) : isSubmitted && currentPhase !== 'calculating' ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
