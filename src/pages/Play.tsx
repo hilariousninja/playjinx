@@ -290,9 +290,14 @@ export default function Play() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-center mt-8 space-y-4">
                   <div className="text-3xl">🎉</div>
                   <p className="text-sm text-muted-foreground font-medium">You've completed today's set!</p>
-                  <Button variant="outline" className="rounded-xl border-border/60" asChild>
-                    <Link to="/">Back to home</Link>
-                  </Button>
+                  <div className="flex gap-3 justify-center flex-wrap">
+                    <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+                      <Link to="/results">View today's results</Link>
+                    </Button>
+                    <Button variant="outline" className="rounded-xl border-border/60" asChild>
+                      <Link to="/">Back to home</Link>
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </motion.div>
