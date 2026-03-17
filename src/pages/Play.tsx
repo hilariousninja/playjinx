@@ -24,6 +24,7 @@ function markPromptCompleted(promptId: string) {
 }
 
 export default function Play() {
+  const [searchParams] = useSearchParams();
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [inputVal, setInputVal] = useState('');
