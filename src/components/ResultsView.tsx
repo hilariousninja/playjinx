@@ -32,7 +32,7 @@ export default function ResultsView({ promptId }: Props) {
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 5000);
+    const interval = setInterval(refresh, 8000);
     return () => clearInterval(interval);
   }, [refresh]);
 
@@ -50,6 +50,7 @@ export default function ResultsView({ promptId }: Props) {
   const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
   const topPercent = Math.max(1, 100 - percentile);
   const isEarly = total < 5;
+  const matchCount = userStat?.count ?? 0;
 
   const shareText = prompt
     ? `JINX Daily\n${prompt.word_a} + ${prompt.word_b}\n\nMy answer: ${userAnswer?.raw_answer?.toUpperCase()}\nRank: #${rank} · Top ${topPercent}%\n\nCan you beat it?`
@@ -80,13 +81,19 @@ export default function ResultsView({ promptId }: Props) {
         >
           <Award className="h-5 w-5 text-primary mx-auto mb-2" />
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">Your Answer</p>
-          <p className="font-display text-3xl font-bold mb-4 jinx-gradient-text">{userAnswer?.raw_answer}</p>
+          <p className="font-display text-3xl font-bold mb-3 jinx-gradient-text">{userAnswer?.raw_answer}</p>
+
+          {/* Match message */}
+          <p className="text-sm text-muted-foreground mb-4">
+            You matched <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'player' : 'players'}
+          </p>
+
           <div className="flex justify-center gap-2 flex-wrap">
             <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
               Rank <span className="font-bold text-foreground">#{rank}</span>
             </span>
             <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
-              <span className="font-bold text-foreground">{userStat.count}</span> {userStat.count === 1 ? 'match' : 'matches'}
+              <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'match' : 'matches'}
             </span>
             <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-display font-bold">
               Top {topPercent}%
@@ -144,8 +151,10 @@ export default function ResultsView({ promptId }: Props) {
                     }`}
                   />
                 </div>
-                <span className={`font-display text-xs w-10 text-right tabular-nums ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/60'}`}>
+                {/* Show percentage and count */}
+                <span className={`font-display text-xs w-24 text-right tabular-nums whitespace-nowrap ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/60'}`}>
                   {s.percentage}%
+                  <span className="text-[10px] text-muted-foreground/40 ml-1">({s.count})</span>
                 </span>
               </motion.div>
             );
