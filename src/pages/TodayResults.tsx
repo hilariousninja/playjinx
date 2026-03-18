@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, RefreshCw, Award, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getActivePrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
+import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
+import Countdown from '@/components/Countdown';
 
 interface PromptSummary {
   prompt: DbPrompt;
