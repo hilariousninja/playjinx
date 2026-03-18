@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, BarChart3, Users, Trophy, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getActivePrompts, type DbPrompt } from '@/lib/store';
+import { ensureDailyPrompts, type DbPrompt } from '@/lib/store';
+import Countdown from '@/components/Countdown';
 
 function getCompletedPrompts(): Set<string> {
   try {
