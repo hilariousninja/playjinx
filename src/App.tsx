@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Play from "./pages/Play";
 import Archive from "./pages/Archive";
 import Dashboard from "./pages/Dashboard";
+import AnswerAdmin from "./pages/AnswerAdmin";
 import TodayResults from "./pages/TodayResults";
 import NotFound from "./pages/NotFound";
 
