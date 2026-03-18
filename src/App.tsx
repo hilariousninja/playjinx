@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Play from "./pages/Play";
 import Archive from "./pages/Archive";
 import Dashboard from "./pages/Dashboard";
+import AnswerAdmin from "./pages/AnswerAdmin";
 import TodayResults from "./pages/TodayResults";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/results" element={<TodayResults />} />
           <Route path="/archive" element={<Archive />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/answers" element={<AnswerAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
