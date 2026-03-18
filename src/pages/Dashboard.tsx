@@ -245,6 +245,9 @@ export default function Dashboard() {
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleBulkUnreviewedToReview}>
               <RefreshCw className="h-4 w-4 mr-2" /> Bulk set Unreviewed → Review
             </Button>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
+              <Link to="/dashboard/answers"><Trash2 className="h-4 w-4 mr-2" /> Clean answer data (merge / delete)</Link>
+            </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" disabled>
               <Tag className="h-4 w-4 mr-2" /> Tag synonym clusters (coming soon)
             </Button>
