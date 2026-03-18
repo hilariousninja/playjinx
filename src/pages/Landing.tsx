@@ -183,7 +183,8 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-5 mt-auto">
+      <footer className="border-t border-border/50 py-5 mt-auto space-y-2">
+        <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">
           JINX — a party word game in development
         </p>

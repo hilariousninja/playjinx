@@ -37,7 +37,7 @@ export default function Play() {
 
   useEffect(() => {
     (async () => {
-      const ps = await getActivePrompts();
+      const ps = await ensureDailyPrompts();
       setPrompts(ps);
 
       const localCompleted = getCompletedPrompts();

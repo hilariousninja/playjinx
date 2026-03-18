@@ -75,10 +75,11 @@ export default function TodayResults() {
             <h1 className="text-2xl font-bold tracking-tight mb-2">
               {allAnswered ? 'All prompts completed' : `${answeredCount} of ${summaries.length} answered`}
             </h1>
-            <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5">
+            <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5 mb-1">
               <RefreshCw className="h-3 w-3" />
               Results update live as more players answer
             </p>
+            <Countdown />
           </div>
 
           {/* Prompt cards */}
