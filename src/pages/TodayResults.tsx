@@ -20,7 +20,7 @@ export default function TodayResults() {
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
-    const prompts = await getActivePrompts();
+    const prompts = await ensureDailyPrompts();
     const results = await Promise.all(
       prompts.map(async (prompt) => {
         const [answer, total, stats] = await Promise.all([
