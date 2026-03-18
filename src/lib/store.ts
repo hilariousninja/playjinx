@@ -216,6 +216,43 @@ export async function getImportSources(): Promise<DbImportSource[]> {
   return data ?? [];
 }
 
+// --- Admin: Answer Cleaning ---
+export async function mergeAnswers(promptId: string, sourceNormalized: string, targetNormalized: string): Promise<number> {
+  // Count affected rows first
+  const { count } = await supabase
+    .from('answers')
+    .select('*', { count: 'exact', head: true })
+    .eq('prompt_id', promptId)
+    .eq('normalized_answer', sourceNormalized);
+
+  // Update all source answers to target
+  const { error } = await supabase
+    .from('answers')
+    .update({ normalized_answer: targetNormalized.toLowerCase().trim() })
+    .eq('prompt_id', promptId)
+    .eq('normalized_answer', sourceNormalized);
+  if (error) throw error;
+
+  return count ?? 0;
+}
+
+export async function deleteAnswersByNormalized(promptId: string, normalizedAnswer: string): Promise<number> {
+  const { count } = await supabase
+    .from('answers')
+    .select('*', { count: 'exact', head: true })
+    .eq('prompt_id', promptId)
+    .eq('normalized_answer', normalizedAnswer);
+
+  const { error } = await supabase
+    .from('answers')
+    .delete()
+    .eq('prompt_id', promptId)
+    .eq('normalized_answer', normalizedAnswer);
+  if (error) throw error;
+
+  return count ?? 0;
+}
+
 // --- JINX Score (client-side for MVP) ---
 export function getJinxScoreBreakdown(word: DbWord) {
   const s = word.jinx_score;
