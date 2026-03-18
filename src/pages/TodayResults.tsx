@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, RefreshCw, Award, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getActivePrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
+import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
+import Countdown from '@/components/Countdown';
 
 interface PromptSummary {
   prompt: DbPrompt;
@@ -19,7 +20,7 @@ export default function TodayResults() {
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
-    const prompts = await getActivePrompts();
+    const prompts = await ensureDailyPrompts();
     const results = await Promise.all(
       prompts.map(async (prompt) => {
         const [answer, total, stats] = await Promise.all([
@@ -74,10 +75,11 @@ export default function TodayResults() {
             <h1 className="text-2xl font-bold tracking-tight mb-2">
               {allAnswered ? 'All prompts completed' : `${answeredCount} of ${summaries.length} answered`}
             </h1>
-            <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5">
+            <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5 mb-1">
               <RefreshCw className="h-3 w-3" />
               Results update live as more players answer
             </p>
+            <Countdown />
           </div>
 
           {/* Prompt cards */}

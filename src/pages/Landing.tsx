@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, BarChart3, Users, Trophy, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getActivePrompts, type DbPrompt } from '@/lib/store';
+import { ensureDailyPrompts, type DbPrompt } from '@/lib/store';
+import Countdown from '@/components/Countdown';
 
 function getCompletedPrompts(): Set<string> {
   try {
@@ -32,7 +33,7 @@ export default function Landing() {
 
   useEffect(() => {
     (async () => {
-      const ps = await getActivePrompts();
+      const ps = await ensureDailyPrompts();
       setPrompts(ps);
       setCompletedIds(getCompletedPrompts());
       setLoaded(true);
@@ -182,7 +183,8 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-5 mt-auto">
+      <footer className="border-t border-border/50 py-5 mt-auto space-y-2">
+        <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">
           JINX — a party word game in development
         </p>
