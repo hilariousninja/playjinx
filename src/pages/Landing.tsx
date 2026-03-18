@@ -33,7 +33,7 @@ export default function Landing() {
 
   useEffect(() => {
     (async () => {
-      const ps = await getActivePrompts();
+      const ps = await ensureDailyPrompts();
       setPrompts(ps);
       setCompletedIds(getCompletedPrompts());
       setLoaded(true);
