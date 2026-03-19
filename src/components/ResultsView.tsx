@@ -172,13 +172,21 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </div>
 
+      {/* Scoring explainer */}
+      <div className="game-card text-center py-4 px-5">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-2 font-medium">How scoring works</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          You score higher when more people match your answer. Your rank depends on how popular your answer is.
+        </p>
+      </div>
+
       {/* Live indicator */}
       <div className="text-center space-y-1 py-1">
         <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
-          Results are still updating
+          Results are still updating — your rank may change
         </p>
-        <p className="text-[10px] text-muted-foreground/40">Check back later to see if your rank changes</p>
+        <p className="text-[10px] text-muted-foreground/40">Check back later to see how your answer performs</p>
       </div>
     </div>
   );
