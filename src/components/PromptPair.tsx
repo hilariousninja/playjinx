@@ -15,7 +15,7 @@ export default function PromptPair({ wordA, wordB, size = 'lg', className }: Pro
   const sizeClasses = {
     sm: 'text-xl md:text-2xl',
     md: 'text-2xl md:text-3xl',
-    lg: 'text-3xl md:text-4xl',
+    lg: 'text-2xl md:text-3xl',
   };
 
   const plusClasses = {
