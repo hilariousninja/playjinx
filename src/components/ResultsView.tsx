@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Hash, TrendingUp, Award, Crown } from 'lucide-react';
-import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, getCanonicalAnswer, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
 interface Props {
   promptId: string;
@@ -11,6 +11,7 @@ export default function ResultsView({ promptId }: Props) {
   const [stats, setStats] = useState<AnswerStat[]>([]);
   const [prompt, setPrompt] = useState<DbPrompt | null>(null);
   const [userAnswer, setUserAnswer] = useState<DbAnswer | null>(null);
+  const [userCanonical, setUserCanonical] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +26,29 @@ export default function ResultsView({ promptId }: Props) {
     setPrompt(p);
     setUserAnswer(ua);
     setTotal(t);
+    // Resolve user's answer to canonical form for stat matching
+    if (ua) {
+      const canon = await getCanonicalAnswer(ua.normalized_answer);
+      // Also check fuzzy match against stat keys
+      const exactMatch = s.find(st => st.normalized_answer === canon);
+      if (exactMatch) {
+        setUserCanonical(canon);
+      } else {
+        // Fuzzy merged into another form — find which stat contains this answer
+        const { levenshtein } = await import('@/lib/normalize');
+        const fuzzyMatch = s.find(st => {
+          const dist = levenshtein(canon, st.normalized_answer);
+          const minLen = Math.min(canon.length, st.normalized_answer.length);
+          if (minLen <= 3) return false;
+          if (minLen <= 5) return dist <= 1;
+          if (minLen <= 9) return dist <= 2;
+          return dist <= 2;
+        });
+        setUserCanonical(fuzzyMatch?.normalized_answer ?? canon);
+      }
+    } else {
+      setUserCanonical(null);
+    }
     setLoading(false);
   }, [promptId]);
 
@@ -42,7 +66,7 @@ export default function ResultsView({ promptId }: Props) {
   );
 
   const unique = stats.length;
-  const userStat = stats.find(s => s.normalized_answer === userAnswer?.normalized_answer);
+  const userStat = userCanonical ? stats.find(s => s.normalized_answer === userCanonical) : undefined;
   const topAnswer = stats.length > 0 ? stats[0] : null;
   const rank = userStat?.rank ?? 0;
   const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
@@ -139,7 +163,7 @@ export default function ResultsView({ promptId }: Props) {
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-4 font-medium">Answer Clusters</p>
         <div className="space-y-1">
           {stats.slice(0, 8).map((s, i) => {
-            const isUser = s.normalized_answer === userAnswer?.normalized_answer;
+            const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
             return (
               <motion.div
                 key={s.normalized_answer}
@@ -194,7 +218,7 @@ export default function ResultsView({ promptId }: Props) {
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-3 font-medium">🎲 Wild Answers</p>
             <div className="flex flex-wrap gap-1.5">
               {wildAnswers.map(s => {
-                const isUser = s.normalized_answer === userAnswer?.normalized_answer;
+                const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
                 return (
                   <span
                     key={s.normalized_answer}
