@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, type DbPrompt, type DbAnswer } from '@/lib/store';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
+import JinxLogo from '@/components/JinxLogo';
 
 type Phase = 'input' | 'calculating' | 'results';
 
@@ -140,7 +141,9 @@ export default function Play() {
       {/* Header */}
       <header className="border-b border-border shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
-          <Link to="/" className="font-display text-xl font-bold tracking-tighter text-foreground">JINX</Link>
+          <Link to="/">
+            <JinxLogo size={20} className="text-foreground text-lg" />
+          </Link>
           <div className="flex items-center gap-4">
             {/* Dot progress */}
             <div className="flex items-center gap-2">
@@ -169,68 +172,65 @@ export default function Play() {
           <AnimatePresence mode="wait">
             <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
 
-              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-4">
+              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-6">
                 Prompt {currentIdx + 1} of {prompts.length}
               </p>
 
-              {/* Prompt card */}
-              <div className="game-card-elevated text-center mb-5">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.15em] mb-2 leading-relaxed font-medium">
-                  Find the bridge-word
-                </p>
-                <p className="text-[11px] text-muted-foreground/70 mb-8 max-w-[280px] mx-auto leading-relaxed">
-                  Enter the ONE word you think the most other players will also submit. Match the crowd, rank higher.
-                </p>
-
-                <div className="flex flex-col items-center gap-0 mb-4">
-                  <span className="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground">{prompt.word_a}</span>
-                  <span className="text-primary text-xl font-display font-bold my-1.5">+</span>
-                  <span className="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground">{prompt.word_b}</span>
+              {/* Prompt hero */}
+              <div className="text-center mb-6">
+                <div className="flex flex-col items-center gap-0 mb-8">
+                  <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_a}</span>
+                  <span className="text-primary text-2xl font-display font-bold my-2">+</span>
+                  <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_b}</span>
                 </div>
+              </div>
 
-                <p className="text-[10px] text-muted-foreground/50 mb-8">
-                  e.g. <span className="font-display">COW + SNOW</span> → <span className="font-display font-semibold text-muted-foreground">Milk</span>
-                </p>
-
-                {/* Input */}
-                {currentPhase === 'input' && !isSubmitted ? (
-                  <div className="space-y-3 max-w-xs mx-auto">
-                    <div className="flex gap-2">
-                      <Input
-                        value={inputVal}
-                        onChange={e => setInputVal(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                        placeholder="Enter your word..."
-                        className="rounded-lg text-center font-display bg-card border-border h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40"
-                        maxLength={50}
-                        disabled={submitting}
-                        autoFocus
-                      />
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={!inputVal.trim() || submitting}
-                        size="icon"
-                        className="rounded-lg shrink-0 h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/50">Single word answers work best</p>
+              {/* Objective + Input */}
+              {currentPhase === 'input' && !isSubmitted ? (
+                <div className="game-card-elevated text-center py-8 px-6 mb-5">
+                  <p className="text-sm font-semibold text-foreground mb-1.5">
+                    Enter the ONE word most players will also choose
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-6">
+                    You are trying to match the crowd, not just find any valid link.
+                  </p>
+                  <div className="flex gap-2 max-w-xs mx-auto">
+                    <Input
+                      value={inputVal}
+                      onChange={e => setInputVal(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                      placeholder="Enter your word..."
+                      className="rounded-lg text-center font-display bg-background border-border h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40"
+                      maxLength={50}
+                      disabled={submitting}
+                      autoFocus
+                    />
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!inputVal.trim() || submitting}
+                      size="icon"
+                      className="rounded-lg shrink-0 h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
                   </div>
-                ) : isSubmitted && currentPhase !== 'calculating' ? (
+                  <p className="text-[10px] text-muted-foreground/50 mt-3">Single word answers work best</p>
+                </div>
+              ) : isSubmitted && currentPhase !== 'calculating' ? (
+                <div className="text-center mb-5">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full"
+                    className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2.5 rounded-full"
                   >
                     <Check className="h-4 w-4" />
-                    <span className="text-sm font-display font-bold">{userAnswers[prompt.id]?.raw_answer}</span>
+                    <span className="text-sm font-display font-bold">Your answer: {userAnswers[prompt.id]?.raw_answer}</span>
                   </motion.div>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
 
               {/* Player count */}
-              {(playerCounts[prompt.id] ?? 0) > 0 && (
+              {(playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
                 <p className="text-[11px] text-muted-foreground/60 text-center mb-5 flex items-center justify-center gap-1.5">
                   <Users className="h-3 w-3" />
                   {playerCounts[prompt.id]} {playerCounts[prompt.id] === 1 ? 'player has' : 'players have'} answered
@@ -272,13 +272,14 @@ export default function Play() {
               {allDone && currentPhase === 'results' && currentIdx === prompts.length - 1 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-center mt-8 space-y-4">
                   <div className="text-3xl">🎉</div>
-                  <p className="text-sm text-muted-foreground font-medium">You've completed today's set!</p>
+                  <p className="text-sm font-semibold text-foreground">You've completed today's prompts!</p>
+                  <p className="text-xs text-muted-foreground">Check back later — results update as more players answer.</p>
                   <div className="flex gap-3 justify-center flex-wrap">
                     <Button className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90" asChild>
                       <Link to="/results">View today's results</Link>
                     </Button>
                     <Button variant="outline" className="rounded-lg" asChild>
-                      <Link to="/">Back to home</Link>
+                      <Link to="/archive">Play archive</Link>
                     </Button>
                   </div>
                   <Countdown />

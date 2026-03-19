@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
+import JinxLogo from '@/components/JinxLogo';
 
 function getCompletedPrompts(): Set<string> {
   try {
@@ -35,16 +36,18 @@ export default function Landing() {
       {/* Header */}
       <header className="border-b border-border">
         <div className="max-w-xl mx-auto flex items-center justify-between h-14 px-5">
-          <Link to="/" className="font-display text-xl font-bold tracking-tighter text-foreground">
-            JINX
+          <Link to="/">
+            <JinxLogo size={22} className="text-foreground text-lg" />
           </Link>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
               <Link to="/archive">Archive</Link>
             </Button>
-            <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold px-4" asChild>
-              <Link to="/play">Play</Link>
-            </Button>
+            {!allDone && (
+              <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold px-4" asChild>
+                <Link to="/play">Play</Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -82,7 +85,7 @@ export default function Landing() {
             >
               <CheckCircle2 className="h-7 w-7 text-primary mx-auto mb-3" />
               <p className="font-semibold text-base mb-1 text-foreground">You've completed today's prompts</p>
-              <p className="text-xs text-muted-foreground mb-6">Results update live as more players answer.</p>
+              <p className="text-xs text-muted-foreground mb-6">Results update live — check back later to see rank changes.</p>
               <div className="flex gap-3 justify-center flex-wrap">
                 <Button size="lg" className="rounded-lg px-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
                   <Link to="/results">
@@ -123,9 +126,6 @@ export default function Landing() {
                     <Link to="/results">View results</Link>
                   </Button>
                 )}
-                <Button size="lg" variant="outline" className="rounded-lg px-6 h-12 text-base" asChild>
-                  <Link to="/archive">Browse archive</Link>
-                </Button>
               </div>
             </>
           )}

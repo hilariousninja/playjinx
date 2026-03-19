@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Users, RefreshCw, ChevronRight } from 'lucide-react';
+import { ArrowRight, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
 import Countdown from '@/components/Countdown';
+import JinxLogo from '@/components/JinxLogo';
 
 interface PromptSummary {
   prompt: DbPrompt;
@@ -59,7 +60,9 @@ export default function TodayResults() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
-          <Link to="/" className="font-display text-xl font-bold tracking-tighter text-foreground">JINX</Link>
+          <Link to="/">
+            <JinxLogo size={20} className="text-foreground text-lg" />
+          </Link>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
             <Link to="/play">Play</Link>
           </Button>
@@ -74,7 +77,7 @@ export default function TodayResults() {
               {allAnswered ? 'All prompts completed' : `${answeredCount} of ${summaries.length} answered`}
             </h1>
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5 mb-2">
-              <RefreshCw className="h-3 w-3" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
               Results update live as more players answer
             </p>
             <Countdown />
@@ -141,6 +144,11 @@ export default function TodayResults() {
               <Link to="/archive">Browse archive</Link>
             </Button>
           </div>
+
+          {/* Return hook */}
+          <p className="text-center text-[10px] text-muted-foreground/40 mt-6">
+            More players are still answering — check back later to see how results change
+          </p>
         </motion.div>
       </div>
 
