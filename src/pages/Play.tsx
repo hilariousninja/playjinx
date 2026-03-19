@@ -215,11 +215,11 @@ export default function Play() {
                   <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
                       value={inputVal}
-                      onChange={e => setInputVal(e.target.value)}
+                      onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                      placeholder="Enter your word..."
-                      className="rounded-lg text-center font-display bg-background border-border h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40"
-                      maxLength={50}
+                      placeholder="Enter your answer..."
+                      className={`rounded-lg text-center font-display bg-background h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40 ${inputError ? 'border-destructive' : 'border-border'}`}
+                      maxLength={80}
                       disabled={submitting}
                       autoFocus
                     />
@@ -232,7 +232,11 @@ export default function Play() {
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground/50 mt-3">Single word answers work best</p>
+                  {inputError ? (
+                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground/50 mt-3">One word or short phrase</p>
+                  )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
                 <div className="text-center mb-5">
