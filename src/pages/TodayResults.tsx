@@ -68,7 +68,14 @@ export default function TodayResults() {
     if (bestTopPercent <= 5) return '🔥 Mind reader!';
     if (bestTopPercent <= 20) return '⚡ Strong match!';
     if (bestTopPercent <= 50) return '👀 Decent run';
-    return '🎲 Wildcard answers';
+    return '🎲 Tough round';
+  };
+
+  const getMedal = (tp: number) => {
+    if (tp <= 10) return '🥇';
+    if (tp <= 30) return '🥈';
+    if (tp <= 60) return '🥉';
+    return '';
   };
 
   const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
