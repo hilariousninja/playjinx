@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Users, ChevronRight } from 'lucide-react';
+import { ArrowRight, Users, ChevronRight, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
 import Countdown from '@/components/Countdown';
@@ -14,11 +14,13 @@ interface PromptSummary {
   rank: number;
   matchCount: number;
   topPercent: number;
+  topAnswer: AnswerStat | null;
 }
 
 export default function TodayResults() {
   const [summaries, setSummaries] = useState<PromptSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   const refresh = async () => {
     const prompts = await ensureDailyPrompts();
@@ -34,7 +36,8 @@ export default function TodayResults() {
         const matchCount = userStat?.count ?? 0;
         const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
         const topPercent = Math.max(1, 100 - percentile);
-        return { prompt, answer, total, rank, matchCount, topPercent };
+        const topAnswer = stats.length > 0 ? stats[0] : null;
+        return { prompt, answer, total, rank, matchCount, topPercent, topAnswer };
       })
     );
     setSummaries(results);
@@ -56,6 +59,30 @@ export default function TodayResults() {
   const allAnswered = summaries.length > 0 && summaries.every(s => s.answer);
   const answeredCount = summaries.filter(s => s.answer).length;
 
+  // Build share text
+  const bestTopPercent = allAnswered
+    ? Math.min(...summaries.map(s => s.topPercent))
+    : null;
+
+  const shareText = allAnswered
+    ? [
+        `JINX — ${answeredCount}/${summaries.length}`,
+        '',
+        ...summaries.map(s =>
+          `${s.prompt.word_a} + ${s.prompt.word_b} → #${s.rank} ${s.answer?.raw_answer?.toUpperCase()}`
+        ),
+        '',
+        `Top ${bestTopPercent}%`,
+        'playjinx.lovable.app',
+      ].join('\n')
+    : '';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border shrink-0">
@@ -63,9 +90,14 @@ export default function TodayResults() {
           <Link to="/">
             <JinxLogo size={20} className="text-foreground text-lg" />
           </Link>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-            <Link to="/play">Play</Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
+              <Link to="/play">Play</Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
+              <Link to="/archive">Archive</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -105,7 +137,7 @@ export default function TodayResults() {
                       {s.answer ? (
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
                           <span className="text-xs text-muted-foreground">
-                            Your answer: <span className="font-display font-bold text-foreground">{s.answer.raw_answer}</span>
+                            You chose: <span className="font-display font-bold text-foreground">{s.answer.raw_answer}</span>
                           </span>
                           <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full font-display">
                             #{s.rank}
@@ -116,6 +148,13 @@ export default function TodayResults() {
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground/60 mt-2">Not answered yet</p>
+                      )}
+
+                      {/* #1 answer for this prompt */}
+                      {s.topAnswer && (
+                        <p className="text-[10px] text-muted-foreground/50 mt-1.5">
+                          #1: <span className="font-display font-medium text-muted-foreground">{s.topAnswer.normalized_answer}</span> — {s.topAnswer.percentage}% ({s.topAnswer.count})
+                        </p>
                       )}
                     </div>
 
@@ -133,6 +172,16 @@ export default function TodayResults() {
           </div>
 
           <div className="mt-8 space-y-3">
+            {/* Copy all results */}
+            {allAnswered && (
+              <Button
+                className="w-full rounded-lg h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+                onClick={handleCopy}
+              >
+                {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                {copied ? 'Copied!' : 'Copy results'}
+              </Button>
+            )}
             {!allAnswered && (
               <Button className="w-full rounded-lg h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
                 <Link to="/play">
