@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Eye } from 'lucide-react';
+import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
