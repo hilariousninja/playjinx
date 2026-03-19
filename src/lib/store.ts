@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeAnswer, applyAlias, isBlocked } from './normalize';
+import { normalizeAnswer, applyAlias, isBlocked, fuzzyMergeGroups } from './normalize';
 import { getAliasMap, getBlockedTerms } from './answer-helpers';
 import type { Tables } from '@/integrations/supabase/types';
 
