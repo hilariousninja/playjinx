@@ -162,7 +162,7 @@ export default function AnswerAdmin() {
                 {stats.map(s => (
                   <div key={s.normalized_answer} className="bg-card border border-border rounded-xl px-4 py-2.5 flex items-center gap-2">
                     <span className="font-display text-[10px] text-muted-foreground/40 w-5 text-right">#{s.rank}</span>
-                    <span className="font-display text-sm font-semibold flex-1 truncate">{s.normalized_answer}</span>
+                    <span className="font-display text-sm font-semibold flex-1 break-words min-w-0">{s.normalized_answer}</span>
                     <span className="text-[10px] text-muted-foreground tabular-nums">
                       {s.percentage}% ({s.count})
                     </span>
