@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, X, Shield, FlaskConical, Loader2, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Check, X, Shield, FlaskConical, Loader2, RefreshCw, TrendingUp, TrendingDown, Gauge } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +21,7 @@ interface PromptRow {
   mode: string;
   prompt_status: PromptStatus;
   prompt_tag: PromptTag;
+  prompt_score: number;
   total_players: number;
   unique_answers: number;
   top_answer_pct: number;
@@ -44,6 +45,22 @@ const PERF_BADGE: Record<string, { label: string; cls: string; icon: typeof Tren
   decent: { label: 'Decent', cls: 'text-muted-foreground', icon: TrendingUp },
   weak: { label: 'Weak', cls: 'text-destructive', icon: TrendingDown },
 };
+
+function getScoreGuidance(score: number): { label: string; hint: string; cls: string } {
+  if (score >= 70) return { label: 'High', hint: 'Strong candidate → Safe', cls: 'text-primary' };
+  if (score >= 45) return { label: 'Medium', hint: 'Worth testing → Test', cls: 'text-muted-foreground' };
+  return { label: 'Low', hint: 'Consider rejecting', cls: 'text-destructive' };
+}
+
+function ScorePill({ score }: { score: number }) {
+  const guidance = getScoreGuidance(score);
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-display font-bold ${guidance.cls}`}>
+      <Gauge className="h-3 w-3" />
+      {score}
+    </span>
+  );
+}
 
 export default function PromptAdmin() {
   const [prompts, setPrompts] = useState<PromptRow[]>([]);
@@ -85,8 +102,14 @@ export default function PromptAdmin() {
     setUpdating(null);
   };
 
-  const pending = useMemo(() => prompts.filter(p => p.prompt_status === 'pending'), [prompts]);
-  const approved = useMemo(() => prompts.filter(p => p.prompt_status === 'approved'), [prompts]);
+  const pending = useMemo(() =>
+    [...prompts.filter(p => p.prompt_status === 'pending')].sort((a, b) => b.prompt_score - a.prompt_score),
+    [prompts]
+  );
+  const approved = useMemo(() =>
+    [...prompts.filter(p => p.prompt_status === 'approved')].sort((a, b) => b.prompt_score - a.prompt_score),
+    [prompts]
+  );
   const played = useMemo(() => prompts.filter(p => p.total_players > 0), [prompts]);
 
   if (loading) return (
@@ -131,83 +154,96 @@ export default function PromptAdmin() {
             <TabsTrigger value="feedback" className="rounded-lg text-xs">Feedback ({played.length})</TabsTrigger>
           </TabsList>
 
-          {/* Review tab: pending prompts */}
+          {/* Review tab: pending prompts sorted by score */}
           <TabsContent value="review" className="mt-4 space-y-2">
             {pending.length === 0 && (
               <p className="text-center text-xs text-muted-foreground py-10">No pending prompts to review.</p>
             )}
-            {pending.map((p, i) => (
-              <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                className="bg-card border border-border rounded-xl p-4"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-display font-bold text-base">
-                    {p.word_a} <span className="text-primary">+</span> {p.word_b}
+            {pending.map((p, i) => {
+              const guidance = getScoreGuidance(p.prompt_score);
+              return (
+                <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                  className="bg-card border border-border rounded-xl p-4"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-display font-bold text-base">
+                      {p.word_a} <span className="text-primary">+</span> {p.word_b}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <ScorePill score={p.prompt_score} />
+                      <Badge className={`${STATUS_BADGE[p.prompt_status].cls} text-[9px] border-0`}>
+                        {STATUS_BADGE[p.prompt_status].label}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className={`text-[10px] mb-3 ${guidance.cls}`}>
+                    {guidance.hint}
                   </p>
-                  <Badge className={`${STATUS_BADGE[p.prompt_status].cls} text-[9px] border-0`}>
-                    {STATUS_BADGE[p.prompt_status].label}
-                  </Badge>
-                </div>
-                <p className="text-[10px] text-muted-foreground mb-3">
-                  Does this pair have a clear shared concept players would converge on?
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" className="rounded-lg text-xs bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={() => handleApprove(p.id)} disabled={updating === p.id}
-                  >
-                    {updating === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
-                    Approve
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-lg text-xs"
-                    onClick={() => handleReject(p.id)} disabled={updating === p.id}
-                  >
-                    <X className="h-3 w-3 mr-1" /> Reject
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex gap-2">
+                    <Button size="sm" className="rounded-lg text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={() => handleApprove(p.id)} disabled={updating === p.id}
+                    >
+                      {updating === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+                      Approve
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-lg text-xs"
+                      onClick={() => handleReject(p.id)} disabled={updating === p.id}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Reject
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
           </TabsContent>
 
-          {/* Approved tab: tag as safe/test */}
+          {/* Approved tab: tag as safe/test, score guides decision */}
           <TabsContent value="approved" className="mt-4 space-y-2">
             {approved.length === 0 && (
               <p className="text-center text-xs text-muted-foreground py-10">No approved prompts yet.</p>
             )}
-            {approved.map((p, i) => (
-              <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                className="bg-card border border-border rounded-xl p-4"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-display font-bold text-base">
-                    {p.word_a} <span className="text-primary">+</span> {p.word_b}
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    {p.prompt_tag && (
-                      <Badge className={`${TAG_BADGE[p.prompt_tag].cls} text-[9px] border-0`}>
-                        {TAG_BADGE[p.prompt_tag].label}
-                      </Badge>
-                    )}
-                    {p.performance && (
-                      <Badge className={`${PERF_BADGE[p.performance].cls} text-[9px] border-0 bg-transparent`}>
-                        {PERF_BADGE[p.performance].label}
-                      </Badge>
-                    )}
+            {approved.map((p, i) => {
+              const guidance = getScoreGuidance(p.prompt_score);
+              return (
+                <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                  className="bg-card border border-border rounded-xl p-4"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-display font-bold text-base">
+                      {p.word_a} <span className="text-primary">+</span> {p.word_b}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <ScorePill score={p.prompt_score} />
+                      {p.prompt_tag && (
+                        <Badge className={`${TAG_BADGE[p.prompt_tag].cls} text-[9px] border-0`}>
+                          {TAG_BADGE[p.prompt_tag].label}
+                        </Badge>
+                      )}
+                      {p.performance && (
+                        <Badge className={`${PERF_BADGE[p.performance].cls} text-[9px] border-0 bg-transparent`}>
+                          {PERF_BADGE[p.performance].label}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant={p.prompt_tag === 'safe' ? 'default' : 'outline'} className="rounded-lg text-xs"
-                    onClick={() => handleTagSafe(p.id)} disabled={updating === p.id}
-                  >
-                    <Shield className="h-3 w-3 mr-1" /> Safe
-                  </Button>
-                  <Button size="sm" variant={p.prompt_tag === 'test' ? 'default' : 'outline'} className="rounded-lg text-xs"
-                    onClick={() => handleTagTest(p.id)} disabled={updating === p.id}
-                  >
-                    <FlaskConical className="h-3 w-3 mr-1" /> Test
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                  {!p.prompt_tag && (
+                    <p className={`text-[10px] mb-2 ${guidance.cls}`}>{guidance.hint}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" variant={p.prompt_tag === 'safe' ? 'default' : 'outline'} className="rounded-lg text-xs"
+                      onClick={() => handleTagSafe(p.id)} disabled={updating === p.id}
+                    >
+                      <Shield className="h-3 w-3 mr-1" /> Safe
+                    </Button>
+                    <Button size="sm" variant={p.prompt_tag === 'test' ? 'default' : 'outline'} className="rounded-lg text-xs"
+                      onClick={() => handleTagTest(p.id)} disabled={updating === p.id}
+                    >
+                      <FlaskConical className="h-3 w-3 mr-1" /> Test
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
           </TabsContent>
 
           {/* Feedback tab: played prompts with performance */}
@@ -225,7 +261,8 @@ export default function PromptAdmin() {
                     <p className="font-display font-bold text-base">
                       {p.word_a} <span className="text-primary">+</span> {p.word_b}
                     </p>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <ScorePill score={p.prompt_score} />
                       {p.prompt_tag && (
                         <Badge className={`${TAG_BADGE[p.prompt_tag].cls} text-[9px] border-0`}>
                           {TAG_BADGE[p.prompt_tag].label}
