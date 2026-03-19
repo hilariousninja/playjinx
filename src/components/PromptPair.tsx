@@ -25,7 +25,7 @@ export default function PromptPair({ wordA, wordB, size = 'lg', className }: Pro
   };
 
   return (
-    <div className={cn('flex items-baseline justify-center gap-3 flex-wrap', className)}>
+    <div className={cn('flex items-center justify-center gap-3 flex-wrap', className)}>
       <span className={cn('font-display font-bold tracking-tight text-foreground leading-none', sizeClasses[size])}>
         {wordA}
       </span>
