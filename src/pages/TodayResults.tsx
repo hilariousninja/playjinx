@@ -68,7 +68,14 @@ export default function TodayResults() {
     if (bestTopPercent <= 5) return '🔥 Mind reader!';
     if (bestTopPercent <= 20) return '⚡ Strong match!';
     if (bestTopPercent <= 50) return '👀 Decent run';
-    return '🎲 Wildcard answers';
+    return '🎲 Tough round';
+  };
+
+  const getMedal = (tp: number) => {
+    if (tp <= 10) return '🥇';
+    if (tp <= 30) return '🥈';
+    if (tp <= 60) return '🥉';
+    return '';
   };
 
   const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -78,11 +85,12 @@ export default function TodayResults() {
         `JINX Daily — ${today}`,
         getHeadline(),
         '',
-        ...summaries.map((s, i) =>
-          `${i + 1}. ${s.prompt.word_a} + ${s.prompt.word_b} → ${s.answer?.raw_answer?.toUpperCase()} · #${s.rank} · Top ${s.topPercent}%`
-        ),
+        ...summaries.map((s, i) => {
+          const medal = getMedal(s.topPercent);
+          return `${i + 1}. ${s.prompt.word_a} + ${s.prompt.word_b} → ${s.answer?.raw_answer?.toUpperCase()}${medal ? ` ${medal}` : ''} (Top ${s.topPercent}%)`;
+        }),
         '',
-        `Best: Top ${bestTopPercent}%`,
+        `Best: ${getMedal(bestTopPercent!)} Top ${bestTopPercent}%`,
         'playjinx.lovable.app',
       ].join('\n')
     : '';
@@ -118,9 +126,22 @@ export default function TodayResults() {
             <h1 className="text-xl font-bold tracking-tight mb-2 text-foreground">
               {allAnswered ? 'All prompts completed' : `${answeredCount} of ${summaries.length} answered`}
             </h1>
+
+            {/* Best-of-3 summary */}
+            {allAnswered && bestTopPercent !== null && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2 rounded-full mb-3"
+              >
+                <span className="text-sm font-display font-bold">{getHeadline()}</span>
+                <span className="text-xs font-display">Best: Top {bestTopPercent}%</span>
+              </motion.div>
+            )}
+
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5 mb-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
-              Results update live as more players answer
+              Results update live — your rank may change
             </p>
             <Countdown />
           </div>
