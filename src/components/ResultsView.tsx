@@ -218,7 +218,7 @@ export default function ResultsView({ promptId }: Props) {
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-3 font-medium">🎲 Wild Answers</p>
             <div className="flex flex-wrap gap-1.5">
               {wildAnswers.map(s => {
-                const isUser = s.normalized_answer === userAnswer?.normalized_answer;
+                const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
                 return (
                   <span
                     key={s.normalized_answer}
