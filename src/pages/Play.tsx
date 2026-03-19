@@ -262,12 +262,12 @@ export default function Play() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="game-card text-center py-12 space-y-3"
+                  className="text-center py-10 space-y-3"
                 >
-                  <div className="w-7 h-7 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
-                  <p className="text-sm text-foreground font-display font-semibold">Finding answer clusters…</p>
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[11px] text-muted-foreground">
-                    Comparing your answer with other players
+                  <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+                  <p className="text-sm text-foreground font-display font-semibold">Finding clusters…</p>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[10px] text-muted-foreground/60">
+                    Comparing with other players
                   </motion.p>
                 </motion.div>
               )}
