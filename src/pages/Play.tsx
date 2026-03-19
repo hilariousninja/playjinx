@@ -131,6 +131,11 @@ export default function Play() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Onboarding overlay */}
+      <AnimatePresence>
+        {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="border-b border-border shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
