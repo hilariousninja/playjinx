@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Trophy } from 'lucide-react';
+import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, getCompletedPrompts, markPromptCompleted, type DbPrompt, type DbAnswer } from '@/lib/store';
@@ -201,13 +202,7 @@ export default function Play() {
               </p>
 
               {/* Prompt hero */}
-              <div className="text-center">
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="font-display text-4xl md:text-5xl font-bold leading-none tracking-tight text-foreground">{prompt.word_a}</span>
-                  <span className="text-primary/80 text-xl font-display font-bold">+</span>
-                  <span className="font-display text-4xl md:text-5xl font-bold leading-none tracking-tight text-foreground">{prompt.word_b}</span>
-                </div>
-              </div>
+              <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
 
               {/* Objective + Input — compact, no card wrapper */}
               {currentPhase === 'input' && !isSubmitted ? (

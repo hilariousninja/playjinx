@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Calendar, Send, Check, Loader2, ChevronRight, Zap } from 'lucide-react';
+import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getArchivePrompts, hasSubmitted, getTotalSubmissions, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
@@ -76,11 +77,7 @@ export default function Archive() {
         <div className="max-w-lg mx-auto px-5 py-8">
           <div className="text-center mb-6">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6 font-display">Archive prompt</p>
-            <div className="flex flex-col items-center gap-0 mb-6">
-              <span className="font-display text-4xl font-bold text-foreground">{selectedPrompt.word_a}</span>
-              <span className="text-primary text-xl font-display font-bold my-1.5">+</span>
-              <span className="font-display text-4xl font-bold text-foreground">{selectedPrompt.word_b}</span>
-            </div>
+            <PromptPair wordA={selectedPrompt.word_a} wordB={selectedPrompt.word_b} size="lg" className="mb-6" />
           </div>
 
           {!isSubmitted ? (
