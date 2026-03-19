@@ -81,9 +81,18 @@ export default function Play() {
     const prompt = prompts[currentIdx];
     if (!prompt) return;
     const trimmed = inputVal.trim();
-    if (!trimmed || submitted[prompt.id] || submitting) return;
+    
+    // Client-side validation
+    const validationError = validateInput(trimmed);
+    if (validationError) {
+      setInputError(validationError);
+      return;
+    }
+    
+    if (submitted[prompt.id] || submitting) return;
 
     setSubmitting(true);
+    setInputError(null);
     try {
       const answer = await submitAnswer(prompt.id, trimmed);
       setSubmitted(prev => ({ ...prev, [prompt.id]: true }));
@@ -97,7 +106,8 @@ export default function Play() {
         setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
         setSubmitting(false);
       }, 1300);
-    } catch {
+    } catch (err: any) {
+      setInputError(err?.message || 'Something went wrong');
       setSubmitting(false);
     }
   }, [prompts, currentIdx, inputVal, submitted, submitting]);
