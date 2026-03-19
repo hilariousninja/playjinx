@@ -254,7 +254,7 @@ export default function Play() {
 
               {/* Player count — quieter */}
               {isSubmitted && (playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
-                <p className="text-[10px] text-muted-foreground/30 text-center flex items-center justify-center gap-1">
+                <p className="text-[10px] text-muted-foreground/30 text-center flex items-center justify-center gap-1 mt-3">
                   <Users className="h-2.5 w-2.5" />
                   {playerCounts[prompt.id]} responses so far
                 </p>
@@ -265,7 +265,7 @@ export default function Play() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-10 space-y-3"
+                  className="text-center py-12 space-y-3"
                 >
                   <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
                   <p className="text-sm text-foreground font-display font-semibold">Finding clusters…</p>
@@ -277,7 +277,7 @@ export default function Play() {
 
               {/* Results */}
               {currentPhase === 'results' && isSubmitted && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-8">
                   <ResultsView promptId={prompt.id} />
                 </motion.div>
               )}
