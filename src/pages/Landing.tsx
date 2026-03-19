@@ -73,7 +73,7 @@ export default function Landing() {
             JINX
           </h1>
 
-          <p className="text-base text-foreground/80 max-w-xs mx-auto font-semibold leading-relaxed">
+          <p className="text-base text-primary max-w-xs mx-auto font-semibold leading-relaxed">
             Think the same. Rank higher.
           </p>
 
