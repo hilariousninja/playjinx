@@ -83,7 +83,13 @@ export type Database = {
           date: string
           id: string
           mode: string
+          performance: string | null
+          prompt_status: string
+          prompt_tag: string | null
           results_unlock_at: string | null
+          top_answer_pct: number
+          total_players: number
+          unique_answers: number
           word_a: string
           word_b: string
         }
@@ -93,7 +99,13 @@ export type Database = {
           date?: string
           id?: string
           mode?: string
+          performance?: string | null
+          prompt_status?: string
+          prompt_tag?: string | null
           results_unlock_at?: string | null
+          top_answer_pct?: number
+          total_players?: number
+          unique_answers?: number
           word_a: string
           word_b: string
         }
@@ -103,7 +115,13 @@ export type Database = {
           date?: string
           id?: string
           mode?: string
+          performance?: string | null
+          prompt_status?: string
+          prompt_tag?: string | null
           results_unlock_at?: string | null
+          top_answer_pct?: number
+          total_players?: number
+          unique_answers?: number
           word_a?: string
           word_b?: string
         }
@@ -118,7 +136,9 @@ export type Database = {
           notes: string
           source: string
           status: string
+          strong_appearances: number
           updated_at: string
+          weak_appearances: number
           word: string
         }
         Insert: {
@@ -129,7 +149,9 @@ export type Database = {
           notes?: string
           source?: string
           status?: string
+          strong_appearances?: number
           updated_at?: string
+          weak_appearances?: number
           word: string
         }
         Update: {
@@ -140,7 +162,9 @@ export type Database = {
           notes?: string
           source?: string
           status?: string
+          strong_appearances?: number
           updated_at?: string
+          weak_appearances?: number
           word?: string
         }
         Relationships: []
