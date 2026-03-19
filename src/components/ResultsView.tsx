@@ -52,8 +52,10 @@ export default function ResultsView({ promptId }: Props) {
   const isEarly = total < 5;
   const matchCount = userStat?.count ?? 0;
 
+  const performanceEmoji = topPercent <= 5 ? '🔥' : topPercent <= 20 ? '⚡' : topPercent <= 50 ? '👀' : '🎲';
+
   const shareText = prompt
-    ? `JINX Daily\n${prompt.word_a} + ${prompt.word_b}\n\nMy answer: ${userAnswer?.raw_answer?.toUpperCase()}\nRank: #${rank} · Top ${topPercent}%\n\nCan you beat it?`
+    ? `JINX Daily ${performanceEmoji}\n${prompt.word_a} + ${prompt.word_b}\n\nMy answer: ${userAnswer?.raw_answer?.toUpperCase()}\nRank: #${rank} · Top ${topPercent}%\n\nplayjinx.lovable.app`
     : '';
 
   const handleCopy = () => {
