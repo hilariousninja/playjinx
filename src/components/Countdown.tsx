@@ -20,7 +20,7 @@ export default function Countdown() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/50 font-display tabular-nums">
+    <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground font-display tabular-nums">
       <Clock className="h-3 w-3" />
       <span>Next prompts in: {time.hours}h {time.minutes}m</span>
     </div>

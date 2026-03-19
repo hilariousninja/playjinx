@@ -64,31 +64,31 @@ export default function Archive() {
     const isSubmitted = submittedMap[selectedPrompt.id];
     return (
       <div className="min-h-screen bg-background">
-        <nav className="border-b border-border">
-          <div className="container flex items-center h-14 gap-3">
+        <header className="border-b border-border">
+          <div className="flex items-center h-14 gap-3 max-w-lg mx-auto px-5">
             <Button variant="ghost" size="icon" onClick={() => setSelected(null)}><ArrowLeft className="h-4 w-4" /></Button>
-            <span className="font-display text-lg font-bold">JINX</span>
+            <span className="font-display text-xl font-bold tracking-tighter text-foreground">JINX</span>
             <span className="text-xs text-muted-foreground ml-auto">{selectedPrompt.date}</span>
           </div>
-        </nav>
-        <div className="container max-w-lg py-8">
-          <div className="game-card text-center mb-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Archive Prompt</p>
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <span className="font-display text-2xl font-bold">{selectedPrompt.word_a}</span>
-              <span className="text-muted-foreground text-xl">+</span>
-              <span className="font-display text-2xl font-bold">{selectedPrompt.word_b}</span>
+        </header>
+        <div className="max-w-lg mx-auto px-5 py-8">
+          <div className="game-card-elevated text-center mb-6">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Archive Prompt</p>
+            <div className="flex flex-col items-center gap-0 mb-6">
+              <span className="font-display text-3xl font-bold text-foreground">{selectedPrompt.word_a}</span>
+              <span className="text-primary text-lg font-display font-bold my-1">+</span>
+              <span className="font-display text-3xl font-bold text-foreground">{selectedPrompt.word_b}</span>
             </div>
             {!isSubmitted ? (
               <div className="flex gap-2 max-w-xs mx-auto">
-                <Input value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} placeholder="Your answer..." className="rounded-2xl text-center font-display bg-secondary border-border" maxLength={50} />
-                <Button onClick={handleSubmit} disabled={!inputVal.trim() || submitting} size="icon" className="rounded-2xl shrink-0">
+                <Input value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} placeholder="Enter your word..." className="rounded-lg text-center font-display bg-card border-border h-12 text-base" maxLength={50} />
+                <Button onClick={handleSubmit} disabled={!inputVal.trim() || submitting} size="icon" className="rounded-lg shrink-0 h-12 w-12">
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Check className="h-4 w-4 text-keep" />
+                <Check className="h-4 w-4 text-primary" />
                 <span className="text-sm">Submitted: <span className="font-display font-semibold text-foreground">{userAnswers[selectedPrompt.id]?.raw_answer}</span></span>
               </div>
             )}
@@ -101,14 +101,16 @@ export default function Archive() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b border-border">
-        <div className="container flex items-center justify-between h-14">
-          <Link to="/" className="font-display text-lg font-bold tracking-tight">JINX</Link>
-          <Button size="sm" asChild><Link to="/play">Play today</Link></Button>
+      <header className="border-b border-border">
+        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
+          <Link to="/" className="font-display text-xl font-bold tracking-tighter text-foreground">JINX</Link>
+          <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4" asChild>
+            <Link to="/play">Play today</Link>
+          </Button>
         </div>
-      </nav>
-      <div className="container max-w-lg py-8">
-        <h1 className="text-2xl font-bold mb-6">Archive</h1>
+      </header>
+      <div className="max-w-lg mx-auto px-5 py-8">
+        <h1 className="text-xl font-bold mb-6 text-foreground">Archive</h1>
         {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
           const isToday = date === new Date().toISOString().split('T')[0];
           return (
@@ -120,14 +122,14 @@ export default function Archive() {
             </div>
             <div className="space-y-2">
               {ps.map((p, i) => (
-                <motion.button key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                <motion.button key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                   onClick={() => setSelected(p.id)}
-                  className="game-card w-full text-left flex items-center justify-between hover:border-muted-foreground/30 transition-colors"
+                  className="game-card w-full text-left flex items-center justify-between hover:border-primary/30 transition-colors"
                 >
                   <div>
-                    <span className="font-display font-semibold">{p.word_a}</span>
+                    <span className="font-display font-semibold text-foreground">{p.word_a}</span>
                     <span className="text-muted-foreground mx-2">+</span>
-                    <span className="font-display font-semibold">{p.word_b}</span>
+                    <span className="font-display font-semibold text-foreground">{p.word_b}</span>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Users className="h-3 w-3" />

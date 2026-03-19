@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Users, RefreshCw, Award, ChevronRight } from 'lucide-react';
+import { ArrowRight, Users, RefreshCw, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
 import Countdown from '@/components/Countdown';
@@ -48,7 +48,7 @@ export default function TodayResults() {
 
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="w-7 h-7 rounded-full border-2 border-primary border-t-transparent animate-spin" />
     </div>
   );
 
@@ -57,49 +57,45 @@ export default function TodayResults() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-card/30 backdrop-blur-sm shrink-0">
-        <div className="container flex items-center justify-between h-14 max-w-lg mx-auto">
-          <Link to="/" className="font-display text-lg font-bold tracking-tight jinx-gradient-text">JINX</Link>
+      <header className="border-b border-border shrink-0">
+        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
+          <Link to="/" className="font-display text-xl font-bold tracking-tighter text-foreground">JINX</Link>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
             <Link to="/play">Play</Link>
           </Button>
         </div>
-      </nav>
+      </header>
 
-      <div className="flex-1 container max-w-lg mx-auto px-5 py-8">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          {/* Header */}
+      <div className="flex-1 max-w-lg mx-auto px-5 py-8 w-full">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <div className="text-center mb-8">
-            <p className="text-[11px] text-muted-foreground/60 font-display tracking-[0.3em] uppercase mb-2">Today's Results</p>
-            <h1 className="text-2xl font-bold tracking-tight mb-2">
+            <p className="text-[11px] text-muted-foreground font-display tracking-[0.25em] uppercase mb-2">Today's Results</p>
+            <h1 className="text-xl font-bold tracking-tight mb-2 text-foreground">
               {allAnswered ? 'All prompts completed' : `${answeredCount} of ${summaries.length} answered`}
             </h1>
-            <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5 mb-1">
+            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5 mb-2">
               <RefreshCw className="h-3 w-3" />
               Results update live as more players answer
             </p>
             <Countdown />
           </div>
 
-          {/* Prompt cards */}
           <div className="space-y-3">
             {summaries.map((s, i) => (
               <motion.div
                 key={s.prompt.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
+                transition={{ delay: i * 0.06 }}
               >
                 <Link
                   to={`/play?prompt=${i}`}
                   className="game-card block hover:border-primary/30 transition-colors group"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Prompt words */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">Prompt {i + 1}</p>
-                      <p className="font-display font-bold text-base tracking-tight">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Prompt {i + 1}</p>
+                      <p className="font-display font-bold text-base tracking-tight text-foreground">
                         {s.prompt.word_a} <span className="text-primary">+</span> {s.prompt.word_b}
                       </p>
 
@@ -116,13 +112,12 @@ export default function TodayResults() {
                           </span>
                         </div>
                       ) : (
-                        <p className="text-xs text-muted-foreground/50 mt-2">Not answered yet</p>
+                        <p className="text-xs text-muted-foreground/60 mt-2">Not answered yet</p>
                       )}
                     </div>
 
-                    {/* Right side */}
                     <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/40">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
                         <Users className="h-3 w-3" />
                         <span>{s.total}</span>
                       </div>
@@ -134,24 +129,23 @@ export default function TodayResults() {
             ))}
           </div>
 
-          {/* Actions */}
           <div className="mt-8 space-y-3">
             {!allAnswered && (
-              <Button className="w-full rounded-xl h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
+              <Button className="w-full rounded-lg h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
                 <Link to="/play">
                   Continue playing <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
             )}
-            <Button variant="outline" className="w-full rounded-xl h-11 border-border/60" asChild>
+            <Button variant="outline" className="w-full rounded-lg h-11" asChild>
               <Link to="/archive">Browse archive</Link>
             </Button>
           </div>
         </motion.div>
       </div>
 
-      <footer className="border-t border-border/50 py-4 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — a party word game in development</p>
+      <footer className="border-t border-border py-4 shrink-0">
+        <p className="text-center text-[10px] text-muted-foreground/50 tracking-wide">JINX — a party word game in development</p>
       </footer>
     </div>
   );
