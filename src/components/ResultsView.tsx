@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Hash, TrendingUp, Award, Crown } from 'lucide-react';
-import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, getCanonicalAnswer, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
 interface Props {
   promptId: string;
