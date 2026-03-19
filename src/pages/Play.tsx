@@ -150,33 +150,32 @@ export default function Play() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between h-16 max-w-lg mx-auto px-5">
+      <header className="border-b border-border/80 shrink-0">
+        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/">
-            <JinxLogo size={20} className="text-foreground text-lg" />
+            <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <div className="flex items-center gap-3">
-            {/* Dot progress */}
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
               {prompts.map((p, i) => (
                 <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); setInputError(null); }}
                   className={`rounded-full transition-all duration-300 ${
                     i === currentIdx
-                      ? 'w-6 h-2 bg-primary'
+                      ? 'w-5 h-1.5 bg-primary'
                       : submitted[p.id]
-                        ? 'w-2 h-2 bg-primary/30'
-                        : 'w-2 h-2 bg-border'
+                        ? 'w-1.5 h-1.5 bg-primary/30'
+                        : 'w-1.5 h-1.5 bg-border'
                   }`}
                 />
               ))}
             </div>
-            <span className="text-[11px] text-muted-foreground/80 font-display tabular-nums">
+            <span className="text-[10px] text-muted-foreground/60 font-display tabular-nums">
               {completedCount}/{prompts.length}
             </span>
             {completedCount > 0 && (
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 px-2" asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground/60 hover:text-foreground h-7 w-7 p-0" asChild>
                 <Link to="/results">
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 className="h-3.5 w-3.5" />
                 </Link>
               </Button>
             )}
@@ -185,8 +184,8 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex items-start justify-center pt-14 pb-28">
-        <div className="w-full max-w-[28rem] mx-auto px-5">
+      <div className="flex-1 flex items-start justify-center pt-16 pb-28">
+        <div className="w-full max-w-[26rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div
               key={prompt.id}
@@ -196,7 +195,7 @@ export default function Play() {
               transition={{ duration: 0.2 }}
             >
 
-              <p className="text-center text-[10px] text-muted-foreground/60 font-display tracking-[0.18em] uppercase mb-6">
+              <p className="text-center text-[10px] text-muted-foreground/50 font-display tracking-[0.2em] uppercase mb-8">
                 Prompt {currentIdx + 1} of {prompts.length}
               </p>
 
@@ -205,17 +204,17 @@ export default function Play() {
 
               {/* Objective + Input */}
               {currentPhase === 'input' && !isSubmitted ? (
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-primary mt-3 mb-8">
+                <div>
+                  <p className="text-[13px] font-semibold text-primary text-center mt-4 mb-10">
                     Think: what will MOST people say?
                   </p>
-                  <div className="flex gap-2.5 max-w-sm mx-auto">
+                  <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
                       value={inputVal}
                       onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                       placeholder="Your answer…"
-                      className={`rounded-xl text-center font-display bg-background h-11 text-[15px] focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/35 ${inputError ? 'border-destructive' : 'border-border'}`}
+                      className={`rounded-xl text-center font-display bg-background h-10 text-sm focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/30 ${inputError ? 'border-destructive' : 'border-border'}`}
                       maxLength={80}
                       disabled={submitting}
                       autoFocus
@@ -224,18 +223,26 @@ export default function Play() {
                       onClick={handleSubmit}
                       disabled={!inputVal.trim() || submitting}
                       size="icon"
-                      className="rounded-xl shrink-0 h-11 w-11"
+                      className="rounded-xl shrink-0 h-10 w-10"
                     >
-                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
                   {inputError ? (
-                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
+                    <p className="text-[11px] text-destructive text-center mt-2">{inputError}</p>
                   ) : (
-                    <div className="mt-7 space-y-0.5">
-                      <p className="text-[10px] font-display font-medium text-muted-foreground/40 uppercase tracking-[0.12em]">Tips</p>
-                      <p className="text-[11px] text-muted-foreground/35 leading-relaxed">Match the crowd, not the "best" answer.</p>
-                      <p className="text-[11px] text-muted-foreground/35 leading-relaxed">Single words usually work best.</p>
+                    <div className="mt-10 max-w-xs mx-auto">
+                      <p className="text-[10px] font-display font-semibold text-muted-foreground/50 uppercase tracking-[0.14em] mb-2">Tips</p>
+                      <ul className="space-y-1">
+                        <li className="text-[11px] text-muted-foreground/45 leading-relaxed flex items-start gap-1.5">
+                          <span className="text-muted-foreground/30 mt-px">•</span>
+                          Match the crowd, not the "best" answer.
+                        </li>
+                        <li className="text-[11px] text-muted-foreground/45 leading-relaxed flex items-start gap-1.5">
+                          <span className="text-muted-foreground/30 mt-px">•</span>
+                          Single words usually work best.
+                        </li>
+                      </ul>
                     </div>
                   )}
                 </div>
