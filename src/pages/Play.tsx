@@ -316,14 +316,14 @@ export default function Play() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Nav arrows */}
-          <div className="flex justify-between mt-8">
-            <Button variant="ghost" size="sm" onClick={goPrev} disabled={currentIdx === 0} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Prev
-            </Button>
-            <Button variant="ghost" size="sm" onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-muted-foreground hover:text-foreground">
-              Next <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
+          {/* Nav arrows — lightweight */}
+          <div className="flex justify-between mt-6">
+            <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+              <ArrowLeft className="h-3 w-3" /> Prev
+            </button>
+            <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+              Next <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
         </div>
       </div>
