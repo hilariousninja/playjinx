@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Users, ChevronRight, Copy, Check, Trophy, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
+import { ensureDailyPrompts, getUserAnswer, getTotalSubmissions, getStats, getCanonicalAnswer, type DbPrompt, type DbAnswer, type AnswerStat } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 
