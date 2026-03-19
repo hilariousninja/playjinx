@@ -9,6 +9,8 @@ import Archive from "./pages/Archive";
 import Dashboard from "./pages/Dashboard";
 import AnswerAdmin from "./pages/AnswerAdmin";
 import TodayResults from "./pages/TodayResults";
+import AdminLogin from "./pages/AdminLogin";
+import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,8 +26,9 @@ const App = () => (
           <Route path="/play" element={<Play />} />
           <Route path="/results" element={<TodayResults />} />
           <Route path="/archive" element={<Archive />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/answers" element={<AnswerAdmin />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/answers" element={<ProtectedRoute><AnswerAdmin /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
