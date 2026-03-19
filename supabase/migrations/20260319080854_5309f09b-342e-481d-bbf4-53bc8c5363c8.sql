@@ -1,0 +1,1 @@
+ALTER TABLE public.answers ADD CONSTRAINT answers_prompt_session_unique UNIQUE (prompt_id, session_id);

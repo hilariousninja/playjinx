@@ -10,7 +10,7 @@ export type DbImportSource = Tables<'import_sources'>;
 export function getSessionId(): string {
   let sid = localStorage.getItem('jinx_session_id');
   if (!sid) {
-    sid = 'sess_' + Math.random().toString(36).slice(2);
+    sid = 'sess_' + crypto.randomUUID().replace(/-/g, '');
     localStorage.setItem('jinx_session_id', sid);
   }
   return sid;
