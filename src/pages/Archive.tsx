@@ -136,8 +136,8 @@ export default function Archive() {
                 </motion.button>
               ))}
             </div>
-          </div>
-        ))}
+          </div>);
+        })}
       </div>
     </div>
   );
