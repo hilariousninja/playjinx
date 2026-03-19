@@ -72,13 +72,15 @@ export default function Landing() {
             JINX
           </h1>
 
-          <p className="text-base text-foreground/80 max-w-xs mx-auto mb-1.5 font-semibold leading-relaxed">
+          <p className="text-base text-foreground/80 max-w-xs mx-auto font-semibold leading-relaxed">
             Think the same. Rank higher.
           </p>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-2 leading-relaxed">
+
+          <p className="text-sm text-muted-foreground max-w-[17rem] mx-auto mt-5 leading-relaxed">
             See two words. Type the one bridge word you think most people will pick.
           </p>
-          <p className="text-xs text-muted-foreground/70 max-w-xs mx-auto mb-10 leading-relaxed">
+
+          <p className="text-xs text-muted-foreground/50 max-w-[17rem] mx-auto mt-3 mb-12 leading-relaxed">
             You're not trying to be correct — you're trying to match the crowd.
           </p>
 
