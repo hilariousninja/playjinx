@@ -26,6 +26,29 @@ export default function ResultsView({ promptId }: Props) {
     setPrompt(p);
     setUserAnswer(ua);
     setTotal(t);
+    // Resolve user's answer to canonical form for stat matching
+    if (ua) {
+      const canon = await getCanonicalAnswer(ua.normalized_answer);
+      // Also check fuzzy match against stat keys
+      const exactMatch = s.find(st => st.normalized_answer === canon);
+      if (exactMatch) {
+        setUserCanonical(canon);
+      } else {
+        // Fuzzy merged into another form — find which stat contains this answer
+        const { levenshtein } = await import('@/lib/normalize');
+        const fuzzyMatch = s.find(st => {
+          const dist = levenshtein(canon, st.normalized_answer);
+          const minLen = Math.min(canon.length, st.normalized_answer.length);
+          if (minLen <= 3) return false;
+          if (minLen <= 5) return dist <= 1;
+          if (minLen <= 9) return dist <= 2;
+          return dist <= 2;
+        });
+        setUserCanonical(fuzzyMatch?.normalized_answer ?? canon);
+      }
+    } else {
+      setUserCanonical(null);
+    }
     setLoading(false);
   }, [promptId]);
 
