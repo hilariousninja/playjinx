@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeAnswer } from './normalize';
+import { normalizeAnswer, applyAlias, isBlocked } from './normalize';
+import { getAliasMap, getBlockedTerms } from './answer-helpers';
 import type { Tables } from '@/integrations/supabase/types';
 
 export type DbPrompt = Tables<'prompts'>;
