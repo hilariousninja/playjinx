@@ -62,66 +62,76 @@ export function levenshtein(a: string, b: string): number {
 
 /**
  * Fuzzy-merge answer groups by Levenshtein distance.
- * Merges shorter/less-popular variants into the most popular canonical form.
- * Only merges when confidence is high (short edit distance relative to word length).
+ * Very conservative: only merges when confidence is high.
+ * Guards: minimum word length, count-ratio, multi-word stricter rules.
  */
 export function fuzzyMergeGroups(
   counts: Record<string, number>
 ): Record<string, number> {
-  // Sort by count descending so popular answers absorb typos
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const canonical: Record<string, string> = {}; // maps each key to its canonical form
+  const canonical: Record<string, string> = {};
   const merged: Record<string, number> = {};
+  const mergeLog: Array<{ from: string; to: string; dist: number }> = [];
 
   for (const [answer] of entries) {
-    canonical[answer] = answer; // default to self
+    canonical[answer] = answer;
   }
 
-  // For each answer, check if it's a typo of a more popular answer
   for (let i = 0; i < entries.length; i++) {
-    const [answerA] = entries[i];
-    if (canonical[answerA] !== answerA) continue; // already merged
+    const [answerA, countA] = entries[i];
+    if (canonical[answerA] !== answerA) continue;
 
     for (let j = i + 1; j < entries.length; j++) {
-      const [answerB] = entries[j];
-      if (canonical[answerB] !== answerB) continue; // already merged
+      const [answerB, countB] = entries[j];
+      if (canonical[answerB] !== answerB) continue;
+
+      // Count-ratio guard: B must look like a typo of A (rare vs popular)
+      if (countB > 2 && countB > countA * 0.3) continue;
 
       const maxDist = getMaxEditDistance(answerA, answerB);
-      if (maxDist === 0) continue; // too short to fuzzy match
+      if (maxDist === 0) continue;
 
       const dist = levenshtein(answerA, answerB);
       if (dist <= maxDist) {
-        canonical[answerB] = answerA; // merge B into A (A is more popular)
+        canonical[answerB] = answerA;
+        mergeLog.push({ from: answerB, to: answerA, dist });
       }
     }
   }
 
-  // Rebuild counts using canonical forms
   for (const [answer, count] of entries) {
     const canon = canonical[answer];
     merged[canon] = (merged[canon] || 0) + count;
+  }
+
+  // Expose merge log for admin debugging (console: window.__jinxLastMergeLog)
+  if (mergeLog.length > 0 && typeof window !== 'undefined') {
+    (window as any).__jinxLastMergeLog = mergeLog;
   }
 
   return merged;
 }
 
 /**
- * Determine max edit distance for fuzzy matching based on word lengths.
- * Conservative: only merge when confidence is high.
+ * Max edit distance — very conservative to avoid merging real distinct words.
+ * Short words (≤6 chars) are never fuzzy-matched.
  */
 function getMaxEditDistance(a: string, b: string): number {
   const minLen = Math.min(a.length, b.length);
   const maxLen = Math.max(a.length, b.length);
 
-  // Don't fuzzy match very short words (too many false positives)
-  if (minLen <= 3) return 0;
-  // Length difference too large — probably different words
+  // Multi-word: only merge long phrases with distance 1
+  if (a.includes(' ') || b.includes(' ')) {
+    if (minLen < 12 || maxLen - minLen > 1) return 0;
+    return 1;
+  }
+
+  // Single-word: no fuzzy for ≤6 chars (bake/bike, coat/coast, desert/dessert)
+  if (minLen <= 6) return 0;
   if (maxLen - minLen > 2) return 0;
-  // 4-5 char words: allow distance 1
-  if (minLen <= 5) return 1;
-  // 6-9 char words: allow distance 1-2
-  if (minLen <= 9) return Math.min(2, Math.floor(minLen / 4));
-  // 10+ char words: allow distance 2
+  // 7-9 chars: distance 1
+  if (minLen <= 9) return 1;
+  // 10+ chars: distance 2
   return 2;
 }
 
