@@ -163,7 +163,7 @@ export default function ResultsView({ promptId }: Props) {
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-4 font-medium">Answer Clusters</p>
         <div className="space-y-1">
           {stats.slice(0, 8).map((s, i) => {
-            const isUser = s.normalized_answer === userAnswer?.normalized_answer;
+            const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
             return (
               <motion.div
                 key={s.normalized_answer}
