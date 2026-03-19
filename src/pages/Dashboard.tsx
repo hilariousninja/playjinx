@@ -387,6 +387,9 @@ export default function Dashboard() {
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" /> Export final deck snapshot
             </Button>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleBackfill}>
+              <BarChart3 className="h-4 w-4 mr-2" /> Backfill all metrics from play data
+            </Button>
           </TabsContent>
         </Tabs>
       </div>
