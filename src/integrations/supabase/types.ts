@@ -132,40 +132,52 @@ export type Database = {
       }
       words: {
         Row: {
+          avg_top_answer_pct: number
+          avg_unique_answers: number
           category: string
           created_at: string
+          decent_appearances: number
           id: string
           jinx_score: number
           notes: string
           source: string
           status: string
           strong_appearances: number
+          times_used: number
           updated_at: string
           weak_appearances: number
           word: string
         }
         Insert: {
+          avg_top_answer_pct?: number
+          avg_unique_answers?: number
           category?: string
           created_at?: string
+          decent_appearances?: number
           id?: string
           jinx_score?: number
           notes?: string
           source?: string
           status?: string
           strong_appearances?: number
+          times_used?: number
           updated_at?: string
           weak_appearances?: number
           word: string
         }
         Update: {
+          avg_top_answer_pct?: number
+          avg_unique_answers?: number
           category?: string
           created_at?: string
+          decent_appearances?: number
           id?: string
           jinx_score?: number
           notes?: string
           source?: string
           status?: string
           strong_appearances?: number
+          times_used?: number
           updated_at?: string
           weak_appearances?: number
           word?: string
