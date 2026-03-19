@@ -135,14 +135,14 @@ Deno.serve(async (req) => {
     // FALLBACK: Generate from word pairs (legacy behavior for bootstrapping)
     let { data: words } = await supabase
       .from("words")
-      .select("word")
+      .select("word, jinx_score")
       .eq("status", "approved")
       .limit(500);
 
     if (!words || words.length < needed * 2) {
       const { data: allWords } = await supabase
         .from("words")
-        .select("word")
+        .select("word, jinx_score")
         .limit(500);
       words = allWords;
     }
@@ -154,17 +154,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    const shuffled = shuffle(words).map(w => w.word);
+    const shuffled = shuffle(words);
 
     const newPrompts = [];
     for (let i = 0; i < needed; i++) {
+      const wA = shuffled[i * 2];
+      const wB = shuffled[i * 2 + 1];
+      const promptScore = Math.round(((wA.jinx_score ?? 50) + (wB.jinx_score ?? 50)) / 2);
       newPrompts.push({
-        word_a: shuffled[i * 2].toUpperCase(),
-        word_b: shuffled[i * 2 + 1].toUpperCase(),
+        word_a: wA.word.toUpperCase(),
+        word_b: wB.word.toUpperCase(),
         active: true,
         date: today,
         mode: "daily",
         prompt_status: "pending",
+        prompt_score: promptScore,
       });
     }
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.prompts ADD COLUMN IF NOT EXISTS prompt_score integer NOT NULL DEFAULT 0;

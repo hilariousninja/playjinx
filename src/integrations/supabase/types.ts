@@ -84,6 +84,7 @@ export type Database = {
           id: string
           mode: string
           performance: string | null
+          prompt_score: number
           prompt_status: string
           prompt_tag: string | null
           results_unlock_at: string | null
@@ -100,6 +101,7 @@ export type Database = {
           id?: string
           mode?: string
           performance?: string | null
+          prompt_score?: number
           prompt_status?: string
           prompt_tag?: string | null
           results_unlock_at?: string | null
@@ -116,6 +118,7 @@ export type Database = {
           id?: string
           mode?: string
           performance?: string | null
+          prompt_score?: number
           prompt_status?: string
           prompt_tag?: string | null
           results_unlock_at?: string | null
