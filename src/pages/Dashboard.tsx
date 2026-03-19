@@ -139,6 +139,24 @@ export default function Dashboard() {
     await loadData();
   };
 
+  const handleBackfill = async () => {
+    const confirmed = confirm('This will recompute metrics for ALL prompts and words from existing play data. Continue?');
+    if (!confirmed) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-actions', {
+        body: { action: 'backfill_all' },
+      });
+      if (error) throw error;
+      alert(`Backfill complete: ${data?.prompts_processed ?? 0} prompts processed, ${data?.words_updated ?? 0} words updated.`);
+      await loadData();
+    } catch (e) {
+      alert('Backfill failed. Check console.');
+      console.error(e);
+      setLoading(false);
+    }
+  };
+
   const handleExport = () => {
     const csv = ['word,category,status,jinx_score,notes', ...words.map(w => `${w.word},${w.category},${w.status},${w.jinx_score},"${w.notes}"`)].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
