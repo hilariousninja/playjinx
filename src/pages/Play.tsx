@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, getCompletedPrompts, markPromptCompleted, type DbPrompt, type DbAnswer } from '@/lib/store';
@@ -82,7 +82,6 @@ export default function Play() {
     if (!prompt) return;
     const trimmed = inputVal.trim();
     
-    // Client-side validation
     const validationError = validateInput(trimmed);
     if (validationError) {
       setInputError(validationError);
@@ -138,8 +137,8 @@ export default function Play() {
   const allDone = prompts.every(p => submitted[p.id]);
   const completedCount = prompts.filter(p => submitted[p.id]).length;
 
-  const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); };
-  const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); };
+  const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); setInputError(null); };
+  const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); setInputError(null); };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -158,7 +157,7 @@ export default function Play() {
             {/* Dot progress */}
             <div className="flex items-center gap-2">
               {prompts.map((p, i) => (
-                <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); }}
+                <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); setInputError(null); }}
                   className={`rounded-full transition-all duration-300 ${
                     i === currentIdx
                       ? 'w-6 h-2 bg-primary'
@@ -172,7 +171,6 @@ export default function Play() {
             <span className="text-[11px] text-muted-foreground font-display tabular-nums">
               {completedCount}/{prompts.length}
             </span>
-            {/* Persistent Results button */}
             {completedCount > 0 && (
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 px-2" asChild>
                 <Link to="/results">
@@ -246,7 +244,7 @@ export default function Play() {
                     className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2.5 rounded-full"
                   >
                     <Check className="h-4 w-4" />
-                    <span className="text-sm font-display font-bold">Your answer: {userAnswers[prompt.id]?.raw_answer}</span>
+                    <span className="text-sm font-display font-bold">You chose: {userAnswers[prompt.id]?.raw_answer}</span>
                   </motion.div>
                 </div>
               ) : null}
@@ -290,21 +288,29 @@ export default function Play() {
                 </motion.div>
               )}
 
-              {/* All done */}
+              {/* All done — polished end-of-run */}
               {allDone && currentPhase === 'results' && currentIdx === prompts.length - 1 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-center mt-8 space-y-4">
-                  <div className="text-3xl">🎉</div>
-                  <p className="text-sm font-semibold text-foreground">You've completed today's prompts!</p>
-                  <p className="text-xs text-muted-foreground">Check back later — results update as more players answer.</p>
-                  <div className="flex gap-3 justify-center flex-wrap">
-                    <Button className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-                      <Link to="/results">View today's results</Link>
-                    </Button>
-                    <Button variant="outline" className="rounded-lg" asChild>
-                      <Link to="/archive">Play archive</Link>
-                    </Button>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-8">
+                  <div className="game-card-elevated text-center py-8 px-6">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                      <Trophy className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-1">All done for today!</h3>
+                    <p className="text-xs text-muted-foreground mb-6 max-w-xs mx-auto">
+                      Your results are live. Check back later — your rank may improve as more players answer.
+                    </p>
+                    <div className="flex gap-3 justify-center flex-wrap">
+                      <Button className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
+                        <Link to="/results">View today's results</Link>
+                      </Button>
+                      <Button variant="outline" className="rounded-lg" asChild>
+                        <Link to="/archive">Play archive</Link>
+                      </Button>
+                    </div>
                   </div>
-                  <Countdown />
+                  <div className="mt-5">
+                    <Countdown />
+                  </div>
                 </motion.div>
               )}
             </motion.div>
