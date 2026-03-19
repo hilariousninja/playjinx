@@ -228,6 +228,12 @@ export default function Play() {
                       {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
+                  {(playerCounts[prompt.id] ?? 0) > 0 && (
+                    <p className="text-[10px] text-muted-foreground/35 text-center flex items-center justify-center gap-1 mt-3">
+                      <Users className="h-2.5 w-2.5" />
+                      {playerCounts[prompt.id]} answers so far
+                    </p>
+                  )}
                   {inputError ? (
                     <p className="text-[11px] text-destructive text-center mt-2">{inputError}</p>
                   ) : (
