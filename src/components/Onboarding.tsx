@@ -20,13 +20,13 @@ interface Props {
 const steps = [
   {
     emoji: '👀',
-    title: "You'll see two words",
-    desc: 'Each round shows a pair of words side by side.',
+    title: 'Two words appear',
+    desc: 'Each prompt shows a pair of words.',
   },
   {
     emoji: '🧠',
-    title: 'Type ONE word',
-    desc: 'Enter the word you think most other players will also say.',
+    title: 'Predict the crowd',
+    desc: 'Type the one word you think most people will also say.',
     example: { a: 'DOG', b: 'BEACH', answer: 'SAND' },
   },
 ];

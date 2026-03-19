@@ -329,8 +329,8 @@ export default function Play() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border py-4 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/50 tracking-wide">JINX — a party word game in development</p>
+      <footer className="border-t border-border py-3 shrink-0">
+        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
       </footer>
     </div>
   );
