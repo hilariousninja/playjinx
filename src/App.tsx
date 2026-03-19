@@ -11,6 +11,7 @@ import AnswerAdmin from "./pages/AnswerAdmin";
 import PromptAdmin from "./pages/PromptAdmin";
 import TodayResults from "./pages/TodayResults";
 import AdminLogin from "./pages/AdminLogin";
+import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/results" element={<TodayResults />} />
           <Route path="/archive" element={<Archive />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/answers" element={<ProtectedRoute><AnswerAdmin /></ProtectedRoute>} />
           <Route path="/dashboard/prompts" element={<ProtectedRoute><PromptAdmin /></ProtectedRoute>} />

@@ -3,16 +3,23 @@ import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
+const ADMIN_EMAIL = 'rajan.p@hotmail.co.uk';
+
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [status, setStatus] = useState<'loading' | 'authorized' | 'unauthorized'>('loading');
 
   useEffect(() => {
+    const check = (email: string | undefined) => {
+      if (!email) return 'unauthorized';
+      return email.toLowerCase() === ADMIN_EMAIL ? 'authorized' : 'unauthorized';
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setStatus(session ? 'authenticated' : 'unauthenticated');
+      setStatus(session ? check(session.user.email) : 'unauthorized');
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setStatus(session ? 'authenticated' : 'unauthenticated');
+      setStatus(session ? check(session.user.email) : 'unauthorized');
     });
 
     return () => subscription.unsubscribe();
@@ -26,7 +33,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     );
   }
 
-  if (status === 'unauthenticated') {
+  if (status === 'unauthorized') {
     return <Navigate to="/admin-login" replace />;
   }
 
