@@ -11,6 +11,7 @@ import AnswerAdmin from "./pages/AnswerAdmin";
 import PromptAdmin from "./pages/PromptAdmin";
 import TodayResults from "./pages/TodayResults";
 import AdminLogin from "./pages/AdminLogin";
+import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
