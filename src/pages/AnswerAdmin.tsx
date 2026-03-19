@@ -105,7 +105,7 @@ export default function AnswerAdmin() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center theme-dashboard">
       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   );
