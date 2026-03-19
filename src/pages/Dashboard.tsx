@@ -3,14 +3,15 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Upload, Download, Search, ArrowLeft, FileSpreadsheet,
-  RefreshCw, Tag, CheckCircle, Database, BarChart3, Trash2, Loader2
+  RefreshCw, CheckCircle, Database, BarChart3, Trash2, Loader2,
+  AlertCircle, Eye, TrendingDown, Clock, HelpCircle, List
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  getWords, importWordsFromCSV, getImportSources, updateWord, bulkUpdateStatus, getJinxScoreBreakdown,
+  getWords, importWordsFromCSV, getImportSources, updateWord, bulkUpdateStatus,
   type DbWord, type DbImportSource
 } from '@/lib/store';
 import type { WordStatus } from '@/lib/types';
@@ -24,6 +25,41 @@ const STATUS_COLORS: Record<WordStatus, string> = {
 };
 
 const CATEGORIES = ['All', 'Abstract', 'Animals', 'Body Parts', 'Culture', 'Emotions', 'Events', 'Food', 'Materials', 'Nature', 'Objects', 'People', 'Places', 'Signals', 'Threat', 'Transport', 'Weather'];
+
+type ConfidenceLevel = 'low' | 'medium' | 'high';
+
+function getConfidence(word: DbWord): ConfidenceLevel {
+  const totalAppearances = (word.strong_appearances ?? 0) + (word.weak_appearances ?? 0);
+  if (totalAppearances < 2) return 'low';
+  const strongRate = totalAppearances > 0 ? (word.strong_appearances ?? 0) / totalAppearances : 0;
+  if (totalAppearances >= 5 && (strongRate >= 0.7 || strongRate <= 0.3)) return 'high';
+  return 'medium';
+}
+
+function getConfidenceLabel(c: ConfidenceLevel) {
+  if (c === 'high') return { label: 'High', cls: 'text-[hsl(var(--keep))]' };
+  if (c === 'medium') return { label: 'Med', cls: 'text-[hsl(var(--review))]' };
+  return { label: 'Low', cls: 'text-muted-foreground' };
+}
+
+function WordRow({ word, onClick }: { word: DbWord; onClick: () => void }) {
+  const confidence = getConfidence(word);
+  const confLabel = getConfidenceLabel(confidence);
+  return (
+    <motion.button
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={onClick}
+      className="bg-card border border-border rounded-xl w-full text-left flex items-center gap-2 px-4 py-2.5 hover:border-muted-foreground/30 transition-colors"
+    >
+      <span className="font-display text-sm font-semibold flex-1 truncate">{word.word}</span>
+      <span className="text-[10px] text-muted-foreground/50 hidden sm:inline">{word.category}</span>
+      <span className={`text-[9px] font-display ${confLabel.cls}`}>{confLabel.label}</span>
+      <span className="font-display text-[10px] text-muted-foreground/40 tabular-nums w-6 text-right">{word.jinx_score}</span>
+      <Badge variant="outline" className={`${STATUS_COLORS[word.status as WordStatus]} text-[9px] px-1.5 py-0 border-0 rounded-md`}>{word.status}</Badge>
+    </motion.button>
+  );
+}
 
 export default function Dashboard() {
   const [words, setWords] = useState<DbWord[]>([]);
@@ -44,6 +80,25 @@ export default function Dashboard() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  // Actionable sections
+  const sections = useMemo(() => {
+    const needsReview = words.filter(w => w.status === 'unreviewed' || w.status === 'review');
+    const likelyKeeps = words.filter(w => {
+      const conf = getConfidence(w);
+      return w.status === 'keep' || (conf === 'high' && (w.strong_appearances ?? 0) > (w.weak_appearances ?? 0) && w.status !== 'cut');
+    });
+    const likelyCuts = words.filter(w => {
+      return w.status === 'cut' || ((w.weak_appearances ?? 0) >= 3 && (w.strong_appearances ?? 0) < (w.weak_appearances ?? 0) && w.status !== 'keep');
+    });
+    const lowConfidence = words.filter(w => getConfidence(w) === 'low' && w.status !== 'cut');
+    const recentlyUpdated = [...words]
+      .filter(w => w.updated_at !== w.created_at)
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 10);
+
+    return { needsReview, likelyKeeps, likelyCuts, lowConfidence, recentlyUpdated };
+  }, [words]);
 
   const filteredWords = useMemo(() => {
     return words.filter(w => {
@@ -146,9 +201,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-4 gap-2">
           {[
             { icon: Database, label: 'Total', value: words.length, color: 'text-muted-foreground' },
-            { icon: CheckCircle, label: 'Keep', value: statusCounts.keep, color: 'text-keep' },
-            { icon: BarChart3, label: 'Review', value: statusCounts.review, color: 'text-review' },
-            { icon: Trash2, label: 'Cut', value: statusCounts.cut, color: 'text-cut' },
+            { icon: CheckCircle, label: 'Keep', value: statusCounts.keep, color: 'text-[hsl(var(--keep))]' },
+            { icon: Eye, label: 'Review', value: statusCounts.review + statusCounts.unreviewed, color: 'text-[hsl(var(--review))]' },
+            { icon: Trash2, label: 'Cut', value: statusCounts.cut, color: 'text-[hsl(var(--cut))]' },
           ].map(s => (
             <div key={s.label} className="bg-card border border-border rounded-xl p-3 text-center">
               <s.icon className={`h-3.5 w-3.5 mx-auto mb-1 ${s.color}`} />
@@ -158,29 +213,99 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Import sources */}
-        {sources.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground/60" />
-              <span className="text-xs font-medium text-muted-foreground">Import History</span>
-            </div>
-            {sources.map(s => (
-              <div key={s.id} className="flex items-center justify-between text-[11px] text-muted-foreground py-0.5">
-                <span>{s.name}</span>
-                <span className="tabular-nums">{s.rows_imported} rows · {new Date(s.last_sync).toLocaleDateString()}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-secondary rounded-xl h-9">
-            <TabsTrigger value="queue" className="rounded-lg text-xs">Trimming Queue</TabsTrigger>
+            <TabsTrigger value="queue" className="rounded-lg text-xs">Review Queue</TabsTrigger>
+            <TabsTrigger value="browse" className="rounded-lg text-xs">Browse All</TabsTrigger>
             <TabsTrigger value="actions" className="rounded-lg text-xs">Actions</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="queue" className="mt-4 space-y-3">
+          {/* Actionable Queue */}
+          <TabsContent value="queue" className="mt-4 space-y-6">
+            {/* Needs Review */}
+            {sections.needsReview.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-3.5 w-3.5 text-[hsl(var(--review))]" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Needs review <span className="text-foreground/50">({sections.needsReview.length})</span>
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {sections.needsReview.slice(0, 15).map(w => (
+                    <WordRow key={w.id} word={w} onClick={() => setSelectedWord(w)} />
+                  ))}
+                  {sections.needsReview.length > 15 && (
+                    <p className="text-[10px] text-muted-foreground text-center py-1">
+                      +{sections.needsReview.length - 15} more — use Browse All to see everything
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Likely Cuts */}
+            {sections.likelyCuts.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingDown className="h-3.5 w-3.5 text-[hsl(var(--cut))]" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Likely cuts <span className="text-foreground/50">({sections.likelyCuts.length})</span>
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {sections.likelyCuts.slice(0, 10).map(w => (
+                    <WordRow key={w.id} word={w} onClick={() => setSelectedWord(w)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Low Confidence */}
+            {sections.lowConfidence.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Low confidence — needs more data <span className="text-foreground/50">({sections.lowConfidence.length})</span>
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {sections.lowConfidence.slice(0, 10).map(w => (
+                    <WordRow key={w.id} word={w} onClick={() => setSelectedWord(w)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recently Updated */}
+            {sections.recentlyUpdated.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Recently updated
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {sections.recentlyUpdated.map(w => (
+                    <WordRow key={w.id} word={w} onClick={() => setSelectedWord(w)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sections.needsReview.length === 0 && sections.likelyCuts.length === 0 && sections.lowConfidence.length === 0 && (
+              <div className="text-center py-10 text-muted-foreground">
+                <CheckCircle className="h-6 w-6 mx-auto mb-2 text-[hsl(var(--keep))]" />
+                <p className="text-sm font-semibold">Queue is clear</p>
+                <p className="text-xs mt-1">All words have been reviewed. Nice work!</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Browse All */}
+          <TabsContent value="browse" className="mt-4 space-y-3">
             {/* Status filters */}
             <div className="flex flex-wrap gap-1.5">
               {(['all', 'unreviewed', 'keep', 'review', 'cut'] as const).map(f => (
@@ -218,16 +343,8 @@ export default function Dashboard() {
 
             {/* Word list */}
             <div className="space-y-1">
-              {filteredWords.map((w, i) => (
-                <motion.button key={w.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.4) }}
-                  onClick={() => setSelectedWord(w)}
-                  className="bg-card border border-border rounded-xl w-full text-left flex items-center gap-2 px-4 py-2.5 hover:border-muted-foreground/30 transition-colors"
-                >
-                  <span className="font-display text-sm font-semibold flex-1 truncate">{w.word}</span>
-                  <span className="text-[10px] text-muted-foreground/50 hidden sm:inline">{w.category}</span>
-                  <span className="font-display text-[10px] text-muted-foreground/40 tabular-nums w-6 text-right">{w.jinx_score}</span>
-                  <Badge variant="outline" className={`${STATUS_COLORS[w.status as WordStatus]} text-[9px] px-1.5 py-0 border-0 rounded-md`}>{w.status}</Badge>
-                </motion.button>
+              {filteredWords.map(w => (
+                <WordRow key={w.id} word={w} onClick={() => setSelectedWord(w)} />
               ))}
               {filteredWords.length === 0 && (
                 <div className="text-center py-10 text-muted-foreground">
@@ -238,6 +355,22 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="actions" className="mt-4 space-y-2">
+            {/* Import sources */}
+            {sources.length > 0 && (
+              <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground/60" />
+                  <span className="text-xs font-medium text-muted-foreground">Import History</span>
+                </div>
+                {sources.map(s => (
+                  <div key={s.id} className="flex items-center justify-between text-[11px] text-muted-foreground py-0.5">
+                    <span>{s.name}</span>
+                    <span className="tabular-nums">{s.rows_imported} rows · {new Date(s.last_sync).toLocaleDateString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <input ref={fileRef} type="file" accept=".csv,.json" className="hidden" onChange={handleImport} />
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4 mr-2" /> Import starting deck (CSV)
@@ -250,9 +383,6 @@ export default function Dashboard() {
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
               <Link to="/dashboard/prompts"><CheckCircle className="h-4 w-4 mr-2" /> Prompt quality review</Link>
-            </Button>
-            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" disabled>
-              <Tag className="h-4 w-4 mr-2" /> Tag synonym clusters (coming soon)
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" /> Export final deck snapshot

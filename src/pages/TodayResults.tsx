@@ -59,20 +59,28 @@ export default function TodayResults() {
   const allAnswered = summaries.length > 0 && summaries.every(s => s.answer);
   const answeredCount = summaries.filter(s => s.answer).length;
 
-  // Build share text
+  // Build share text with performance headline
   const bestTopPercent = allAnswered
     ? Math.min(...summaries.map(s => s.topPercent))
     : null;
 
+  const getHeadline = () => {
+    if (!bestTopPercent) return 'JINX Daily';
+    if (bestTopPercent <= 5) return 'JINX Daily 🔥 Mind reader!';
+    if (bestTopPercent <= 20) return 'JINX Daily ⚡ Strong match!';
+    if (bestTopPercent <= 50) return 'JINX Daily 👀 Decent run';
+    return 'JINX Daily 🎲 Wildcard answers';
+  };
+
   const shareText = allAnswered
     ? [
-        `JINX — ${answeredCount}/${summaries.length}`,
+        getHeadline(),
         '',
         ...summaries.map(s =>
           `${s.prompt.word_a} + ${s.prompt.word_b} → #${s.rank} ${s.answer?.raw_answer?.toUpperCase()}`
         ),
         '',
-        `Top ${bestTopPercent}%`,
+        `Best: Top ${bestTopPercent}%`,
         'playjinx.lovable.app',
       ].join('\n')
     : '';

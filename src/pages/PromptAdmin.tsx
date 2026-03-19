@@ -41,24 +41,56 @@ const TAG_BADGE: Record<string, { label: string; cls: string }> = {
 };
 
 const PERF_BADGE: Record<string, { label: string; cls: string; icon: typeof TrendingUp }> = {
-  strong: { label: 'Strong', cls: 'text-primary', icon: TrendingUp },
+  strong: { label: 'Strong', cls: 'text-[hsl(var(--keep))]', icon: TrendingUp },
   decent: { label: 'Decent', cls: 'text-muted-foreground', icon: TrendingUp },
   weak: { label: 'Weak', cls: 'text-destructive', icon: TrendingDown },
 };
 
-function getScoreGuidance(score: number): { label: string; hint: string; cls: string } {
-  if (score >= 70) return { label: 'High', hint: 'Strong candidate → Safe', cls: 'text-primary' };
-  if (score >= 45) return { label: 'Medium', hint: 'Worth testing → Test', cls: 'text-muted-foreground' };
-  return { label: 'Low', hint: 'Consider rejecting', cls: 'text-destructive' };
+// Reason badges for prompt feedback
+const REASON_BADGES = [
+  { key: 'healthy', label: 'Healthy clustering', cls: 'bg-[hsl(var(--keep))]/15 text-[hsl(var(--keep))]' },
+  { key: 'obvious', label: 'Too obvious', cls: 'bg-[hsl(var(--review))]/15 text-[hsl(var(--review))]' },
+  { key: 'abstract', label: 'Too abstract', cls: 'bg-destructive/15 text-destructive' },
+  { key: 'scattered', label: 'Too scattered', cls: 'bg-destructive/15 text-destructive' },
+] as const;
+
+function getAutoReasons(p: PromptRow): string[] {
+  const reasons: string[] = [];
+  if (p.total_players === 0) return reasons;
+  if (p.top_answer_pct >= 60) reasons.push('obvious');
+  else if (p.top_answer_pct >= 35) reasons.push('healthy');
+  if (p.unique_answers > 0 && p.total_players > 0) {
+    const scatterRate = p.unique_answers / p.total_players;
+    if (scatterRate > 0.7) reasons.push('scattered');
+  }
+  if (p.top_answer_pct > 0 && p.top_answer_pct < 15 && p.total_players >= 5) reasons.push('abstract');
+  return reasons;
 }
 
 function ScorePill({ score }: { score: number }) {
-  const guidance = getScoreGuidance(score);
+  const cls = score >= 70 ? 'text-primary' : score >= 45 ? 'text-muted-foreground' : 'text-destructive';
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-display font-bold ${guidance.cls}`}>
+    <span className={`inline-flex items-center gap-1 text-[10px] font-display font-bold ${cls}`}>
       <Gauge className="h-3 w-3" />
       {score}
     </span>
+  );
+}
+
+function ReasonBadges({ reasons }: { reasons: string[] }) {
+  if (reasons.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {reasons.map(r => {
+        const badge = REASON_BADGES.find(b => b.key === r);
+        if (!badge) return null;
+        return (
+          <span key={r} className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>
+            {badge.label}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -110,16 +142,19 @@ export default function PromptAdmin() {
     [...prompts.filter(p => p.prompt_status === 'approved')].sort((a, b) => b.prompt_score - a.prompt_score),
     [prompts]
   );
-  const played = useMemo(() => prompts.filter(p => p.total_players > 0), [prompts]);
+  const played = useMemo(() =>
+    [...prompts.filter(p => p.total_players > 0)].sort((a, b) => b.total_players - a.total_players),
+    [prompts]
+  );
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center theme-dashboard">
       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background theme-dashboard">
       <nav className="border-b border-border">
         <div className="container flex items-center h-14 gap-3">
           <Button variant="ghost" size="icon" asChild>
@@ -147,6 +182,14 @@ export default function PromptAdmin() {
           </div>
         </div>
 
+        {/* Quality gate guidance */}
+        <div className="bg-card border border-border rounded-xl p-4 text-[10px] text-muted-foreground space-y-1">
+          <p className="font-semibold text-foreground text-xs mb-1">Quality Gate</p>
+          <p>✅ Approve if: clear shared pathway, players likely to converge</p>
+          <p>❌ Reject if: too abstract, vague, or likely to scatter</p>
+          <p className="mt-1">Safe = high confidence · Test = uncertain, for learning</p>
+        </div>
+
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-secondary rounded-xl h-9">
             <TabsTrigger value="review" className="rounded-lg text-xs">Review ({pending.length})</TabsTrigger>
@@ -154,13 +197,15 @@ export default function PromptAdmin() {
             <TabsTrigger value="feedback" className="rounded-lg text-xs">Feedback ({played.length})</TabsTrigger>
           </TabsList>
 
-          {/* Review tab: pending prompts sorted by score */}
+          {/* Review tab */}
           <TabsContent value="review" className="mt-4 space-y-2">
             {pending.length === 0 && (
               <p className="text-center text-xs text-muted-foreground py-10">No pending prompts to review.</p>
             )}
             {pending.map((p, i) => {
-              const guidance = getScoreGuidance(p.prompt_score);
+              const guidance = p.prompt_score >= 70 ? { hint: 'Strong candidate → Safe', cls: 'text-primary' }
+                : p.prompt_score >= 45 ? { hint: 'Worth testing → Test', cls: 'text-muted-foreground' }
+                : { hint: 'Consider rejecting', cls: 'text-destructive' };
               return (
                 <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                   className="bg-card border border-border rounded-xl p-4"
@@ -176,9 +221,7 @@ export default function PromptAdmin() {
                       </Badge>
                     </div>
                   </div>
-                  <p className={`text-[10px] mb-3 ${guidance.cls}`}>
-                    {guidance.hint}
-                  </p>
+                  <p className={`text-[10px] mb-3 ${guidance.cls}`}>{guidance.hint}</p>
                   <div className="flex gap-2">
                     <Button size="sm" className="rounded-lg text-xs bg-primary text-primary-foreground hover:bg-primary/90"
                       onClick={() => handleApprove(p.id)} disabled={updating === p.id}
@@ -197,13 +240,15 @@ export default function PromptAdmin() {
             })}
           </TabsContent>
 
-          {/* Approved tab: tag as safe/test, score guides decision */}
+          {/* Approved tab */}
           <TabsContent value="approved" className="mt-4 space-y-2">
             {approved.length === 0 && (
               <p className="text-center text-xs text-muted-foreground py-10">No approved prompts yet.</p>
             )}
             {approved.map((p, i) => {
-              const guidance = getScoreGuidance(p.prompt_score);
+              const guidance = p.prompt_score >= 70 ? { hint: 'Strong candidate → Safe', cls: 'text-primary' }
+                : p.prompt_score >= 45 ? { hint: 'Worth testing → Test', cls: 'text-muted-foreground' }
+                : { hint: 'Consider rejecting', cls: 'text-destructive' };
               return (
                 <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                   className="bg-card border border-border rounded-xl p-4"
@@ -226,9 +271,7 @@ export default function PromptAdmin() {
                       )}
                     </div>
                   </div>
-                  {!p.prompt_tag && (
-                    <p className={`text-[10px] mb-2 ${guidance.cls}`}>{guidance.hint}</p>
-                  )}
+                  {!p.prompt_tag && <p className={`text-[10px] mb-2 ${guidance.cls}`}>{guidance.hint}</p>}
                   <div className="flex gap-2">
                     <Button size="sm" variant={p.prompt_tag === 'safe' ? 'default' : 'outline'} className="rounded-lg text-xs"
                       onClick={() => handleTagSafe(p.id)} disabled={updating === p.id}
@@ -241,18 +284,20 @@ export default function PromptAdmin() {
                       <FlaskConical className="h-3 w-3 mr-1" /> Test
                     </Button>
                   </div>
+                  <ReasonBadges reasons={getAutoReasons(p)} />
                 </motion.div>
               );
             })}
           </TabsContent>
 
-          {/* Feedback tab: played prompts with performance */}
+          {/* Feedback tab */}
           <TabsContent value="feedback" className="mt-4 space-y-2">
             {played.length === 0 && (
               <p className="text-center text-xs text-muted-foreground py-10">No prompts have been played yet.</p>
             )}
             {played.map((p, i) => {
               const perf = p.performance ? PERF_BADGE[p.performance] : null;
+              const reasons = getAutoReasons(p);
               return (
                 <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                   className="bg-card border border-border rounded-xl p-4"
@@ -275,12 +320,13 @@ export default function PromptAdmin() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-[10px] text-muted-foreground mb-3">
+                  <div className="flex items-center gap-4 text-[10px] text-muted-foreground mb-2">
                     <span>{p.total_players} players</span>
-                    <span>{p.unique_answers} unique answers</span>
-                    <span>Top answer: {p.top_answer_pct}%</span>
+                    <span>{p.unique_answers} unique</span>
+                    <span>Top: {p.top_answer_pct}%</span>
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-lg text-xs"
+                  <ReasonBadges reasons={reasons} />
+                  <Button size="sm" variant="outline" className="rounded-lg text-xs mt-3"
                     onClick={() => computeFeedback(p.id)} disabled={updating === p.id}
                   >
                     {updating === p.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
