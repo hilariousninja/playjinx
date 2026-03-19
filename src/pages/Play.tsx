@@ -183,39 +183,39 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex items-start justify-center pt-8 pb-24">
+      <div className="flex-1 flex items-start justify-center pt-6 pb-20">
         <div className="w-full max-w-md mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
 
-              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-6">
+              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-5">
                 Prompt {currentIdx + 1} of {prompts.length}
               </p>
 
               {/* Prompt hero */}
-              <div className="text-center mb-6">
-                <div className="flex flex-col items-center gap-0 mb-8">
+              <div className="text-center mb-5">
+                <div className="flex flex-col items-center gap-0 mb-4">
                   <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_a}</span>
-                  <span className="text-primary text-2xl font-display font-bold my-2">+</span>
+                  <span className="text-primary text-2xl font-display font-bold my-1.5">+</span>
                   <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_b}</span>
                 </div>
               </div>
 
-              {/* Objective + Input */}
+              {/* Objective + Input — compact, no card wrapper */}
               {currentPhase === 'input' && !isSubmitted ? (
-                <div className="game-card-elevated text-center py-8 px-6 mb-5">
-                  <p className="text-base font-bold text-primary mb-1">
-                    Think: what will MOST people say?
+                <div className="text-center mb-4">
+                  <p className="text-sm font-semibold text-primary mb-0.5">
+                    What will most people say?
                   </p>
-                  <p className="text-xs text-muted-foreground/80 mb-6">
-                    You're not trying to be correct — you're trying to match the crowd.
+                  <p className="text-[11px] text-muted-foreground/60 mb-4">
+                    Match the crowd, not the "best" answer.
                   </p>
                   <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
                       value={inputVal}
                       onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                      placeholder="Enter your answer..."
+                      placeholder="Your answer…"
                       className={`rounded-lg text-center font-display bg-background h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40 ${inputError ? 'border-destructive' : 'border-border'}`}
                       maxLength={80}
                       disabled={submitting}
@@ -233,11 +233,11 @@ export default function Play() {
                   {inputError ? (
                     <p className="text-[11px] text-destructive mt-2">{inputError}</p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground/50 mt-3">Single word answers work best</p>
+                    <p className="text-[10px] text-muted-foreground/40 mt-2">Single word answers work best</p>
                   )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
-                <div className="text-center mb-5">
+                <div className="text-center mb-4">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -249,11 +249,11 @@ export default function Play() {
                 </div>
               ) : null}
 
-              {/* Player count */}
+              {/* Player count — quieter */}
               {(playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
-                <p className="text-[11px] text-muted-foreground/60 text-center mb-5 flex items-center justify-center gap-1.5">
-                  <Users className="h-3 w-3" />
-                  {playerCounts[prompt.id]} {playerCounts[prompt.id] === 1 ? 'player has' : 'players have'} answered
+                <p className="text-[10px] text-muted-foreground/40 text-center mb-4 flex items-center justify-center gap-1">
+                  <Users className="h-2.5 w-2.5" />
+                  {playerCounts[prompt.id]} answered
                 </p>
               )}
 
