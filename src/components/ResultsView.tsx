@@ -165,6 +165,12 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </div>
 
+      {/* Live indicator */}
+      <p className="text-[10px] text-muted-foreground/40 text-center flex items-center justify-center gap-1.5">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" />
+        Results update live as more players answer
+      </p>
+
       {/* Share */}
       <Button
         variant="outline"

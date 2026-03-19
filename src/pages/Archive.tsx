@@ -109,11 +109,14 @@ export default function Archive() {
       </nav>
       <div className="container max-w-lg py-8">
         <h1 className="text-2xl font-bold mb-6">Archive</h1>
-        {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => (
+        {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
+          const isToday = date === new Date().toISOString().split('T')[0];
+          return (
           <div key={date} className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-display">{date}</span>
+              <span className="text-xs text-muted-foreground font-display">{isToday ? 'Today' : date}</span>
+              {isToday && <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-display font-bold">Live</span>}
             </div>
             <div className="space-y-2">
               {ps.map((p, i) => (
@@ -133,8 +136,8 @@ export default function Archive() {
                 </motion.button>
               ))}
             </div>
-          </div>
-        ))}
+          </div>);
+        })}
       </div>
     </div>
   );
