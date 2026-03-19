@@ -8,6 +8,7 @@ import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotal
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
+import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 
 type Phase = 'input' | 'calculating' | 'results';
 
