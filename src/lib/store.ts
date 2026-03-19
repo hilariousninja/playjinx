@@ -7,13 +7,58 @@ export type DbAnswer = Tables<'answers'>;
 export type DbWord = Tables<'words'>;
 export type DbImportSource = Tables<'import_sources'>;
 
-export function getSessionId(): string {
-  let sid = localStorage.getItem('jinx_session_id');
-  if (!sid) {
-    sid = 'sess_' + crypto.randomUUID().replace(/-/g, '');
-    localStorage.setItem('jinx_session_id', sid);
+export function getPlayerId(): string {
+  // Check for existing player_id first, then migrate from old session_id
+  let pid = localStorage.getItem('jinx_player_id');
+  if (!pid) {
+    // Migrate from old session_id if it exists
+    const oldSid = localStorage.getItem('jinx_session_id');
+    if (oldSid) {
+      pid = oldSid;
+      localStorage.setItem('jinx_player_id', pid);
+    } else {
+      pid = 'player_' + crypto.randomUUID().replace(/-/g, '');
+      localStorage.setItem('jinx_player_id', pid);
+    }
   }
-  return sid;
+  return pid;
+}
+
+/** @deprecated Use getPlayerId() */
+export const getSessionId = getPlayerId;
+
+// --- Completed prompts tracking ---
+export function getCompletedPrompts(): Set<string> {
+  try {
+    const raw = localStorage.getItem('jinx_completed_prompts');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+export function markPromptCompleted(promptId: string) {
+  const completed = getCompletedPrompts();
+  completed.add(promptId);
+  localStorage.setItem('jinx_completed_prompts', JSON.stringify([...completed]));
+}
+
+/** Check completion status against server, updating local cache */
+export async function syncCompletionStatus(prompts: DbPrompt[]): Promise<Record<string, boolean>> {
+  const localCompleted = getCompletedPrompts();
+  const statusMap: Record<string, boolean> = {};
+
+  await Promise.all(prompts.map(async (p) => {
+    if (localCompleted.has(p.id)) {
+      statusMap[p.id] = true;
+      return;
+    }
+    const serverSubmitted = await hasSubmitted(p.id);
+    if (serverSubmitted) {
+      markPromptCompleted(p.id);
+    }
+    statusMap[p.id] = serverSubmitted;
+  }));
+
+  return statusMap;
 }
 
 // --- Prompts ---
