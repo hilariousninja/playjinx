@@ -402,6 +402,7 @@ export default function Dashboard() {
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
               <Link to="/dashboard/answer-config"><ArrowRightLeft className="h-4 w-4 mr-2" /> Answer config (aliases / blocked terms)</Link>
+            </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
               <Link to="/dashboard/prompts"><CheckCircle className="h-4 w-4 mr-2" /> Prompt quality review</Link>
             </Button>
