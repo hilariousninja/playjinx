@@ -401,6 +401,8 @@ export default function Dashboard() {
               <Link to="/dashboard/answers"><Trash2 className="h-4 w-4 mr-2" /> Clean answer data (merge / delete)</Link>
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
+              <Link to="/dashboard/answer-config"><ArrowRightLeft className="h-4 w-4 mr-2" /> Answer config (aliases / blocked terms)</Link>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
               <Link to="/dashboard/prompts"><CheckCircle className="h-4 w-4 mr-2" /> Prompt quality review</Link>
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleExport}>
