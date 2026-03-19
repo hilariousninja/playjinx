@@ -182,19 +182,24 @@ export interface AnswerStat {
 }
 
 export async function getStats(promptId: string): Promise<AnswerStat[]> {
-  const { data, error } = await supabase
-    .from('answers')
-    .select('normalized_answer')
-    .eq('prompt_id', promptId);
-  if (error) throw error;
+  const [answersResult, aliasMap] = await Promise.all([
+    supabase.from('answers').select('normalized_answer').eq('prompt_id', promptId),
+    getAliasMap(),
+  ]);
+  if (answersResult.error) throw answersResult.error;
 
-  const counts: Record<string, number> = {};
-  for (const row of data ?? []) {
-    counts[row.normalized_answer] = (counts[row.normalized_answer] || 0) + 1;
+  // Step 1: Apply alias mappings to each answer
+  const aliasedCounts: Record<string, number> = {};
+  for (const row of answersResult.data ?? []) {
+    const canonical = applyAlias(row.normalized_answer, aliasMap);
+    aliasedCounts[canonical] = (aliasedCounts[canonical] || 0) + 1;
   }
 
-  const total = Object.values(counts).reduce((s, c) => s + c, 0);
-  return Object.entries(counts)
+  // Step 2: Fuzzy-merge typo variants
+  const mergedCounts = fuzzyMergeGroups(aliasedCounts);
+
+  const total = Object.values(mergedCounts).reduce((s, c) => s + c, 0);
+  return Object.entries(mergedCounts)
     .sort((a, b) => b[1] - a[1])
     .map(([word, count], i) => ({
       normalized_answer: word,
