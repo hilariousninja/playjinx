@@ -3,16 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ensureDailyPrompts, type DbPrompt } from '@/lib/store';
+import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
-
-function getCompletedPrompts(): Set<string> {
-  try {
-    const raw = localStorage.getItem('jinx_completed_prompts');
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch { return new Set(); }
-}
 
 export default function Landing() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
@@ -24,12 +17,13 @@ export default function Landing() {
     (async () => {
       const ps = await ensureDailyPrompts();
       setPrompts(ps);
-      const completed = getCompletedPrompts();
+      const statusMap = await syncCompletionStatus(ps);
+      const completed = new Set(Object.entries(statusMap).filter(([, v]) => v).map(([k]) => k));
       setCompletedIds(completed);
       setLoaded(true);
 
       // Auto-redirect completed users to results
-      const allDone = ps.length > 0 && ps.every(p => completed.has(p.id));
+      const allDone = ps.length > 0 && ps.every(p => statusMap[p.id]);
       if (allDone) {
         navigate('/results', { replace: true });
       }
