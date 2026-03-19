@@ -136,6 +136,7 @@ export default function Play() {
   const isSubmitted = submitted[prompt.id];
   const allDone = prompts.every(p => submitted[p.id]);
   const completedCount = prompts.filter(p => submitted[p.id]).length;
+  const showBottomNav = isSubmitted && currentPhase === 'results';
 
   const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); setInputError(null); };
   const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); setInputError(null); };
@@ -149,7 +150,7 @@ export default function Play() {
 
       {/* Header */}
       <header className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
+        <div className="flex items-center justify-between h-16 max-w-lg mx-auto px-5">
           <Link to="/">
             <JinxLogo size={20} className="text-foreground text-lg" />
           </Link>
@@ -168,7 +169,7 @@ export default function Play() {
                 />
               ))}
             </div>
-            <span className="text-[11px] text-muted-foreground font-display tabular-nums">
+            <span className="text-[11px] text-muted-foreground/80 font-display tabular-nums">
               {completedCount}/{prompts.length}
             </span>
             {completedCount > 0 && (
@@ -183,40 +184,47 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex items-start justify-center pt-6 pb-20">
-        <div className="w-full max-w-md mx-auto px-5">
+      <div className="flex-1 flex items-start justify-center pt-10 pb-24">
+        <div className="w-full max-w-[30rem] mx-auto px-5">
           <AnimatePresence mode="wait">
-            <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+            <motion.div
+              key={prompt.id}
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
 
-              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-5">
+              <p className="text-center text-[10px] text-muted-foreground/70 font-display tracking-[0.18em] uppercase">
                 Prompt {currentIdx + 1} of {prompts.length}
               </p>
 
               {/* Prompt hero */}
-              <div className="text-center mb-5">
-                <div className="flex flex-col items-center gap-0 mb-4">
-                  <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_a}</span>
-                  <span className="text-primary text-2xl font-display font-bold my-1.5">+</span>
-                  <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_b}</span>
+              <div className="text-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="font-display text-4xl md:text-5xl font-bold leading-none tracking-tight text-foreground">{prompt.word_a}</span>
+                  <span className="text-primary/80 text-xl font-display font-bold">+</span>
+                  <span className="font-display text-4xl md:text-5xl font-bold leading-none tracking-tight text-foreground">{prompt.word_b}</span>
                 </div>
               </div>
 
               {/* Objective + Input — compact, no card wrapper */}
               {currentPhase === 'input' && !isSubmitted ? (
-                <div className="text-center mb-4">
-                  <p className="text-sm font-semibold text-primary mb-0.5">
-                    What will most people say?
+                <div className="text-center space-y-3">
+                  <p className="text-sm font-semibold text-foreground">
+                    Think: what will MOST people say?
                   </p>
-                  <p className="text-[11px] text-muted-foreground/60 mb-4">
-                    Match the crowd, not the "best" answer.
+                  <p className="text-xs text-muted-foreground">
+                    Match the crowd, not the “best” answer.
                   </p>
-                  <div className="flex gap-2 max-w-xs mx-auto">
+                  <div className="flex gap-2.5 max-w-sm mx-auto pt-1">
                     <Input
                       value={inputVal}
                       onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                       placeholder="Your answer…"
-                      className={`rounded-lg text-center font-display bg-background h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40 ${inputError ? 'border-destructive' : 'border-border'}`}
+                      className={`rounded-xl text-center font-display bg-background h-11 text-[15px] focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/35 ${inputError ? 'border-destructive' : 'border-border'}`}
                       maxLength={80}
                       disabled={submitting}
                       autoFocus
@@ -225,19 +233,19 @@ export default function Play() {
                       onClick={handleSubmit}
                       disabled={!inputVal.trim() || submitting}
                       size="icon"
-                      className="rounded-lg shrink-0 h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90"
+                      className="rounded-xl shrink-0 h-11 w-11"
                     >
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                   {inputError ? (
-                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
+                    <p className="text-[11px] text-destructive mt-1">{inputError}</p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground/40 mt-2">Single word answers work best</p>
+                    <p className="text-[10px] text-muted-foreground/35 mt-1">Single-word answers tend to score best</p>
                   )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
-                <div className="text-center mb-4">
+                <div className="text-center">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -250,10 +258,10 @@ export default function Play() {
               ) : null}
 
               {/* Player count — quieter */}
-              {(playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
-                <p className="text-[10px] text-muted-foreground/40 text-center mb-4 flex items-center justify-center gap-1">
+              {isSubmitted && (playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
+                <p className="text-[10px] text-muted-foreground/30 text-center flex items-center justify-center gap-1">
                   <Users className="h-2.5 w-2.5" />
-                  {playerCounts[prompt.id]} answered
+                  {playerCounts[prompt.id]} responses so far
                 </p>
               )}
 
@@ -282,7 +290,7 @@ export default function Play() {
               {/* Next prompt */}
               {currentPhase === 'results' && isSubmitted && currentIdx < prompts.length - 1 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-                  <Button onClick={goNext} className="w-full rounded-lg mt-5 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+                  <Button onClick={goNext} className="w-full rounded-lg h-12 font-semibold">
                     Next prompt <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </motion.div>
@@ -290,7 +298,7 @@ export default function Play() {
 
               {/* All done — polished end-of-run */}
               {allDone && currentPhase === 'results' && currentIdx === prompts.length - 1 && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-8">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="pt-2">
                   <div className="game-card-elevated text-center py-8 px-6">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
                       <Trophy className="h-6 w-6 text-primary" />
@@ -300,7 +308,7 @@ export default function Play() {
                       Your results are live. Check back later — your rank may improve as more players answer.
                     </p>
                     <div className="flex gap-3 justify-center flex-wrap">
-                      <Button className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
+                      <Button className="rounded-lg font-semibold" asChild>
                         <Link to="/results">View today's results</Link>
                       </Button>
                       <Button variant="outline" className="rounded-lg" asChild>
@@ -317,14 +325,16 @@ export default function Play() {
           </AnimatePresence>
 
           {/* Nav arrows — lightweight */}
-          <div className="flex justify-between mt-6">
-            <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
-              <ArrowLeft className="h-3 w-3" /> Prev
-            </button>
-            <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
-              Next <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
+          {showBottomNav && (
+            <div className="flex justify-between mt-8">
+              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[10px] uppercase tracking-wide text-muted-foreground/35 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+                <ArrowLeft className="h-3 w-3" /> Prev
+              </button>
+              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[10px] uppercase tracking-wide text-muted-foreground/35 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+                Next <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
