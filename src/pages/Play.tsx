@@ -4,25 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, getCompletedPrompts, markPromptCompleted, type DbPrompt, type DbAnswer } from '@/lib/store';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 
 type Phase = 'input' | 'calculating' | 'results';
-
-function getCompletedPrompts(): Set<string> {
-  try {
-    const raw = localStorage.getItem('jinx_completed_prompts');
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch { return new Set(); }
-}
-
-function markPromptCompleted(promptId: string) {
-  const completed = getCompletedPrompts();
-  completed.add(promptId);
-  localStorage.setItem('jinx_completed_prompts', JSON.stringify([...completed]));
-}
 
 export default function Play() {
   const [searchParams] = useSearchParams();
