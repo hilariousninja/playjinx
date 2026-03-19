@@ -49,60 +49,73 @@ export default function ResultsView({ promptId }: Props) {
   const topPercent = Math.max(1, 100 - percentile);
   const isEarly = total < 5;
   const matchCount = userStat?.count ?? 0;
+  const topAnswerPct = topAnswer?.percentage ?? 0;
+
+  // Low consensus framing
+  const isFragmented = topAnswerPct > 0 && topAnswerPct < 15 && total >= 5;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Early bird */}
       {isEarly && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-card text-center py-4">
-          <p className="text-xs text-muted-foreground">🌅 You're early! Results will grow as more players answer.</p>
+          <p className="text-xs text-muted-foreground">🌅 Early results — rankings will shift as more players answer.</p>
         </motion.div>
       )}
 
-      {/* #1 Answer highlight */}
+      {/* Your answer card — the main reveal */}
+      {userStat && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.35 }}
+          className="game-card-elevated text-center py-7 px-5"
+        >
+          <Award className="h-5 w-5 text-primary mx-auto mb-2" />
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">You chose</p>
+          <p className="font-display text-3xl font-bold mb-4 text-primary break-words">{userAnswer?.raw_answer}</p>
+
+          <div className="flex justify-center gap-2 flex-wrap">
+            <span className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-display font-bold">
+              Top {topPercent}%
+            </span>
+            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
+              Rank <span className="font-bold text-foreground">#{rank}</span>
+            </span>
+            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
+              <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'match' : 'matches'}
+            </span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* #1 Answer */}
       {topAnswer && (
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
           className="game-card text-center py-5"
         >
           <div className="flex items-center justify-center gap-1.5 mb-2">
             <Crown className="h-4 w-4 text-primary" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">#1 Answer</span>
           </div>
-          <p className="font-display text-2xl font-bold text-foreground mb-1 break-words">{topAnswer.normalized_answer}</p>
+          <p className="font-display text-xl font-bold text-foreground mb-1 break-words">{topAnswer.normalized_answer}</p>
           <p className="text-sm text-muted-foreground">
             <span className="font-bold text-foreground">{topAnswer.percentage}%</span>
-            <span className="text-muted-foreground/50 mx-1">·</span>
+            <span className="text-muted-foreground/40 mx-1.5">·</span>
             <span>{topAnswer.count} {topAnswer.count === 1 ? 'player' : 'players'}</span>
           </p>
         </motion.div>
       )}
 
-      {/* Your answer card */}
-      {userStat && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35, delay: 0.1 }}
-          className="game-card-elevated text-center py-6"
-        >
-          <Award className="h-5 w-5 text-primary mx-auto mb-2" />
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">You chose</p>
-          <p className="font-display text-3xl font-bold mb-3 text-primary break-words">{userAnswer?.raw_answer}</p>
-
-          <div className="flex justify-center gap-2 flex-wrap">
-            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
-              Current Rank <span className="font-bold text-foreground">#{rank}</span>
-            </span>
-            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
-              <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'match' : 'matches'}
-            </span>
-            <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-display font-bold">
-              Top {topPercent}%
-            </span>
-          </div>
+      {/* Fragmented prompt context */}
+      {isFragmented && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-card text-center py-4 px-5">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            🧩 This prompt split the crowd — lots of unique answers! Rankings may shift as more players weigh in.
+          </p>
         </motion.div>
       )}
 
@@ -111,10 +124,10 @@ export default function ResultsView({ promptId }: Props) {
         {[
           { icon: Users, value: total, label: 'Players' },
           { icon: Hash, value: unique, label: 'Unique' },
-          { icon: TrendingUp, value: `${topAnswer?.percentage ?? 0}%`, label: 'Top Answer' },
+          { icon: TrendingUp, value: `${topAnswerPct}%`, label: 'Consensus' },
         ].map((stat) => (
-          <div key={stat.label} className="game-card text-center py-3 px-2">
-            <stat.icon className="h-3.5 w-3.5 mx-auto mb-1.5 text-muted-foreground/50" />
+          <div key={stat.label} className="game-card text-center py-3.5 px-2">
+            <stat.icon className="h-3.5 w-3.5 mx-auto mb-1.5 text-muted-foreground/40" />
             <p className="text-lg font-display font-bold text-foreground">{stat.value}</p>
             <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
           </div>
@@ -123,8 +136,8 @@ export default function ResultsView({ promptId }: Props) {
 
       {/* Answer clusters */}
       <div className="game-card">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-5 font-medium">Answer Clusters</p>
-        <div className="space-y-2">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-4 font-medium">Answer Clusters</p>
+        <div className="space-y-1">
           {stats.slice(0, 8).map((s, i) => {
             const isUser = s.normalized_answer === userAnswer?.normalized_answer;
             return (
@@ -132,31 +145,31 @@ export default function ResultsView({ promptId }: Props) {
                 key={s.normalized_answer}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className={`py-2 px-2 rounded-lg -mx-2 ${isUser ? 'bg-primary/5' : ''}`}
+                transition={{ delay: i * 0.05 }}
+                className={`py-2.5 px-3 rounded-xl -mx-1 ${isUser ? 'bg-primary/5 ring-1 ring-primary/10' : ''}`}
               >
-                <div className="flex items-baseline justify-between gap-2 mb-1">
-                  <div className="flex items-baseline gap-2 min-w-0">
-                    <span className={`font-display text-[11px] tabular-nums shrink-0 ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
+                <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                  <div className="flex items-baseline gap-2.5 min-w-0">
+                    <span className={`font-display text-xs tabular-nums shrink-0 w-4 text-right ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/40'}`}>
                       {i + 1}
                     </span>
-                    <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground'}`}>
+                    <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground font-medium'}`}>
                       {s.normalized_answer}
                     </span>
                   </div>
-                  <span className={`text-xs tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/70'}`}>
+                  <span className={`text-xs tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/60'}`}>
                     {s.percentage}%
-                    <span className="text-muted-foreground/40 ml-1 text-[10px]">({s.count})</span>
+                    <span className="text-muted-foreground/30 ml-1 text-[10px]">({s.count})</span>
                   </span>
                 </div>
-                <div className="cluster-bar ml-5" style={{ height: '6px' }}>
+                <div className="cluster-bar ml-6" style={{ height: '5px' }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.max(s.percentage, 4)}%` }}
-                    transition={{ duration: 0.7, delay: 0.12 + i * 0.06, ease: 'easeOut' }}
+                    transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: 'easeOut' }}
                     className={`absolute inset-y-0 left-0 rounded-lg ${
                       isUser
-                        ? 'bg-primary/60'
+                        ? 'bg-primary/50'
                         : i === 0
                           ? 'bg-primary/20'
                           : 'bg-muted-foreground/10'
@@ -172,7 +185,7 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </div>
 
-      {/* Wild answers — fun one-offs */}
+      {/* Wild answers */}
       {(() => {
         const wildAnswers = stats.filter(s => s.count === 1).slice(0, 5);
         if (wildAnswers.length === 0 || total < 5) return null;
@@ -207,12 +220,11 @@ export default function ResultsView({ promptId }: Props) {
       </div>
 
       {/* Live indicator */}
-      <div className="text-center space-y-1 py-1">
-        <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
-          Results are still updating — your rank may change
+      <div className="text-center py-1">
+        <p className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
+          Results update as more players answer
         </p>
-        <p className="text-[10px] text-muted-foreground/40">Check back later to see how your answer performs</p>
       </div>
     </div>
   );

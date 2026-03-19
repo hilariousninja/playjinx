@@ -22,7 +22,6 @@ export default function Landing() {
       setCompletedIds(completed);
       setLoaded(true);
 
-      // Auto-redirect completed users to results
       const allDone = ps.length > 0 && ps.every(p => statusMap[p.id]);
       if (allDone) {
         navigate('/results', { replace: true });
@@ -67,20 +66,20 @@ export default function Landing() {
           transition={{ duration: 0.5 }}
           className="text-center w-full max-w-md py-16"
         >
-          <p className="text-[11px] font-display tracking-[0.35em] text-muted-foreground uppercase mb-6">Daily Word Game</p>
+          <p className="text-[11px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-6">Daily Crowd Word Game</p>
 
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-foreground mb-2">
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-foreground mb-6">
             JINX
           </h1>
-          <p className="text-lg text-muted-foreground font-light tracking-tight mb-8">
-            Daily
-          </p>
 
-          <p className="text-base text-foreground/80 max-w-xs mx-auto mb-2 font-medium leading-relaxed">
+          <p className="text-base text-foreground/80 max-w-xs mx-auto mb-1.5 font-semibold leading-relaxed">
             Think the same. Rank higher.
           </p>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-10 leading-relaxed">
-            See two words. Type the one bridge-word you think everyone else will pick.
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-2 leading-relaxed">
+            See two words. Type the one bridge word you think most people will pick.
+          </p>
+          <p className="text-xs text-muted-foreground/70 max-w-xs mx-auto mb-10 leading-relaxed">
+            You're not trying to be correct — you're trying to match the crowd.
           </p>
 
           {/* Completed state */}
@@ -113,12 +112,15 @@ export default function Landing() {
                 transition={{ delay: 0.2 }}
                 className="game-card-elevated inline-block px-12 py-7 mb-10"
               >
+                <p className="text-[9px] text-muted-foreground/60 uppercase tracking-[0.2em] font-display mb-4">Example prompt</p>
                 <div className="flex flex-col items-center gap-0.5 font-display">
                   <span className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">COW</span>
                   <span className="text-primary text-lg font-bold my-0.5">+</span>
                   <span className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">SNOW</span>
-                  <span className="text-muted-foreground text-sm mt-3 mb-1">→</span>
-                  <span className="text-primary text-lg font-bold">Milk</span>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-muted-foreground/50 text-sm">→</span>
+                    <span className="text-primary text-lg font-bold tracking-tight">Milk</span>
+                  </div>
                 </div>
               </motion.div>
 
@@ -146,8 +148,8 @@ export default function Landing() {
           <div className="grid grid-cols-2 gap-8">
             {[
               { num: '1', title: 'See the prompt', desc: 'Two words appear.' },
-              { num: '2', title: 'Submit one word', desc: 'Find the bridge.' },
-              { num: '3', title: 'Watch clusters', desc: 'See what others picked.' },
+              { num: '2', title: 'Submit one word', desc: 'Guess one bridge word.' },
+              { num: '3', title: 'See the crowd\'s answers', desc: 'Watch the clusters form.' },
               { num: '4', title: 'Rank higher', desc: 'Match the crowd.' },
             ].map((s) => (
               <div key={s.num} className="text-center">
