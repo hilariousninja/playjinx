@@ -13,15 +13,15 @@ interface PromptPairProps {
  */
 export default function PromptPair({ wordA, wordB, size = 'lg', className }: PromptPairProps) {
   const sizeClasses = {
-    sm: 'text-xl md:text-2xl',
-    md: 'text-2xl md:text-3xl',
-    lg: 'text-2xl md:text-3xl',
+    sm: 'text-lg md:text-xl',
+    md: 'text-xl md:text-2xl',
+    lg: 'text-[22px] md:text-[26px]',
   };
 
   const plusClasses = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base',
   };
 
   return (
