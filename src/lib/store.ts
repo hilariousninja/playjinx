@@ -49,7 +49,6 @@ export async function getArchivePrompts(): Promise<DbPrompt[]> {
   const { data, error } = await supabase
     .from('prompts')
     .select('*')
-    .eq('mode', 'archive')
     .order('date', { ascending: false })
     .order('created_at');
   if (error) throw error;
