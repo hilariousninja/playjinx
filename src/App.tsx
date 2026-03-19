@@ -33,6 +33,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/answers" element={<ProtectedRoute><AnswerAdmin /></ProtectedRoute>} />
+          <Route path="/dashboard/answer-config" element={<ProtectedRoute><AnswerConfig /></ProtectedRoute>} />
           <Route path="/dashboard/prompts" element={<ProtectedRoute><PromptAdmin /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
