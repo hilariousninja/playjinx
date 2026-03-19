@@ -111,7 +111,7 @@ export default function AnswerAdmin() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background theme-dashboard">
       <nav className="border-b border-border">
         <div className="container flex items-center h-14 gap-3">
           <Button variant="ghost" size="icon" asChild>
