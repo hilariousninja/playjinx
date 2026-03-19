@@ -126,9 +126,22 @@ export default function TodayResults() {
             <h1 className="text-xl font-bold tracking-tight mb-2 text-foreground">
               {allAnswered ? 'All prompts completed' : `${answeredCount} of ${summaries.length} answered`}
             </h1>
+
+            {/* Best-of-3 summary */}
+            {allAnswered && bestTopPercent !== null && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2 rounded-full mb-3"
+              >
+                <span className="text-sm font-display font-bold">{getHeadline()}</span>
+                <span className="text-xs font-display">Best: Top {bestTopPercent}%</span>
+              </motion.div>
+            )}
+
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5 mb-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
-              Results update live as more players answer
+              Results update live — your rank may change
             </p>
             <Countdown />
           </div>
