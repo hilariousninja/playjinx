@@ -92,7 +92,7 @@ export default function Dashboard() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center theme-dashboard">
       <div className="text-center space-y-3">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mx-auto" />
         <p className="text-xs text-muted-foreground">Loading deck…</p>
@@ -102,7 +102,7 @@ export default function Dashboard() {
 
   if (selectedWord) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background theme-dashboard">
         <nav className="border-b border-border">
           <div className="container flex items-center h-14 gap-3">
             <Button variant="ghost" size="icon" onClick={() => setSelectedWord(null)}><ArrowLeft className="h-4 w-4" /></Button>
@@ -130,11 +130,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background theme-dashboard">
       <nav className="border-b border-border">
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <Link to="/" className="font-display text-lg font-bold tracking-tight">JINX</Link>
+            <Link to="/" className="font-display text-lg font-bold tracking-tight jinx-gradient-text">JINX</Link>
             <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">Creator</span>
           </div>
           <Button size="sm" variant="outline" asChild><Link to="/play">Play →</Link></Button>

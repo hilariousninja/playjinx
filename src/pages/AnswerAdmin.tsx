@@ -105,13 +105,13 @@ export default function AnswerAdmin() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center theme-dashboard">
       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background theme-dashboard">
       <nav className="border-b border-border">
         <div className="container flex items-center h-14 gap-3">
           <Button variant="ghost" size="icon" asChild>

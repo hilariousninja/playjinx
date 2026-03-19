@@ -6,6 +6,66 @@
 
 @layer base {
   :root {
+    /* Light theme for public game */
+    --background: 40 20% 97%;
+    --foreground: 220 15% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 15%;
+
+    --primary: 220 72% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 220 15% 40%;
+
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 220 14% 90%;
+    --accent-foreground: 220 15% 15%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --ring: 220 72% 45%;
+
+    --radius: 0.75rem;
+
+    --success: 142 72% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 4%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    --keep: 142 72% 40%;
+    --review: 38 92% 50%;
+    --cut: 0 72% 51%;
+    --unreviewed: 215 12% 60%;
+
+    --surface-elevated: 0 0% 100%;
+
+    --sidebar-background: 220 14% 6%;
+    --sidebar-foreground: 210 15% 75%;
+    --sidebar-primary: 220 72% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 12% 12%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 220 12% 18%;
+    --sidebar-ring: 220 72% 45%;
+
+    --font-display: 'JetBrains Mono', monospace;
+    --font-body: 'Space Grotesk', sans-serif;
+  }
+
+  /* Dashboard dark theme */
+  .theme-dashboard {
     --background: 220 14% 8%;
     --foreground: 210 20% 95%;
 
@@ -36,31 +96,7 @@
 
     --radius: 1rem;
 
-    --success: 142 72% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 4%;
-    --info: 217 91% 60%;
-    --info-foreground: 0 0% 100%;
-
-    --keep: 142 72% 45%;
-    --review: 38 92% 50%;
-    --cut: 0 72% 51%;
-    --unreviewed: 215 12% 40%;
-
     --surface-elevated: 220 13% 14%;
-
-    --sidebar-background: 220 14% 6%;
-    --sidebar-foreground: 210 15% 75%;
-    --sidebar-primary: 47 95% 55%;
-    --sidebar-primary-foreground: 220 14% 8%;
-    --sidebar-accent: 220 12% 12%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 220 12% 18%;
-    --sidebar-ring: 47 95% 55%;
-
-    --font-display: 'JetBrains Mono', monospace;
-    --font-body: 'Space Grotesk', sans-serif;
   }
 }
 
@@ -83,18 +119,17 @@
 @layer components {
   .game-card {
     @apply bg-card border border-border rounded-2xl p-6;
-    box-shadow: 0 2px 12px -4px hsl(220 14% 4% / 0.4);
+    box-shadow: 0 1px 3px 0 hsl(220 15% 15% / 0.04), 0 1px 2px -1px hsl(220 15% 15% / 0.04);
   }
   .game-card-elevated {
-    @apply rounded-2xl p-6 border border-border;
-    background: hsl(var(--surface-elevated));
-    box-shadow: 0 4px 20px -6px hsl(220 14% 4% / 0.5);
+    @apply rounded-2xl p-6 border border-border bg-card;
+    box-shadow: 0 4px 16px -4px hsl(220 15% 15% / 0.08), 0 2px 4px -2px hsl(220 15% 15% / 0.04);
   }
   .stat-pill {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
   }
   .cluster-bar {
-    @apply h-8 rounded-lg relative overflow-hidden;
+    @apply h-7 rounded-lg relative overflow-hidden;
     background: hsl(var(--secondary));
   }
   .cluster-bar-fill {
@@ -113,6 +148,14 @@
     @apply bg-[hsl(var(--unreviewed))] text-foreground;
   }
   .jinx-gradient-text {
+    background: linear-gradient(135deg, hsl(220 72% 45%), hsl(220 72% 55%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Dashboard keeps its own gradient */
+  .theme-dashboard .jinx-gradient-text {
     background: linear-gradient(135deg, hsl(47 95% 55%), hsl(38 92% 60%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
