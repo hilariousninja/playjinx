@@ -31,7 +31,20 @@ export default function TodayResults() {
           getTotalSubmissions(prompt.id),
           getStats(prompt.id),
         ]);
-        const userStat = answer ? stats.find(s => s.normalized_answer === answer.normalized_answer) : null;
+        // Resolve user's answer through the same alias+fuzzy pipeline
+        let userStat: AnswerStat | null = null;
+        if (answer) {
+          const canon = await getCanonicalAnswer(answer.normalized_answer);
+          userStat = stats.find(s => s.normalized_answer === canon) ?? null;
+          // Fallback: fuzzy match against stat keys (in case fuzzy merged further)
+          if (!userStat) {
+            const { levenshtein } = await import('@/lib/normalize');
+            userStat = stats.find(s => {
+              const dist = levenshtein(canon, s.normalized_answer);
+              return s.normalized_answer.length > 6 && dist <= (s.normalized_answer.length >= 10 ? 2 : 1);
+            }) ?? null;
+          }
+        }
         const rank = userStat?.rank ?? 0;
         const matchCount = userStat?.count ?? 0;
         const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
