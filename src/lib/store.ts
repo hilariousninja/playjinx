@@ -246,39 +246,28 @@ export async function getImportSources(): Promise<DbImportSource[]> {
 
 // --- Admin: Answer Cleaning ---
 export async function mergeAnswers(promptId: string, sourceNormalized: string, targetNormalized: string): Promise<number> {
-  // Count affected rows first
-  const { count } = await supabase
-    .from('answers')
-    .select('*', { count: 'exact', head: true })
-    .eq('prompt_id', promptId)
-    .eq('normalized_answer', sourceNormalized);
-
-  // Update all source answers to target
-  const { error } = await supabase
-    .from('answers')
-    .update({ normalized_answer: targetNormalized.toLowerCase().trim() })
-    .eq('prompt_id', promptId)
-    .eq('normalized_answer', sourceNormalized);
+  const { data, error } = await supabase.functions.invoke('admin-actions', {
+    body: {
+      action: 'merge_answers',
+      prompt_id: promptId,
+      source: sourceNormalized,
+      target: targetNormalized,
+    },
+  });
   if (error) throw error;
-
-  return count ?? 0;
+  return data?.merged ?? 0;
 }
 
 export async function deleteAnswersByNormalized(promptId: string, normalizedAnswer: string): Promise<number> {
-  const { count } = await supabase
-    .from('answers')
-    .select('*', { count: 'exact', head: true })
-    .eq('prompt_id', promptId)
-    .eq('normalized_answer', normalizedAnswer);
-
-  const { error } = await supabase
-    .from('answers')
-    .delete()
-    .eq('prompt_id', promptId)
-    .eq('normalized_answer', normalizedAnswer);
+  const { data, error } = await supabase.functions.invoke('admin-actions', {
+    body: {
+      action: 'delete_answers',
+      prompt_id: promptId,
+      normalized_answer: normalizedAnswer,
+    },
+  });
   if (error) throw error;
-
-  return count ?? 0;
+  return data?.deleted ?? 0;
 }
 
 // --- JINX Score (client-side for MVP) ---
