@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Upload, Download, Search, ArrowLeft, FileSpreadsheet,
   RefreshCw, CheckCircle, Database, BarChart3, Trash2, Loader2,
-  AlertCircle, Eye, TrendingDown, Clock, HelpCircle, List
+  AlertCircle, Eye, TrendingDown, Clock, HelpCircle, List, ArrowRightLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -399,6 +399,9 @@ export default function Dashboard() {
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
               <Link to="/dashboard/answers"><Trash2 className="h-4 w-4 mr-2" /> Clean answer data (merge / delete)</Link>
+            </Button>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
+              <Link to="/dashboard/answer-config"><ArrowRightLeft className="h-4 w-4 mr-2" /> Answer config (aliases / blocked terms)</Link>
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" asChild>
               <Link to="/dashboard/prompts"><CheckCircle className="h-4 w-4 mr-2" /> Prompt quality review</Link>

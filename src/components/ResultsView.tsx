@@ -172,6 +172,32 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </div>
 
+      {/* Wild answers — fun one-offs */}
+      {(() => {
+        const wildAnswers = stats.filter(s => s.count === 1).slice(0, 5);
+        if (wildAnswers.length === 0 || total < 5) return null;
+        return (
+          <div className="game-card">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-3 font-medium">🎲 Wild Answers</p>
+            <div className="flex flex-wrap gap-1.5">
+              {wildAnswers.map(s => {
+                const isUser = s.normalized_answer === userAnswer?.normalized_answer;
+                return (
+                  <span
+                    key={s.normalized_answer}
+                    className={`px-2.5 py-1 rounded-full text-xs font-display ${
+                      isUser ? 'bg-primary/10 text-primary font-bold' : 'bg-secondary text-secondary-foreground'
+                    }`}
+                  >
+                    {s.normalized_answer}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Scoring explainer */}
       <div className="game-card text-center py-4 px-5">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-2 font-medium">How scoring works</p>

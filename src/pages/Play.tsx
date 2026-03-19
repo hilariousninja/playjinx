@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } fr
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, getCompletedPrompts, markPromptCompleted, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
@@ -17,6 +18,7 @@ export default function Play() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [inputVal, setInputVal] = useState('');
+  const [inputError, setInputError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [userAnswers, setUserAnswers] = useState<Record<string, DbAnswer>>({});
   const [loading, setLoading] = useState(true);
@@ -79,9 +81,18 @@ export default function Play() {
     const prompt = prompts[currentIdx];
     if (!prompt) return;
     const trimmed = inputVal.trim();
-    if (!trimmed || submitted[prompt.id] || submitting) return;
+    
+    // Client-side validation
+    const validationError = validateInput(trimmed);
+    if (validationError) {
+      setInputError(validationError);
+      return;
+    }
+    
+    if (submitted[prompt.id] || submitting) return;
 
     setSubmitting(true);
+    setInputError(null);
     try {
       const answer = await submitAnswer(prompt.id, trimmed);
       setSubmitted(prev => ({ ...prev, [prompt.id]: true }));
@@ -95,7 +106,8 @@ export default function Play() {
         setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
         setSubmitting(false);
       }, 1300);
-    } catch {
+    } catch (err: any) {
+      setInputError(err?.message || 'Something went wrong');
       setSubmitting(false);
     }
   }, [prompts, currentIdx, inputVal, submitted, submitting]);
@@ -203,11 +215,11 @@ export default function Play() {
                   <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
                       value={inputVal}
-                      onChange={e => setInputVal(e.target.value)}
+                      onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                      placeholder="Enter your word..."
-                      className="rounded-lg text-center font-display bg-background border-border h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40"
-                      maxLength={50}
+                      placeholder="Enter your answer..."
+                      className={`rounded-lg text-center font-display bg-background h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40 ${inputError ? 'border-destructive' : 'border-border'}`}
+                      maxLength={80}
                       disabled={submitting}
                       autoFocus
                     />
@@ -220,7 +232,11 @@ export default function Play() {
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground/50 mt-3">Single word answers work best</p>
+                  {inputError ? (
+                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground/50 mt-3">One word or short phrase</p>
+                  )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
                 <div className="text-center mb-5">

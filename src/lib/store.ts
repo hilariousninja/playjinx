@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeAnswer } from './normalize';
+import { normalizeAnswer, applyAlias, isBlocked } from './normalize';
+import { getAliasMap, getBlockedTerms } from './answer-helpers';
 import type { Tables } from '@/integrations/supabase/types';
 
 export type DbPrompt = Tables<'prompts'>;
@@ -147,13 +148,25 @@ export async function getUserAnswer(promptId: string): Promise<DbAnswer | null> 
 
 export async function submitAnswer(promptId: string, rawAnswer: string): Promise<DbAnswer> {
   const sid = getSessionId();
+  let normalized = normalizeAnswer(rawAnswer);
+
+  // Apply alias mapping
+  const aliasMap = await getAliasMap();
+  normalized = applyAlias(normalized, aliasMap);
+
+  // Check blocked terms
+  const blocked = await getBlockedTerms();
+  if (isBlocked(normalized, blocked)) {
+    throw new Error('This answer is not allowed.');
+  }
+
   const { data, error } = await supabase
     .from('answers')
     .insert({
       prompt_id: promptId,
       session_id: sid,
       raw_answer: rawAnswer,
-      normalized_answer: normalizeAnswer(rawAnswer),
+      normalized_answer: normalized,
     })
     .select()
     .single();
