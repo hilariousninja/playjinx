@@ -59,25 +59,27 @@ export default function TodayResults() {
   const allAnswered = summaries.length > 0 && summaries.every(s => s.answer);
   const answeredCount = summaries.filter(s => s.answer).length;
 
-  // Build share text with performance headline
   const bestTopPercent = allAnswered
     ? Math.min(...summaries.map(s => s.topPercent))
     : null;
 
   const getHeadline = () => {
     if (!bestTopPercent) return 'JINX Daily';
-    if (bestTopPercent <= 5) return 'JINX Daily 🔥 Mind reader!';
-    if (bestTopPercent <= 20) return 'JINX Daily ⚡ Strong match!';
-    if (bestTopPercent <= 50) return 'JINX Daily 👀 Decent run';
-    return 'JINX Daily 🎲 Wildcard answers';
+    if (bestTopPercent <= 5) return '🔥 Mind reader!';
+    if (bestTopPercent <= 20) return '⚡ Strong match!';
+    if (bestTopPercent <= 50) return '👀 Decent run';
+    return '🎲 Wildcard answers';
   };
+
+  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   const shareText = allAnswered
     ? [
+        `JINX Daily — ${today}`,
         getHeadline(),
         '',
-        ...summaries.map(s =>
-          `${s.prompt.word_a} + ${s.prompt.word_b} → #${s.rank} ${s.answer?.raw_answer?.toUpperCase()}`
+        ...summaries.map((s, i) =>
+          `${i + 1}. ${s.prompt.word_a} + ${s.prompt.word_b} → ${s.answer?.raw_answer?.toUpperCase()} · #${s.rank} · Top ${s.topPercent}%`
         ),
         '',
         `Best: Top ${bestTopPercent}%`,
@@ -145,7 +147,7 @@ export default function TodayResults() {
                       {s.answer ? (
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
                           <span className="text-xs text-muted-foreground">
-                            You chose: <span className="font-display font-bold text-foreground">{s.answer.raw_answer}</span>
+                            You chose: <span className="font-display font-bold text-foreground break-words">{s.answer.raw_answer}</span>
                           </span>
                           <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full font-display">
                             #{s.rank}
@@ -158,10 +160,9 @@ export default function TodayResults() {
                         <p className="text-xs text-muted-foreground/60 mt-2">Not answered yet</p>
                       )}
 
-                      {/* #1 answer for this prompt */}
                       {s.topAnswer && (
                         <p className="text-[10px] text-muted-foreground/50 mt-1.5">
-                          #1: <span className="font-display font-medium text-muted-foreground">{s.topAnswer.normalized_answer}</span> — {s.topAnswer.percentage}% ({s.topAnswer.count})
+                          #1: <span className="font-display font-medium text-muted-foreground break-words">{s.topAnswer.normalized_answer}</span> — {s.topAnswer.percentage}% ({s.topAnswer.count})
                         </p>
                       )}
                     </div>
@@ -180,7 +181,6 @@ export default function TodayResults() {
           </div>
 
           <div className="mt-8 space-y-3">
-            {/* Copy all results */}
             {allAnswered && (
               <Button
                 className="w-full rounded-lg h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
@@ -202,7 +202,6 @@ export default function TodayResults() {
             </Button>
           </div>
 
-          {/* Return hook */}
           <p className="text-center text-[10px] text-muted-foreground/40 mt-6">
             More players are still answering — check back later to see how results change
           </p>

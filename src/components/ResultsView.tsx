@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Copy, Check, Users, Hash, TrendingUp, Award, Crown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Users, Hash, TrendingUp, Award, Crown } from 'lucide-react';
 import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
 interface Props {
@@ -13,7 +12,6 @@ export default function ResultsView({ promptId }: Props) {
   const [prompt, setPrompt] = useState<DbPrompt | null>(null);
   const [userAnswer, setUserAnswer] = useState<DbAnswer | null>(null);
   const [total, setTotal] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -52,18 +50,6 @@ export default function ResultsView({ promptId }: Props) {
   const isEarly = total < 5;
   const matchCount = userStat?.count ?? 0;
 
-  const performanceEmoji = topPercent <= 5 ? '🔥' : topPercent <= 20 ? '⚡' : topPercent <= 50 ? '👀' : '🎲';
-
-  const shareText = prompt
-    ? `JINX Daily ${performanceEmoji}\n${prompt.word_a} + ${prompt.word_b}\n\nMy answer: ${userAnswer?.raw_answer?.toUpperCase()}\nRank: #${rank} · Top ${topPercent}%\n\nplayjinx.lovable.app`
-    : '';
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div className="space-y-4">
       {/* Early bird */}
@@ -85,7 +71,7 @@ export default function ResultsView({ promptId }: Props) {
             <Crown className="h-4 w-4 text-primary" />
             <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">#1 Answer</span>
           </div>
-          <p className="font-display text-2xl font-bold text-foreground mb-1">{topAnswer.normalized_answer}</p>
+          <p className="font-display text-2xl font-bold text-foreground mb-1 break-words">{topAnswer.normalized_answer}</p>
           <p className="text-sm text-muted-foreground">
             <span className="font-bold text-foreground">{topAnswer.percentage}%</span>
             <span className="text-muted-foreground/50 mx-1">·</span>
@@ -104,7 +90,7 @@ export default function ResultsView({ promptId }: Props) {
         >
           <Award className="h-5 w-5 text-primary mx-auto mb-2" />
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">You chose</p>
-          <p className="font-display text-3xl font-bold mb-3 text-primary">{userAnswer?.raw_answer}</p>
+          <p className="font-display text-3xl font-bold mb-3 text-primary break-words">{userAnswer?.raw_answer}</p>
 
           <div className="flex justify-center gap-2 flex-wrap">
             <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
@@ -149,13 +135,13 @@ export default function ResultsView({ promptId }: Props) {
                 transition={{ delay: i * 0.06 }}
                 className={`flex items-center gap-3 py-1.5 px-2 rounded-lg -mx-2 ${isUser ? 'bg-primary/5' : ''}`}
               >
-                <span className={`font-display text-[11px] w-5 text-right tabular-nums ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
+                <span className={`font-display text-[11px] w-5 text-right tabular-nums shrink-0 ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
                   {i + 1}
                 </span>
-                <span className={`font-display text-sm min-w-[5rem] truncate ${isUser ? 'text-primary font-bold' : 'text-foreground'}`}>
+                <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground'}`}>
                   {s.normalized_answer}
                 </span>
-                <div className="flex-1 cluster-bar">
+                <div className="flex-1 cluster-bar shrink-0" style={{ minWidth: '3rem' }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.max(s.percentage, 4)}%` }}
@@ -169,7 +155,7 @@ export default function ResultsView({ promptId }: Props) {
                     }`}
                   />
                 </div>
-                <span className={`text-xs tabular-nums whitespace-nowrap ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/70'}`}>
+                <span className={`text-xs tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/70'}`}>
                   {s.percentage}%
                   <span className="text-muted-foreground/40 ml-1 text-[10px]">({s.count})</span>
                 </span>
@@ -182,7 +168,7 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </div>
 
-      {/* Live indicator + return hook */}
+      {/* Live indicator */}
       <div className="text-center space-y-1 py-1">
         <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
@@ -190,16 +176,6 @@ export default function ResultsView({ promptId }: Props) {
         </p>
         <p className="text-[10px] text-muted-foreground/40">Check back later to see if your rank changes</p>
       </div>
-
-      {/* Share */}
-      <Button
-        variant="outline"
-        className="w-full rounded-lg h-11 transition-all"
-        onClick={handleCopy}
-      >
-        {copied ? <Check className="h-4 w-4 mr-2 text-primary" /> : <Copy className="h-4 w-4 mr-2" />}
-        {copied ? 'Copied!' : 'Share result'}
-      </Button>
     </div>
   );
 }

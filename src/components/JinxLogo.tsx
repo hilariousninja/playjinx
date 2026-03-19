@@ -5,20 +5,33 @@ interface Props {
 }
 
 export default function JinxLogo({ size = 24, className = '', showWordmark = true }: Props) {
-  const dotR = size * 0.09;
-  const mid = size / 2;
+  const w = size;
+  const h = size * 0.6;
+  const r = size * 0.12;
+  const cy = h / 2;
+  const cx1 = size * 0.22;
+  const cx2 = size * 0.78;
 
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      {/* Convergence icon: two dots converging to one */}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" aria-hidden="true">
-        <circle cx={mid - size * 0.22} cy={mid - size * 0.2} r={dotR} fill="currentColor" opacity="0.45" />
-        <circle cx={mid + size * 0.22} cy={mid - size * 0.2} r={dotR} fill="currentColor" opacity="0.45" />
-        {/* Convergence lines */}
-        <line x1={mid - size * 0.22} y1={mid - size * 0.2 + dotR} x2={mid} y2={mid + size * 0.18 - dotR} stroke="currentColor" strokeWidth={size * 0.04} opacity="0.2" />
-        <line x1={mid + size * 0.22} y1={mid - size * 0.2 + dotR} x2={mid} y2={mid + size * 0.18 - dotR} stroke="currentColor" strokeWidth={size * 0.04} opacity="0.2" />
-        {/* Meeting point */}
-        <circle cx={mid} cy={mid + size * 0.18} r={dotR * 1.3} className="fill-primary" />
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none" aria-hidden="true">
+        {/* Left circle */}
+        <circle cx={cx1} cy={cy} r={r} className="fill-primary" />
+        {/* Right circle */}
+        <circle cx={cx2} cy={cy} r={r} className="fill-primary" />
+        {/* Connecting line */}
+        <line
+          x1={cx1 + r}
+          y1={cy}
+          x2={cx2 - r}
+          y2={cy}
+          stroke="currentColor"
+          strokeWidth={size * 0.06}
+          opacity="0.25"
+          strokeLinecap="round"
+        />
+        {/* Center meeting dot */}
+        <circle cx={w / 2} cy={cy} r={r * 0.5} className="fill-primary" opacity="0.5" />
       </svg>
       {showWordmark && (
         <span className="font-display font-bold tracking-tighter text-foreground">JINX</span>
