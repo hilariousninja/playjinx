@@ -75,7 +75,7 @@ export default function Archive() {
         </header>
         <div className="max-w-lg mx-auto px-5 py-8">
           <div className="text-center mb-6">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6 font-display">Archive Prompt</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6 font-display">Archive prompt</p>
             <div className="flex flex-col items-center gap-0 mb-6">
               <span className="font-display text-4xl font-bold text-foreground">{selectedPrompt.word_a}</span>
               <span className="text-primary text-xl font-display font-bold my-1.5">+</span>
@@ -84,15 +84,16 @@ export default function Archive() {
           </div>
 
           {!isSubmitted ? (
-            <div className="game-card-elevated text-center py-6 px-6 mb-6">
-              <p className="text-sm font-semibold text-foreground mb-1">Enter the ONE word most players will also choose</p>
-              <p className="text-xs text-muted-foreground mb-5">You are trying to match the crowd, not just find any valid link.</p>
+            <div className="text-center mb-6">
+              <p className="text-sm font-semibold text-primary mb-0.5">What will most people say?</p>
+              <p className="text-[11px] text-muted-foreground/60 mb-4">Match the crowd, not the "best" answer.</p>
               <div className="flex gap-2 max-w-xs mx-auto">
-                <Input value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} placeholder="Enter your answer..." className="rounded-lg text-center font-display bg-background border-border h-12 text-base" maxLength={50} />
+                <Input value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} placeholder="Your answer…" className="rounded-lg text-center font-display bg-background border-border h-12 text-base" maxLength={50} />
                 <Button onClick={handleSubmit} disabled={!inputVal.trim() || submitting} size="icon" className="rounded-lg shrink-0 h-12 w-12">
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
+              <p className="text-[10px] text-muted-foreground/40 mt-2">Single word answers work best</p>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">

@@ -59,7 +59,7 @@ export default function ResultsView({ promptId }: Props) {
       {/* Early bird */}
       {isEarly && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-card text-center py-4">
-          <p className="text-xs text-muted-foreground">🌅 Early results — rankings will shift as more players answer.</p>
+          <p className="text-xs text-muted-foreground">🌅 Early results — rankings will shift as more players join.</p>
         </motion.div>
       )}
 

@@ -183,39 +183,39 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex items-start justify-center pt-8 pb-24">
+      <div className="flex-1 flex items-start justify-center pt-6 pb-20">
         <div className="w-full max-w-md mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
 
-              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-6">
+              <p className="text-center text-[11px] text-muted-foreground font-display tracking-widest uppercase mb-5">
                 Prompt {currentIdx + 1} of {prompts.length}
               </p>
 
               {/* Prompt hero */}
-              <div className="text-center mb-6">
-                <div className="flex flex-col items-center gap-0 mb-8">
+              <div className="text-center mb-5">
+                <div className="flex flex-col items-center gap-0 mb-4">
                   <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_a}</span>
-                  <span className="text-primary text-2xl font-display font-bold my-2">+</span>
+                  <span className="text-primary text-2xl font-display font-bold my-1.5">+</span>
                   <span className="font-display text-5xl md:text-6xl font-bold tracking-tight text-foreground">{prompt.word_b}</span>
                 </div>
               </div>
 
-              {/* Objective + Input */}
+              {/* Objective + Input — compact, no card wrapper */}
               {currentPhase === 'input' && !isSubmitted ? (
-                <div className="game-card-elevated text-center py-8 px-6 mb-5">
-                  <p className="text-base font-bold text-primary mb-1">
-                    Think: what will MOST people say?
+                <div className="text-center mb-4">
+                  <p className="text-sm font-semibold text-primary mb-0.5">
+                    What will most people say?
                   </p>
-                  <p className="text-xs text-muted-foreground/80 mb-6">
-                    You're not trying to be correct — you're trying to match the crowd.
+                  <p className="text-[11px] text-muted-foreground/60 mb-4">
+                    Match the crowd, not the "best" answer.
                   </p>
                   <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
                       value={inputVal}
                       onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                      placeholder="Enter your answer..."
+                      placeholder="Your answer…"
                       className={`rounded-lg text-center font-display bg-background h-12 text-base focus:border-primary focus:ring-primary/20 placeholder:text-muted-foreground/40 ${inputError ? 'border-destructive' : 'border-border'}`}
                       maxLength={80}
                       disabled={submitting}
@@ -233,11 +233,11 @@ export default function Play() {
                   {inputError ? (
                     <p className="text-[11px] text-destructive mt-2">{inputError}</p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground/50 mt-3">Single word answers work best</p>
+                    <p className="text-[10px] text-muted-foreground/40 mt-2">Single word answers work best</p>
                   )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
-                <div className="text-center mb-5">
+                <div className="text-center mb-4">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -249,11 +249,11 @@ export default function Play() {
                 </div>
               ) : null}
 
-              {/* Player count */}
+              {/* Player count — quieter */}
               {(playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
-                <p className="text-[11px] text-muted-foreground/60 text-center mb-5 flex items-center justify-center gap-1.5">
-                  <Users className="h-3 w-3" />
-                  {playerCounts[prompt.id]} {playerCounts[prompt.id] === 1 ? 'player has' : 'players have'} answered
+                <p className="text-[10px] text-muted-foreground/40 text-center mb-4 flex items-center justify-center gap-1">
+                  <Users className="h-2.5 w-2.5" />
+                  {playerCounts[prompt.id]} answered
                 </p>
               )}
 
@@ -262,12 +262,12 @@ export default function Play() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="game-card text-center py-12 space-y-3"
+                  className="text-center py-10 space-y-3"
                 >
-                  <div className="w-7 h-7 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
-                  <p className="text-sm text-foreground font-display font-semibold">Finding answer clusters…</p>
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[11px] text-muted-foreground">
-                    Comparing your answer with other players
+                  <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+                  <p className="text-sm text-foreground font-display font-semibold">Finding clusters…</p>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[10px] text-muted-foreground/60">
+                    Comparing with other players
                   </motion.p>
                 </motion.div>
               )}
@@ -316,21 +316,21 @@ export default function Play() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Nav arrows */}
-          <div className="flex justify-between mt-8">
-            <Button variant="ghost" size="sm" onClick={goPrev} disabled={currentIdx === 0} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Prev
-            </Button>
-            <Button variant="ghost" size="sm" onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-muted-foreground hover:text-foreground">
-              Next <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
+          {/* Nav arrows — lightweight */}
+          <div className="flex justify-between mt-6">
+            <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+              <ArrowLeft className="h-3 w-3" /> Prev
+            </button>
+            <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+              Next <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border py-4 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/50 tracking-wide">JINX — a party word game in development</p>
+      <footer className="border-t border-border py-3 shrink-0">
+        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
       </footer>
     </div>
   );
