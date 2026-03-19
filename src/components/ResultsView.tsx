@@ -119,7 +119,7 @@ export default function ResultsView({ promptId }: Props) {
       {/* Answer clusters */}
       <div className="game-card">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-5 font-medium">Answer Clusters</p>
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {stats.slice(0, 8).map((s, i) => {
             const isUser = s.normalized_answer === userAnswer?.normalized_answer;
             return (
@@ -128,31 +128,31 @@ export default function ResultsView({ promptId }: Props) {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className="flex items-center gap-3"
+                className={`flex items-center gap-3 py-1.5 px-2 rounded-lg -mx-2 ${isUser ? 'bg-primary/5' : ''}`}
               >
-                <span className={`font-display text-[10px] w-5 text-right tabular-nums ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
-                  #{i + 1}
+                <span className={`font-display text-[11px] w-5 text-right tabular-nums ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
+                  {i + 1}
                 </span>
-                <span className={`font-display text-xs w-20 text-right truncate ${isUser ? 'text-primary font-bold' : 'text-foreground/80'}`}>
+                <span className={`font-display text-sm min-w-[5rem] truncate ${isUser ? 'text-primary font-bold' : 'text-foreground'}`}>
                   {s.normalized_answer}
                 </span>
                 <div className="flex-1 cluster-bar">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(s.percentage, 3)}%` }}
+                    animate={{ width: `${Math.max(s.percentage, 4)}%` }}
                     transition={{ duration: 0.7, delay: 0.12 + i * 0.06, ease: 'easeOut' }}
                     className={`absolute inset-y-0 left-0 rounded-lg ${
                       isUser
-                        ? 'bg-primary/70'
+                        ? 'bg-primary/60'
                         : i === 0
-                          ? 'bg-primary/25'
-                          : 'bg-muted-foreground/12'
+                          ? 'bg-primary/20'
+                          : 'bg-muted-foreground/10'
                     }`}
                   />
                 </div>
-                <span className={`font-display text-xs w-24 text-right tabular-nums whitespace-nowrap ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/60'}`}>
+                <span className={`text-xs tabular-nums whitespace-nowrap ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/70'}`}>
                   {s.percentage}%
-                  <span className="text-[10px] text-muted-foreground/40 ml-1">({s.count})</span>
+                  <span className="text-muted-foreground/40 ml-1 text-[10px]">({s.count})</span>
                 </span>
               </motion.div>
             );
@@ -163,11 +163,14 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </div>
 
-      {/* Live indicator */}
-      <p className="text-[10px] text-muted-foreground/50 text-center flex items-center justify-center gap-1.5">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
-        Results update live as more players answer
-      </p>
+      {/* Live indicator + return hook */}
+      <div className="text-center space-y-1 py-1">
+        <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50 animate-pulse" />
+          Results are still updating
+        </p>
+        <p className="text-[10px] text-muted-foreground/40">Check back later to see if your rank changes</p>
+      </div>
 
       {/* Share */}
       <Button
