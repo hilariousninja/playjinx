@@ -11,6 +11,7 @@ export default function ResultsView({ promptId }: Props) {
   const [stats, setStats] = useState<AnswerStat[]>([]);
   const [prompt, setPrompt] = useState<DbPrompt | null>(null);
   const [userAnswer, setUserAnswer] = useState<DbAnswer | null>(null);
+  const [userCanonical, setUserCanonical] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
