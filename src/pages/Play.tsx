@@ -202,13 +202,7 @@ export default function Play() {
               </p>
 
               {/* Prompt hero */}
-              <div className="text-center">
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="font-display text-4xl md:text-5xl font-bold leading-none tracking-tight text-foreground">{prompt.word_a}</span>
-                  <span className="text-primary/80 text-xl font-display font-bold">+</span>
-                  <span className="font-display text-4xl md:text-5xl font-bold leading-none tracking-tight text-foreground">{prompt.word_b}</span>
-                </div>
-              </div>
+              <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
 
               {/* Objective + Input — compact, no card wrapper */}
               {currentPhase === 'input' && !isSubmitted ? (

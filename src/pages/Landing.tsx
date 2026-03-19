@@ -116,14 +116,10 @@ export default function Landing() {
                 className="game-card-elevated inline-block px-12 py-7 mb-10"
               >
                 <p className="text-[9px] text-muted-foreground/60 uppercase tracking-[0.2em] font-display mb-4">Example prompt</p>
-                <div className="flex flex-col items-center gap-0.5 font-display">
-                  <span className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">COW</span>
-                  <span className="text-primary text-lg font-bold my-0.5">+</span>
-                  <span className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">SNOW</span>
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-muted-foreground/50 text-sm">→</span>
-                    <span className="text-primary text-lg font-bold tracking-tight">Milk</span>
-                  </div>
+                <PromptPair wordA="COW" wordB="SNOW" size="md" className="mb-3" />
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-muted-foreground/50 text-sm">→</span>
+                  <span className="text-primary text-lg font-display font-bold tracking-tight">Milk</span>
                 </div>
               </motion.div>
 
