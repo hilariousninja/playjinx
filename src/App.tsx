@@ -8,6 +8,7 @@ import Play from "./pages/Play";
 import Archive from "./pages/Archive";
 import Dashboard from "./pages/Dashboard";
 import AnswerAdmin from "./pages/AnswerAdmin";
+import PromptAdmin from "./pages/PromptAdmin";
 import TodayResults from "./pages/TodayResults";
 import AdminLogin from "./pages/AdminLogin";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/answers" element={<ProtectedRoute><AnswerAdmin /></ProtectedRoute>} />
+          <Route path="/dashboard/prompts" element={<ProtectedRoute><PromptAdmin /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

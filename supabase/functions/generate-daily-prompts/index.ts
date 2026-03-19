@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -34,7 +33,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role for the actual operations
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -63,7 +61,6 @@ Deno.serve(async (req) => {
       .eq("active", true)
       .neq("date", today);
 
-    // How many new prompts do we need?
     const existingCount = existing?.length ?? 0;
     const needed = 3 - existingCount;
 
@@ -74,14 +71,74 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get approved words (status = 'approved' or 'unreviewed' as fallback)
+    // Try to select from approved+tagged prompts first (2 safe, 1 test)
+    const { data: safePrompts } = await supabase
+      .from("prompts")
+      .select("*")
+      .eq("prompt_status", "approved")
+      .eq("prompt_tag", "safe")
+      .eq("active", false)
+      .is("date", null)
+      .limit(50);
+
+    const { data: testPrompts } = await supabase
+      .from("prompts")
+      .select("*")
+      .eq("prompt_status", "approved")
+      .eq("prompt_tag", "test")
+      .eq("active", false)
+      .is("date", null)
+      .limit(50);
+
+    // Shuffle helper
+    const shuffle = <T>(arr: T[]): T[] =>
+      arr.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
+
+    const safePicked = shuffle(safePrompts ?? []);
+    const testPicked = shuffle(testPrompts ?? []);
+
+    const selected: string[] = [];
+
+    // Pick up to 2 safe
+    for (const p of safePicked) {
+      if (selected.length >= 2) break;
+      selected.push(p.id);
+    }
+
+    // Pick up to 1 test
+    if (testPicked.length > 0 && selected.length < 3) {
+      selected.push(testPicked[0].id);
+    }
+
+    // Fill remaining from safe if test wasn't available
+    for (const p of safePicked) {
+      if (selected.length >= 3) break;
+      if (!selected.includes(p.id)) selected.push(p.id);
+    }
+
+    // If we have enough pre-approved prompts, activate them
+    if (selected.length >= needed) {
+      const toActivate = selected.slice(0, needed);
+      for (const id of toActivate) {
+        await supabase
+          .from("prompts")
+          .update({ active: true, date: today, mode: "daily" })
+          .eq("id", id);
+      }
+
+      return new Response(
+        JSON.stringify({ message: "Activated approved prompts", count: toActivate.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // FALLBACK: Generate from word pairs (legacy behavior for bootstrapping)
     let { data: words } = await supabase
       .from("words")
       .select("word")
       .eq("status", "approved")
       .limit(500);
 
-    // Fallback to all words if not enough approved
     if (!words || words.length < needed * 2) {
       const { data: allWords } = await supabase
         .from("words")
@@ -97,11 +154,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Shuffle and pick pairs
-    const shuffled = words
-      .map((w) => ({ word: w.word, sort: Math.random() }))
-      .sort((a, b) => a.sort - b.sort)
-      .map((w) => w.word);
+    const shuffled = shuffle(words).map(w => w.word);
 
     const newPrompts = [];
     for (let i = 0; i < needed; i++) {
@@ -111,6 +164,7 @@ Deno.serve(async (req) => {
         active: true,
         date: today,
         mode: "daily",
+        prompt_status: "pending",
       });
     }
 
@@ -122,7 +176,7 @@ Deno.serve(async (req) => {
     if (error) throw error;
 
     return new Response(
-      JSON.stringify({ message: "Generated daily prompts", prompts: inserted }),
+      JSON.stringify({ message: "Generated daily prompts (fallback)", prompts: inserted }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

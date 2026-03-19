@@ -101,6 +101,86 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Compute post-play feedback for a prompt
+    if (action === "compute_prompt_feedback") {
+      const { prompt_id } = body;
+      if (!prompt_id) {
+        return new Response(
+          JSON.stringify({ error: "Missing prompt_id" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get all answers for this prompt
+      const { data: answers } = await supabase
+        .from("answers")
+        .select("normalized_answer")
+        .eq("prompt_id", prompt_id);
+
+      if (!answers || answers.length === 0) {
+        return new Response(
+          JSON.stringify({ total_players: 0, unique_answers: 0, top_answer_pct: 0, performance: null }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const total = answers.length;
+      const counts: Record<string, number> = {};
+      for (const a of answers) {
+        counts[a.normalized_answer] = (counts[a.normalized_answer] || 0) + 1;
+      }
+      const uniqueCount = Object.keys(counts).length;
+      const topCount = Math.max(...Object.values(counts));
+      const topPct = Math.round((topCount / total) * 100);
+
+      // Classify performance
+      let performance: string;
+      if (topPct >= 40) {
+        performance = "strong";
+      } else if (topPct >= 20) {
+        performance = "decent";
+      } else {
+        performance = "weak";
+      }
+
+      // Update prompt
+      await supabase
+        .from("prompts")
+        .update({ total_players: total, unique_answers: uniqueCount, top_answer_pct: topPct, performance })
+        .eq("id", prompt_id);
+
+      // Get the prompt to update word-level tracking
+      const { data: prompt } = await supabase
+        .from("prompts")
+        .select("word_a, word_b")
+        .eq("id", prompt_id)
+        .single();
+
+      if (prompt) {
+        const field = performance === "strong" ? "strong_appearances" : performance === "weak" ? "weak_appearances" : null;
+        if (field) {
+          for (const word of [prompt.word_a.toLowerCase(), prompt.word_b.toLowerCase()]) {
+            const { data: wordRow } = await supabase
+              .from("words")
+              .select("id, strong_appearances, weak_appearances")
+              .eq("word", word)
+              .maybeSingle();
+            if (wordRow) {
+              await supabase
+                .from("words")
+                .update({ [field]: (wordRow[field as keyof typeof wordRow] as number) + 1 })
+                .eq("id", wordRow.id);
+            }
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ total_players: total, unique_answers: uniqueCount, top_answer_pct: topPct, performance }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Unknown action" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
