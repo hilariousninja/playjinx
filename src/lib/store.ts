@@ -181,6 +181,15 @@ export interface AnswerStat {
   rank: number;
 }
 
+/**
+ * Resolve a user's normalized_answer to its canonical form
+ * (after alias + fuzzy merging) for stat lookups.
+ */
+export async function getCanonicalAnswer(normalizedAnswer: string): Promise<string> {
+  const aliasMap = await getAliasMap();
+  return applyAlias(normalizedAnswer, aliasMap);
+}
+
 export async function getStats(promptId: string): Promise<AnswerStat[]> {
   const [answersResult, aliasMap] = await Promise.all([
     supabase.from('answers').select('normalized_answer').eq('prompt_id', promptId),
