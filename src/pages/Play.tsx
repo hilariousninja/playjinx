@@ -9,6 +9,8 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 
+type Phase = 'input' | 'calculating' | 'results';
+
 export default function Play() {
   const [searchParams] = useSearchParams();
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
