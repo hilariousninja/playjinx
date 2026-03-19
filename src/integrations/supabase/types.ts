@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      answer_aliases: {
+        Row: {
+          alias_type: string
+          canonical_text: string
+          created_at: string
+          id: string
+          source_text: string
+          status: string
+        }
+        Insert: {
+          alias_type?: string
+          canonical_text: string
+          created_at?: string
+          id?: string
+          source_text: string
+          status?: string
+        }
+        Update: {
+          alias_type?: string
+          canonical_text?: string
+          created_at?: string
+          id?: string
+          source_text?: string
+          status?: string
+        }
+        Relationships: []
+      }
       answers: {
         Row: {
           created_at: string
@@ -48,6 +75,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      blocked_terms: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          term: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string
+          term: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          term?: string
+        }
+        Relationships: []
       }
       import_sources: {
         Row: {
