@@ -130,11 +130,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background theme-dashboard">
       <nav className="border-b border-border">
         <div className="container flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <Link to="/" className="font-display text-lg font-bold tracking-tight">JINX</Link>
+            <Link to="/" className="font-display text-lg font-bold tracking-tight jinx-gradient-text">JINX</Link>
             <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">Creator</span>
           </div>
           <Button size="sm" variant="outline" asChild><Link to="/play">Play →</Link></Button>
