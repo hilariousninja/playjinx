@@ -235,7 +235,7 @@ export default function Play() {
                   {inputError ? (
                     <p className="text-[11px] text-destructive mt-2">{inputError}</p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground/50 mt-3">One word or short phrase</p>
+                    <p className="text-[10px] text-muted-foreground/50 mt-3">Single word answers work best</p>
                   )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
