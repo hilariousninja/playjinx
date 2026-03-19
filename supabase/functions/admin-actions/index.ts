@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -37,7 +36,6 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // Use service role for admin operations
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -101,7 +99,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Compute post-play feedback for a prompt
+    // Compute feedback for a single prompt
     if (action === "compute_prompt_feedback") {
       const { prompt_id } = body;
       if (!prompt_id) {
@@ -111,72 +109,39 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Get all answers for this prompt
-      const { data: answers } = await supabase
-        .from("answers")
-        .select("normalized_answer")
-        .eq("prompt_id", prompt_id);
+      const result = await computePromptFeedback(supabase, prompt_id);
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-      if (!answers || answers.length === 0) {
+    // Backfill ALL prompts and word-level aggregation
+    if (action === "backfill_all") {
+      // Get all prompts
+      const { data: allPrompts } = await supabase
+        .from("prompts")
+        .select("id");
+
+      if (!allPrompts || allPrompts.length === 0) {
         return new Response(
-          JSON.stringify({ total_players: 0, unique_answers: 0, top_answer_pct: 0, performance: null }),
+          JSON.stringify({ prompts_processed: 0, words_updated: 0 }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const total = answers.length;
-      const counts: Record<string, number> = {};
-      for (const a of answers) {
-        counts[a.normalized_answer] = (counts[a.normalized_answer] || 0) + 1;
-      }
-      const uniqueCount = Object.keys(counts).length;
-      const topCount = Math.max(...Object.values(counts));
-      const topPct = Math.round((topCount / total) * 100);
-
-      // Classify performance
-      let performance: string;
-      if (topPct >= 40) {
-        performance = "strong";
-      } else if (topPct >= 20) {
-        performance = "decent";
-      } else {
-        performance = "weak";
+      // Compute feedback for every prompt
+      let promptsProcessed = 0;
+      for (const p of allPrompts) {
+        await computePromptFeedback(supabase, p.id);
+        promptsProcessed++;
       }
 
-      // Update prompt
-      await supabase
-        .from("prompts")
-        .update({ total_players: total, unique_answers: uniqueCount, top_answer_pct: topPct, performance })
-        .eq("id", prompt_id);
-
-      // Get the prompt to update word-level tracking
-      const { data: prompt } = await supabase
-        .from("prompts")
-        .select("word_a, word_b")
-        .eq("id", prompt_id)
-        .single();
-
-      if (prompt) {
-        const field = performance === "strong" ? "strong_appearances" : performance === "weak" ? "weak_appearances" : null;
-        if (field) {
-          for (const word of [prompt.word_a.toLowerCase(), prompt.word_b.toLowerCase()]) {
-            const { data: wordRow } = await supabase
-              .from("words")
-              .select("id, strong_appearances, weak_appearances")
-              .eq("word", word)
-              .maybeSingle();
-            if (wordRow) {
-              await supabase
-                .from("words")
-                .update({ [field]: (wordRow[field as keyof typeof wordRow] as number) + 1 })
-                .eq("id", wordRow.id);
-            }
-          }
-        }
-      }
+      // Now aggregate word-level stats from all prompts
+      const wordsUpdated = await aggregateWordStats(supabase);
 
       return new Response(
-        JSON.stringify({ total_players: total, unique_answers: uniqueCount, top_answer_pct: topPct, performance }),
+        JSON.stringify({ prompts_processed: promptsProcessed, words_updated: wordsUpdated }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -186,9 +151,130 @@ Deno.serve(async (req) => {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("admin-actions error:", err);
     return new Response(
       JSON.stringify({ error: "An internal error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
+// Helper: compute feedback for one prompt and update it
+async function computePromptFeedback(supabase: ReturnType<typeof createClient>, promptId: string) {
+  const { data: answers } = await supabase
+    .from("answers")
+    .select("normalized_answer")
+    .eq("prompt_id", promptId);
+
+  if (!answers || answers.length === 0) {
+    await supabase
+      .from("prompts")
+      .update({ total_players: 0, unique_answers: 0, top_answer_pct: 0, performance: null })
+      .eq("id", promptId);
+    return { total_players: 0, unique_answers: 0, top_answer_pct: 0, performance: null };
+  }
+
+  const total = answers.length;
+  const counts: Record<string, number> = {};
+  for (const a of answers) {
+    counts[a.normalized_answer] = (counts[a.normalized_answer] || 0) + 1;
+  }
+  const uniqueCount = Object.keys(counts).length;
+  const sorted = Object.values(counts).sort((a, b) => b - a);
+  const topCount = sorted[0] ?? 0;
+  const topPct = Math.round((topCount / total) * 100);
+
+  let performance: string;
+  if (topPct >= 40) performance = "strong";
+  else if (topPct >= 20) performance = "decent";
+  else performance = "weak";
+
+  await supabase
+    .from("prompts")
+    .update({ total_players: total, unique_answers: uniqueCount, top_answer_pct: topPct, performance })
+    .eq("id", promptId);
+
+  return { total_players: total, unique_answers: uniqueCount, top_answer_pct: topPct, performance };
+}
+
+// Helper: aggregate word-level stats from all prompts
+async function aggregateWordStats(supabase: ReturnType<typeof createClient>) {
+  // Get all prompts with their performance and words
+  const { data: prompts } = await supabase
+    .from("prompts")
+    .select("id, word_a, word_b, performance, top_answer_pct, unique_answers, total_players");
+
+  if (!prompts || prompts.length === 0) return 0;
+
+  // Build word -> stats map
+  const wordStats: Record<string, {
+    times_used: number;
+    strong: number;
+    decent: number;
+    weak: number;
+    topPcts: number[];
+    uniqueCounts: number[];
+  }> = {};
+
+  for (const p of prompts) {
+    if (p.total_players === 0) continue; // skip unplayed prompts
+
+    for (const rawWord of [p.word_a, p.word_b]) {
+      const word = rawWord.toLowerCase();
+      if (!wordStats[word]) {
+        wordStats[word] = { times_used: 0, strong: 0, decent: 0, weak: 0, topPcts: [], uniqueCounts: [] };
+      }
+      const ws = wordStats[word];
+      ws.times_used++;
+      if (p.performance === "strong") ws.strong++;
+      else if (p.performance === "decent") ws.decent++;
+      else if (p.performance === "weak") ws.weak++;
+      ws.topPcts.push(p.top_answer_pct);
+      ws.uniqueCounts.push(p.unique_answers);
+    }
+  }
+
+  // Update each word in DB
+  let updated = 0;
+  for (const [word, stats] of Object.entries(wordStats)) {
+    const avgTopPct = stats.topPcts.length > 0
+      ? Math.round(stats.topPcts.reduce((a, b) => a + b, 0) / stats.topPcts.length)
+      : 0;
+    const avgUnique = stats.uniqueCounts.length > 0
+      ? Math.round(stats.uniqueCounts.reduce((a, b) => a + b, 0) / stats.uniqueCounts.length)
+      : 0;
+
+    // Compute data-driven jinx_score
+    // Strong rate weighted heavily, penalize weak rate
+    const totalAppearances = stats.strong + stats.decent + stats.weak;
+    let dataScore = 50; // default
+    if (totalAppearances > 0) {
+      const strongRate = stats.strong / totalAppearances;
+      const decentRate = stats.decent / totalAppearances;
+      const weakRate = stats.weak / totalAppearances;
+      // Score: strong contributes positively, weak negatively, decent neutral
+      dataScore = Math.round(
+        Math.min(100, Math.max(0,
+          50 + (strongRate * 40) - (weakRate * 40) + (decentRate * 10) + Math.min(totalAppearances, 10) * 1
+        ))
+      );
+    }
+
+    const { error } = await supabase
+      .from("words")
+      .update({
+        times_used: stats.times_used,
+        strong_appearances: stats.strong,
+        decent_appearances: stats.decent,
+        weak_appearances: stats.weak,
+        avg_top_answer_pct: avgTopPct,
+        avg_unique_answers: avgUnique,
+        jinx_score: dataScore,
+      })
+      .eq("word", word);
+
+    if (!error) updated++;
+  }
+
+  return updated;
+}

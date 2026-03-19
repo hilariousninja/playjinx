@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import {
   Upload, Download, Search, ArrowLeft, FileSpreadsheet,
@@ -136,6 +137,24 @@ export default function Dashboard() {
   const handleBulkUnreviewedToReview = async () => {
     await bulkUpdateStatus('unreviewed', 'review');
     await loadData();
+  };
+
+  const handleBackfill = async () => {
+    const confirmed = confirm('This will recompute metrics for ALL prompts and words from existing play data. Continue?');
+    if (!confirmed) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-actions', {
+        body: { action: 'backfill_all' },
+      });
+      if (error) throw error;
+      alert(`Backfill complete: ${data?.prompts_processed ?? 0} prompts processed, ${data?.words_updated ?? 0} words updated.`);
+      await loadData();
+    } catch (e) {
+      alert('Backfill failed. Check console.');
+      console.error(e);
+      setLoading(false);
+    }
   };
 
   const handleExport = () => {
@@ -386,6 +405,9 @@ export default function Dashboard() {
             </Button>
             <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" /> Export final deck snapshot
+            </Button>
+            <Button variant="outline" className="w-full rounded-xl justify-start h-10 text-sm" onClick={handleBackfill}>
+              <BarChart3 className="h-4 w-4 mr-2" /> Backfill all metrics from play data
             </Button>
           </TabsContent>
         </Tabs>
