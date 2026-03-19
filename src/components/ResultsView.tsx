@@ -94,7 +94,7 @@ export default function ResultsView({ promptId }: Props) {
 
           <div className="flex justify-center gap-2 flex-wrap">
             <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
-              Rank <span className="font-bold text-foreground">#{rank}</span>
+              Current Rank <span className="font-bold text-foreground">#{rank}</span>
             </span>
             <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
               <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'match' : 'matches'}

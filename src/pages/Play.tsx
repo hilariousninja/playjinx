@@ -194,11 +194,11 @@ export default function Play() {
               {/* Objective + Input */}
               {currentPhase === 'input' && !isSubmitted ? (
                 <div className="game-card-elevated text-center py-8 px-6 mb-5">
-                  <p className="text-sm font-bold text-primary mb-1.5">
+                  <p className="text-base font-bold text-primary mb-1">
                     Think: what will MOST people say?
                   </p>
-                  <p className="text-xs text-muted-foreground mb-6">
-                    Enter the one word you think everyone else will pick.
+                  <p className="text-xs text-muted-foreground/80 mb-6">
+                    You're not trying to be correct — you're trying to match the crowd.
                   </p>
                   <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
