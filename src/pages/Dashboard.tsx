@@ -92,7 +92,7 @@ export default function Dashboard() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center theme-dashboard">
       <div className="text-center space-y-3">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mx-auto" />
         <p className="text-xs text-muted-foreground">Loading deck…</p>
