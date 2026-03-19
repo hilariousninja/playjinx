@@ -77,12 +77,8 @@ export default function Landing() {
             Think the same. Rank higher.
           </p>
 
-          <p className="text-sm text-muted-foreground max-w-[17rem] mx-auto mt-5 leading-relaxed">
-            See two words. Type the one bridge word you think most people will pick.
-          </p>
-
-          <p className="text-xs text-muted-foreground/50 max-w-[17rem] mx-auto mt-3 mb-12 leading-relaxed">
-            You're not trying to be correct — you're trying to match the crowd.
+          <p className="text-sm text-muted-foreground max-w-[16rem] mx-auto mt-5 mb-12 leading-relaxed">
+            See two words. Predict the bridge word most people will pick.
           </p>
 
           {/* Completed state */}
