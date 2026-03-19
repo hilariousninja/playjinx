@@ -185,8 +185,8 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex items-start justify-center pt-10 pb-24">
-        <div className="w-full max-w-[30rem] mx-auto px-5">
+      <div className="flex-1 flex items-start justify-center pt-14 pb-28">
+        <div className="w-full max-w-[28rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div
               key={prompt.id}
@@ -194,26 +194,22 @@ export default function Play() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -16 }}
               transition={{ duration: 0.2 }}
-              className="space-y-6"
             >
 
-              <p className="text-center text-[10px] text-muted-foreground/70 font-display tracking-[0.18em] uppercase">
+              <p className="text-center text-[10px] text-muted-foreground/60 font-display tracking-[0.18em] uppercase mb-6">
                 Prompt {currentIdx + 1} of {prompts.length}
               </p>
 
               {/* Prompt hero */}
               <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
 
-              {/* Objective + Input — compact, no card wrapper */}
+              {/* Objective + Input */}
               {currentPhase === 'input' && !isSubmitted ? (
-                <div className="text-center space-y-3">
-                  <p className="text-sm font-semibold text-foreground">
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-primary mt-3 mb-8">
                     Think: what will MOST people say?
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Match the crowd, not the “best” answer.
-                  </p>
-                  <div className="flex gap-2.5 max-w-sm mx-auto pt-1">
+                  <div className="flex gap-2.5 max-w-sm mx-auto">
                     <Input
                       value={inputVal}
                       onChange={e => { setInputVal(e.target.value); setInputError(null); }}
@@ -234,13 +230,17 @@ export default function Play() {
                     </Button>
                   </div>
                   {inputError ? (
-                    <p className="text-[11px] text-destructive mt-1">{inputError}</p>
+                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground/35 mt-1">Single-word answers tend to score best</p>
+                    <div className="mt-7 space-y-0.5">
+                      <p className="text-[10px] font-display font-medium text-muted-foreground/40 uppercase tracking-[0.12em]">Tips</p>
+                      <p className="text-[11px] text-muted-foreground/35 leading-relaxed">Match the crowd, not the "best" answer.</p>
+                      <p className="text-[11px] text-muted-foreground/35 leading-relaxed">Single words usually work best.</p>
+                    </div>
                   )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
-                <div className="text-center">
+                <div className="text-center mt-6">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -254,7 +254,7 @@ export default function Play() {
 
               {/* Player count — quieter */}
               {isSubmitted && (playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
-                <p className="text-[10px] text-muted-foreground/30 text-center flex items-center justify-center gap-1">
+                <p className="text-[10px] text-muted-foreground/30 text-center flex items-center justify-center gap-1 mt-3">
                   <Users className="h-2.5 w-2.5" />
                   {playerCounts[prompt.id]} responses so far
                 </p>
@@ -265,7 +265,7 @@ export default function Play() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-10 space-y-3"
+                  className="text-center py-12 space-y-3"
                 >
                   <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
                   <p className="text-sm text-foreground font-display font-semibold">Finding clusters…</p>
@@ -277,7 +277,7 @@ export default function Play() {
 
               {/* Results */}
               {currentPhase === 'results' && isSubmitted && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-8">
                   <ResultsView promptId={prompt.id} />
                 </motion.div>
               )}
