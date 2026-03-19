@@ -124,7 +124,7 @@ export default function ResultsView({ promptId }: Props) {
       {/* Answer clusters */}
       <div className="game-card">
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-5 font-medium">Answer Clusters</p>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {stats.slice(0, 8).map((s, i) => {
             const isUser = s.normalized_answer === userAnswer?.normalized_answer;
             return (
@@ -133,15 +133,23 @@ export default function ResultsView({ promptId }: Props) {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className={`flex items-center gap-3 py-1.5 px-2 rounded-lg -mx-2 ${isUser ? 'bg-primary/5' : ''}`}
+                className={`py-2 px-2 rounded-lg -mx-2 ${isUser ? 'bg-primary/5' : ''}`}
               >
-                <span className={`font-display text-[11px] w-5 text-right tabular-nums shrink-0 ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
-                  {i + 1}
-                </span>
-                <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground'}`}>
-                  {s.normalized_answer}
-                </span>
-                <div className="flex-1 cluster-bar shrink-0" style={{ minWidth: '3rem' }}>
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className={`font-display text-[11px] tabular-nums shrink-0 ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/50'}`}>
+                      {i + 1}
+                    </span>
+                    <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground'}`}>
+                      {s.normalized_answer}
+                    </span>
+                  </div>
+                  <span className={`text-xs tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/70'}`}>
+                    {s.percentage}%
+                    <span className="text-muted-foreground/40 ml-1 text-[10px]">({s.count})</span>
+                  </span>
+                </div>
+                <div className="cluster-bar ml-5" style={{ height: '6px' }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.max(s.percentage, 4)}%` }}
@@ -155,10 +163,6 @@ export default function ResultsView({ promptId }: Props) {
                     }`}
                   />
                 </div>
-                <span className={`text-xs tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/70'}`}>
-                  {s.percentage}%
-                  <span className="text-muted-foreground/40 ml-1 text-[10px]">({s.count})</span>
-                </span>
               </motion.div>
             );
           })}
