@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Copy, Check, Users, Hash, TrendingUp, Award } from 'lucide-react';
+import { Copy, Check, Users, Hash, TrendingUp, Award, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
@@ -45,7 +45,7 @@ export default function ResultsView({ promptId }: Props) {
 
   const unique = stats.length;
   const userStat = stats.find(s => s.normalized_answer === userAnswer?.normalized_answer);
-  const topConcentration = stats.length > 0 ? stats[0].percentage : 0;
+  const topAnswer = stats.length > 0 ? stats[0] : null;
   const rank = userStat?.rank ?? 0;
   const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
   const topPercent = Math.max(1, 100 - percentile);
@@ -71,21 +71,38 @@ export default function ResultsView({ promptId }: Props) {
         </motion.div>
       )}
 
+      {/* #1 Answer highlight */}
+      {topAnswer && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="game-card text-center py-5"
+        >
+          <div className="flex items-center justify-center gap-1.5 mb-2">
+            <Crown className="h-4 w-4 text-primary" />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">#1 Answer</span>
+          </div>
+          <p className="font-display text-2xl font-bold text-foreground mb-1">{topAnswer.normalized_answer}</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-bold text-foreground">{topAnswer.percentage}%</span>
+            <span className="text-muted-foreground/50 mx-1">·</span>
+            <span>{topAnswer.count} {topAnswer.count === 1 ? 'player' : 'players'}</span>
+          </p>
+        </motion.div>
+      )}
+
       {/* Your answer card */}
       {userStat && (
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
           className="game-card-elevated text-center py-6"
         >
           <Award className="h-5 w-5 text-primary mx-auto mb-2" />
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">Your Answer</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">You chose</p>
           <p className="font-display text-3xl font-bold mb-3 text-primary">{userAnswer?.raw_answer}</p>
-
-          <p className="text-sm text-muted-foreground mb-4">
-            You matched <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'player' : 'players'}
-          </p>
 
           <div className="flex justify-center gap-2 flex-wrap">
             <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
@@ -106,7 +123,7 @@ export default function ResultsView({ promptId }: Props) {
         {[
           { icon: Users, value: total, label: 'Players' },
           { icon: Hash, value: unique, label: 'Unique' },
-          { icon: TrendingUp, value: `${topConcentration}%`, label: 'Top Answer' },
+          { icon: TrendingUp, value: `${topAnswer?.percentage ?? 0}%`, label: 'Top Answer' },
         ].map((stat) => (
           <div key={stat.label} className="game-card text-center py-3 px-2">
             <stat.icon className="h-3.5 w-3.5 mx-auto mb-1.5 text-muted-foreground/50" />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,15 +18,23 @@ export default function Landing() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
       const ps = await ensureDailyPrompts();
       setPrompts(ps);
-      setCompletedIds(getCompletedPrompts());
+      const completed = getCompletedPrompts();
+      setCompletedIds(completed);
       setLoaded(true);
+
+      // Auto-redirect completed users to results
+      const allDone = ps.length > 0 && ps.every(p => completed.has(p.id));
+      if (allDone) {
+        navigate('/results', { replace: true });
+      }
     })();
-  }, []);
+  }, [navigate]);
 
   const allDone = loaded && prompts.length > 0 && prompts.every(p => completedIds.has(p.id));
   const someStarted = loaded && prompts.some(p => completedIds.has(p.id));
@@ -40,6 +48,11 @@ export default function Landing() {
             <JinxLogo size={22} className="text-foreground text-lg" />
           </Link>
           <div className="flex items-center gap-1">
+            {someStarted && (
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
+                <Link to="/results">Results</Link>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
               <Link to="/archive">Archive</Link>
             </Button>

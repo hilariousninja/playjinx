@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, type DbPrompt, type DbAnswer } from '@/lib/store';
@@ -144,7 +144,7 @@ export default function Play() {
           <Link to="/">
             <JinxLogo size={20} className="text-foreground text-lg" />
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Dot progress */}
             <div className="flex items-center gap-2">
               {prompts.map((p, i) => (
@@ -162,6 +162,14 @@ export default function Play() {
             <span className="text-[11px] text-muted-foreground font-display tabular-nums">
               {completedCount}/{prompts.length}
             </span>
+            {/* Persistent Results button */}
+            {completedCount > 0 && (
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 px-2" asChild>
+                <Link to="/results">
+                  <BarChart3 className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -188,11 +196,11 @@ export default function Play() {
               {/* Objective + Input */}
               {currentPhase === 'input' && !isSubmitted ? (
                 <div className="game-card-elevated text-center py-8 px-6 mb-5">
-                  <p className="text-sm font-semibold text-foreground mb-1.5">
-                    Enter the ONE word most players will also choose
+                  <p className="text-sm font-bold text-primary mb-1.5">
+                    Think: what will MOST people say?
                   </p>
                   <p className="text-xs text-muted-foreground mb-6">
-                    You are trying to match the crowd, not just find any valid link.
+                    Enter the one word you think everyone else will pick.
                   </p>
                   <div className="flex gap-2 max-w-xs mx-auto">
                     <Input
