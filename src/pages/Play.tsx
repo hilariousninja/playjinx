@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } fr
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotalSubmissions, getCompletedPrompts, markPromptCompleted, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
