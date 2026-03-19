@@ -53,7 +53,7 @@ function WordRow({ word, onClick }: { word: DbWord; onClick: () => void }) {
       onClick={onClick}
       className="bg-card border border-border rounded-xl w-full text-left flex items-center gap-2 px-4 py-2.5 hover:border-muted-foreground/30 transition-colors"
     >
-      <span className="font-display text-sm font-semibold flex-1 truncate">{word.word}</span>
+      <span className="font-display text-sm font-semibold flex-1 break-words min-w-0">{word.word}</span>
       <span className="text-[10px] text-muted-foreground/50 hidden sm:inline">{word.category}</span>
       <span className={`text-[9px] font-display ${confLabel.cls}`}>{confLabel.label}</span>
       <span className="font-display text-[10px] text-muted-foreground/40 tabular-nums w-6 text-right">{word.jinx_score}</span>
