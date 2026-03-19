@@ -150,33 +150,32 @@ export default function Play() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between h-16 max-w-lg mx-auto px-5">
+      <header className="border-b border-border/80 shrink-0">
+        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/">
-            <JinxLogo size={20} className="text-foreground text-lg" />
+            <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <div className="flex items-center gap-3">
-            {/* Dot progress */}
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
               {prompts.map((p, i) => (
                 <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); setInputError(null); }}
                   className={`rounded-full transition-all duration-300 ${
                     i === currentIdx
-                      ? 'w-6 h-2 bg-primary'
+                      ? 'w-5 h-1.5 bg-primary'
                       : submitted[p.id]
-                        ? 'w-2 h-2 bg-primary/30'
-                        : 'w-2 h-2 bg-border'
+                        ? 'w-1.5 h-1.5 bg-primary/30'
+                        : 'w-1.5 h-1.5 bg-border'
                   }`}
                 />
               ))}
             </div>
-            <span className="text-[11px] text-muted-foreground/80 font-display tabular-nums">
+            <span className="text-[10px] text-muted-foreground/60 font-display tabular-nums">
               {completedCount}/{prompts.length}
             </span>
             {completedCount > 0 && (
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 px-2" asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground/60 hover:text-foreground h-7 w-7 p-0" asChild>
                 <Link to="/results">
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 className="h-3.5 w-3.5" />
                 </Link>
               </Button>
             )}
