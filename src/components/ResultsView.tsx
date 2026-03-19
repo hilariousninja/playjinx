@@ -66,7 +66,7 @@ export default function ResultsView({ promptId }: Props) {
   );
 
   const unique = stats.length;
-  const userStat = stats.find(s => s.normalized_answer === userAnswer?.normalized_answer);
+  const userStat = userCanonical ? stats.find(s => s.normalized_answer === userCanonical) : undefined;
   const topAnswer = stats.length > 0 ? stats[0] : null;
   const rank = userStat?.rank ?? 0;
   const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
