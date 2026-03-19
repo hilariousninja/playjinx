@@ -85,11 +85,12 @@ export default function TodayResults() {
         `JINX Daily — ${today}`,
         getHeadline(),
         '',
-        ...summaries.map((s, i) =>
-          `${i + 1}. ${s.prompt.word_a} + ${s.prompt.word_b} → ${s.answer?.raw_answer?.toUpperCase()} · #${s.rank} · Top ${s.topPercent}%`
-        ),
+        ...summaries.map((s, i) => {
+          const medal = getMedal(s.topPercent);
+          return `${i + 1}. ${s.prompt.word_a} + ${s.prompt.word_b} → ${s.answer?.raw_answer?.toUpperCase()}${medal ? ` ${medal}` : ''} (Top ${s.topPercent}%)`;
+        }),
         '',
-        `Best: Top ${bestTopPercent}%`,
+        `Best: ${getMedal(bestTopPercent!)} Top ${bestTopPercent}%`,
         'playjinx.lovable.app',
       ].join('\n')
     : '';
