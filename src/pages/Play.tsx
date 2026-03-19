@@ -18,6 +18,7 @@ export default function Play() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [inputVal, setInputVal] = useState('');
+  const [inputError, setInputError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [userAnswers, setUserAnswers] = useState<Record<string, DbAnswer>>({});
   const [loading, setLoading] = useState(true);
