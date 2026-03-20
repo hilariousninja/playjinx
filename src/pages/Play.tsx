@@ -184,7 +184,7 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col items-center pt-[12vh] md:pt-[14vh]">
+      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[12vh] md:pt-[14vh]'} transition-all duration-300`}>
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div
