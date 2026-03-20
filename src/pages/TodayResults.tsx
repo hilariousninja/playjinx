@@ -180,54 +180,44 @@ export default function TodayResults() {
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="mb-8 space-y-2.5"
+              className="mb-8 space-y-3"
             >
               {/* Primary: Challenge a friend */}
-              <div>
-                <Button
-                  className="w-full rounded-xl h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px] shadow-sm active:scale-[0.97] transition-transform"
-                  onClick={handleCopyChallenge}
-                >
-                  {challengeCopied ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Challenge copied!
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Challenge a friend
-                    </>
-                  )}
-                </Button>
-                <p className="text-[10px] text-muted-foreground/35 text-center mt-1.5">
-                  Share today's pairs without spoilers
-                </p>
-              </div>
+              <Button
+                className="w-full rounded-xl h-13 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-base shadow-md active:scale-[0.96] transition-transform"
+                onClick={handleCopyChallenge}
+              >
+                {challengeCopied ? (
+                  <>
+                    <Check className="h-4.5 w-4.5 mr-2" />
+                    Challenge copied!
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4.5 w-4.5 mr-2" />
+                    Challenge a friend
+                  </>
+                )}
+              </Button>
 
               {/* Secondary: Share my results */}
-              <div>
-                <Button
-                  variant="outline"
-                  className="w-full rounded-xl h-11 font-medium text-sm border-border/80 active:scale-[0.97] transition-transform"
-                  onClick={handleCopyResults}
-                >
-                  {resultsCopied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 mr-2" />
-                      Results copied!
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="h-3.5 w-3.5 mr-2" />
-                      Share my results
-                    </>
-                  )}
-                </Button>
-                <p className="text-[10px] text-muted-foreground/35 text-center mt-1.5">
-                  Share how you did today
-                </p>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full rounded-xl h-11 font-medium text-sm border-border active:scale-[0.97] transition-transform"
+                onClick={handleCopyResults}
+              >
+                {resultsCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 mr-2" />
+                    Results copied!
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-3.5 w-3.5 mr-2" />
+                    Share my results
+                  </>
+                )}
+              </Button>
             </motion.div>
           )}
 
