@@ -353,6 +353,7 @@ Deno.serve(async (req) => {
     let bestTrio: PromptCandidate[] = [];
     let bestScore = -Infinity;
     let bestBreakdown: Record<string, number> = {};
+    let bestConfidence = "risky";
     const topCandidates: TrioReport[] = [];
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
