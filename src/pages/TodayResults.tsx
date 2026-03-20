@@ -105,7 +105,7 @@ export default function TodayResults() {
         ...(bestHit?.answer ? [`Best hit: ${bestHit.answer.raw_answer.toUpperCase()}`] : []),
         '',
         'Can you match me?',
-        'playjinx.lovable.app',
+        'playjinx.com',
       ].join('\n')
     : '';
 
