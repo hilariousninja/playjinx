@@ -184,7 +184,7 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col items-center justify-center pb-16">
+      <div className="flex-1 flex flex-col items-center pt-[12vh] md:pt-[14vh]">
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div
@@ -199,12 +199,12 @@ export default function Play() {
               {currentPhase === 'input' && !isSubmitted ? (
                 <div className="text-center">
                   {/* Prompt hero */}
-                  <div className="mb-3">
+                  <div className="mb-4">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
                   </div>
 
                   {/* Core instruction — tight to prompt */}
-                  <p className="text-[14px] font-bold text-primary mb-8">
+                  <p className="text-[14px] font-bold text-primary mb-7">
                     What will most people say?
                   </p>
 
@@ -214,8 +214,8 @@ export default function Play() {
                       value={inputVal}
                       onChange={e => { setInputVal(e.target.value); setInputError(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                      placeholder="Your answer"
-                      className={`rounded-xl text-center font-display bg-card h-14 text-lg border-2 focus:border-primary focus:ring-0 placeholder:text-muted-foreground/20 pr-14 shadow-sm ${inputError ? 'border-destructive' : 'border-border/60'}`}
+                      placeholder="Type your word…"
+                      className={`rounded-xl text-center font-display bg-card h-14 text-lg border-2 focus:border-primary focus:ring-0 placeholder:text-muted-foreground/25 pr-14 shadow-sm ${inputError ? 'border-destructive' : 'border-border/60'}`}
                       maxLength={80}
                       disabled={submitting}
                       autoFocus
@@ -236,9 +236,9 @@ export default function Play() {
 
                   {/* Social proof */}
                   {(playerCounts[prompt.id] ?? 0) > 0 && (
-                    <p className="text-[10px] text-muted-foreground/40 flex items-center justify-center gap-1 mt-4">
-                      <Users className="h-2.5 w-2.5" />
-                      {playerCounts[prompt.id]} answers so far
+                    <p className="text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-5">
+                      <Users className="h-3 w-3" />
+                      {playerCounts[prompt.id]} players answered
                     </p>
                   )}
                 </div>
