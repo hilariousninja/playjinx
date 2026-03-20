@@ -99,6 +99,8 @@ export default function PromptAdmin() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [tab, setTab] = useState('review');
+  const [auditData, setAuditData] = useState<any>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const load = async () => {
     const { data } = await supabase
