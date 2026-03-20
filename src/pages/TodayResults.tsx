@@ -82,7 +82,7 @@ export default function TodayResults() {
     '',
     ...summaries.map(s => `${s.prompt.word_a.toUpperCase()} + ${s.prompt.word_b.toUpperCase()}`),
     '',
-    'playjinx.lovable.app',
+    'playjinx.com',
   ].join('\n');
 
   // --- Results share (with answers) ---
@@ -105,7 +105,7 @@ export default function TodayResults() {
         ...(bestHit?.answer ? [`Best hit: ${bestHit.answer.raw_answer.toUpperCase()}`] : []),
         '',
         'Can you match me?',
-        'playjinx.lovable.app',
+        'playjinx.com',
       ].join('\n')
     : '';
 
