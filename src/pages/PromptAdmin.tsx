@@ -113,6 +113,19 @@ export default function PromptAdmin() {
 
   useEffect(() => { load(); }, []);
 
+  const loadAudit = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-daily-prompts', {
+        body: { dry_run: true },
+      });
+      if (!error) setAuditData(data);
+    } catch (e) {
+      console.error('Audit load failed', e);
+    }
+    setAuditLoading(false);
+  }, []);
+
   const updatePrompt = async (id: string, updates: Record<string, unknown>) => {
     setUpdating(id);
     await supabase.from('prompts').update(updates).eq('id', id);
