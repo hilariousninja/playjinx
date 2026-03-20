@@ -17,12 +17,33 @@ export function normalizeAnswer(raw: string): string {
   return answer;
 }
 
+// Words that should never be depluralized (irregular, mass nouns, or would mangle)
+const DEPLURAL_SKIP = new Set([
+  'gas', 'has', 'was', 'his', 'this', 'yes', 'bus', 'plus', 'minus',
+  'series', 'species', 'lens', 'atlas', 'alias', 'canvas', 'chaos',
+  'news', 'mathematics', 'physics', 'economics', 'politics',
+  'glasses', 'scissors', 'pants', 'shorts', 'jeans',
+  'chess', 'moss', 'ross', 'boss', 'loss', 'toss',
+  'moose', 'goose', 'geese', 'dice', 'mice', 'lice',
+]);
+
 function depluralize(word: string): string {
+  if (DEPLURAL_SKIP.has(word)) return word;
   if (word.endsWith('ies') && word.length > 4) {
     return word.slice(0, -3) + 'y';
-  } else if (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('zes') || word.endsWith('ches') || word.endsWith('shes')) {
+  } else if (word.endsWith('shes') || word.endsWith('ches')) {
     return word.slice(0, -2);
-  } else if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && word.length > 2) {
+  } else if (word.endsWith('xes') || word.endsWith('zes')) {
+    return word.slice(0, -2);
+  } else if (word.endsWith('ses') && word.length > 4) {
+    // Only deplural "ses" for longer words to avoid mangling (roses→ros)
+    // Check if removing "s" gives a valid-looking word ending in "se"
+    const base = word.slice(0, -1); // e.g. "houses" → "house"
+    if (base.endsWith('se') || base.endsWith('ose') || base.endsWith('ase') || base.endsWith('use') || base.endsWith('ise')) {
+      return base;
+    }
+    return word; // Don't mangle ambiguous -ses words
+  } else if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && word.length > 3) {
     return word.slice(0, -1);
   }
   return word;
