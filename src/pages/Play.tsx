@@ -244,11 +244,14 @@ export default function Play() {
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
                 /* Submitted confirmation chip */
-                <div className="text-center mt-5">
+                <div className="text-center">
+                  <div className="mb-3">
+                    <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
+                  </div>
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-2 bg-primary/8 text-primary px-5 py-2 rounded-full"
+                    className="inline-flex items-center gap-2 bg-primary/8 text-primary px-5 py-2 rounded-full mt-2"
                   >
                     <Check className="h-3.5 w-3.5" />
                     <span className="text-sm font-display font-bold">{userAnswers[prompt.id]?.raw_answer}</span>
