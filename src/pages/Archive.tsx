@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Calendar, Send, Check, Loader2, ChevronRight, Zap } from 'lucide-react';
+import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getArchivePrompts, hasSubmitted, getTotalSubmissions, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import JinxLogo from '@/components/JinxLogo';
 
@@ -14,6 +15,7 @@ export default function Archive() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [inputVal, setInputVal] = useState('');
+  const [inputError, setInputError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittedMap, setSubmittedMap] = useState<Record<string, boolean>>({});
   const [userAnswers, setUserAnswers] = useState<Record<string, DbAnswer>>({});
@@ -48,144 +50,235 @@ export default function Archive() {
   const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
 
   const handleSubmit = async () => {
-    if (!selected || !inputVal.trim() || submittedMap[selected] || submitting) return;
+    if (!selected || submitting) return;
+    const trimmed = inputVal.trim();
+    const validationError = validateInput(trimmed);
+    if (validationError) {
+      setInputError(validationError);
+      return;
+    }
+    if (submittedMap[selected]) return;
+
     setSubmitting(true);
+    setInputError(null);
     try {
-      const answer = await submitAnswer(selected, inputVal.trim());
+      const answer = await submitAnswer(selected, trimmed);
       setSubmittedMap(prev => ({ ...prev, [selected]: true }));
       setUserAnswers(prev => ({ ...prev, [selected]: answer }));
+      setTotalCounts(prev => ({ ...prev, [selected]: (prev[selected] || 0) + 1 }));
       setInputVal('');
+    } catch (err: any) {
+      setInputError(err?.message || 'Something went wrong');
     } finally { setSubmitting(false); }
   };
 
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="text-center space-y-3">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+        <p className="text-sm text-muted-foreground">Loading archive…</p>
+      </div>
     </div>
   );
 
+  // ─── DETAIL SCREEN ───
   if (selectedPrompt) {
     const isSubmitted = submittedMap[selectedPrompt.id];
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-border">
-          <div className="flex items-center h-14 gap-3 max-w-lg mx-auto px-5">
-            <Button variant="ghost" size="icon" onClick={() => setSelected(null)}><ArrowLeft className="h-4 w-4" /></Button>
-            <JinxLogo size={18} className="text-foreground text-base" />
-            <span className="text-xs text-muted-foreground ml-auto font-display">{selectedPrompt.date}</span>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header — matches Play */}
+        <header className="border-b border-border/80 shrink-0">
+          <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
+            <button onClick={() => { setSelected(null); setInputVal(''); setInputError(null); }} className="text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <Link to="/">
+              <JinxLogo size={18} className="text-foreground text-base" />
+            </Link>
+            <span className="text-[10px] text-muted-foreground/50 font-display tabular-nums">
+              {new Date(selectedPrompt.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </span>
           </div>
         </header>
-        <div className="max-w-lg mx-auto px-5 py-8">
-          <div className="text-center mb-6">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-6 font-display">Archive prompt</p>
-            <PromptPair wordA={selectedPrompt.word_a} wordB={selectedPrompt.word_b} size="lg" className="mb-6" />
-          </div>
 
-          {!isSubmitted ? (
-            <div className="text-center mb-6">
-              <p className="text-sm font-semibold text-primary mb-0.5">What will most people say?</p>
-              <p className="text-[11px] text-muted-foreground/60 mb-4">Match the crowd, not the "best" answer.</p>
-              <div className="flex gap-2 max-w-xs mx-auto">
-                <Input value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()} placeholder="Your answer…" className="rounded-lg text-center font-display bg-background border-border h-12 text-base" maxLength={50} />
-                <Button onClick={handleSubmit} disabled={!inputVal.trim() || submitting} size="icon" className="rounded-lg shrink-0 h-12 w-12">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
+        {/* Main — matches Play layout */}
+        <div className="flex-1 flex flex-col items-center pt-[12vh] md:pt-[14vh]">
+          <div className="w-full max-w-[22rem] mx-auto px-5">
+            <div className="text-center">
+              {/* Prompt hero */}
+              <div className="mb-4">
+                <PromptPair wordA={selectedPrompt.word_a} wordB={selectedPrompt.word_b} size="lg" />
               </div>
-              <p className="text-[10px] text-muted-foreground/40 mt-2">Single word answers work best</p>
+
+              {!isSubmitted ? (
+                <>
+                  {/* Core instruction — matches Play */}
+                  <p className="text-[14px] font-bold text-primary mb-7">
+                    What will most people say?
+                  </p>
+
+                  {/* Answer input row — matches Play */}
+                  <div className="relative">
+                    <Input
+                      value={inputVal}
+                      onChange={e => { setInputVal(e.target.value); setInputError(null); }}
+                      onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                      placeholder="Type your word…"
+                      className={`rounded-xl text-center font-display bg-card h-14 text-lg border-2 focus:border-primary focus:ring-0 placeholder:text-muted-foreground/25 pr-14 shadow-sm ${inputError ? 'border-destructive' : 'border-border/60'}`}
+                      maxLength={80}
+                      disabled={submitting}
+                      autoFocus
+                    />
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!inputVal.trim() || submitting}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg h-10 w-10 bg-primary hover:bg-primary/90 shadow-sm active:scale-[0.93] transition-transform"
+                    >
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+
+                  {inputError && (
+                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
+                  )}
+
+                  {/* Social proof */}
+                  {(totalCounts[selectedPrompt.id] ?? 0) > 0 && (
+                    <p className="text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-5">
+                      <Users className="h-3 w-3" />
+                      {totalCounts[selectedPrompt.id]} players answered
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Submitted chip — matches Play */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="inline-flex items-center gap-2 bg-primary/8 text-primary px-5 py-2 rounded-full mt-2"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span className="text-sm font-display font-bold">{userAnswers[selectedPrompt.id]?.raw_answer}</span>
+                  </motion.div>
+
+                  {(totalCounts[selectedPrompt.id] ?? 0) > 0 && (
+                    <p className="text-[10px] text-muted-foreground/25 text-center flex items-center justify-center gap-1 mt-2.5">
+                      <Users className="h-2.5 w-2.5" />
+                      {totalCounts[selectedPrompt.id]} responses
+                    </p>
+                  )}
+                </>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
-              <Check className="h-4 w-4 text-primary" />
-              <span className="text-sm">You chose <span className="font-display font-bold text-foreground">{userAnswers[selectedPrompt.id]?.raw_answer}</span></span>
-            </div>
-          )}
-          {isSubmitted && <ResultsView promptId={selectedPrompt.id} />}
+
+            {/* Results */}
+            {isSubmitted && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-6">
+                <ResultsView promptId={selectedPrompt.id} />
+              </motion.div>
+            )}
+          </div>
         </div>
+
+        {/* Footer — matches Play */}
+        <footer className="border-t border-border py-3 shrink-0">
+          <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
+        </footer>
       </div>
     );
   }
 
+  // ─── LIST SCREEN ───
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header — matches Play */}
+      <header className="border-b border-border/80 shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/">
-            <JinxLogo size={20} className="text-foreground text-lg" />
+            <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs h-8" asChild>
               <Link to="/results">Results</Link>
             </Button>
-            <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-sm" asChild>
+            <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
               <Link to="/play">Play today</Link>
             </Button>
           </div>
         </div>
       </header>
-      <div className="max-w-lg mx-auto px-5 py-8">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold text-foreground mb-1">Archive</h1>
-          <p className="text-xs text-muted-foreground">Explore past prompts and see how the crowd answered.</p>
-        </div>
 
-        {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
-          const isToday = date === todayStr;
-          return (
-            <div key={date} className="mb-8">
-              {/* Date header */}
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
-                <span className={`text-xs font-display font-semibold ${isToday ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {isToday ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                </span>
-                {isToday && (
-                  <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-display font-bold flex items-center gap-1">
-                    <Zap className="h-2.5 w-2.5" /> Live
+      <div className="flex-1">
+        <div className="max-w-[22rem] mx-auto px-5 pt-10">
+          {/* Title — minimal */}
+          <div className="mb-10">
+            <h1 className="text-lg font-bold text-foreground tracking-tight">Archive</h1>
+            <p className="text-[11px] text-muted-foreground/50 mt-1">Past prompts and results.</p>
+          </div>
+
+          {/* Grouped list */}
+          {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
+            const isToday = date === todayStr;
+            return (
+              <div key={date} className="mb-10">
+                {/* Date label */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
+                    {isToday ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                   </span>
-                )}
-              </div>
+                  {isToday && (
+                    <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-display font-bold flex items-center gap-1">
+                      <Zap className="h-2 w-2" /> Live
+                    </span>
+                  )}
+                </div>
 
-              {/* Prompt cards */}
-              <div className="space-y-2">
-                {ps.map((p, i) => {
-                  const answered = submittedMap[p.id];
-                  return (
-                    <motion.button
-                      key={p.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      onClick={() => setSelected(p.id)}
-                      className={`game-card w-full text-left flex items-center justify-between transition-all group ${
-                        isToday ? 'hover:border-primary/40 hover:shadow-sm' : 'hover:border-primary/20'
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-display font-bold text-foreground text-sm">
-                          {p.word_a} <span className="text-primary/60">+</span> {p.word_b}
-                        </p>
-                        {answered && userAnswers[p.id] && (
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            → <span className="font-display font-semibold text-foreground">{userAnswers[p.id].raw_answer}</span>
+                {/* Cards */}
+                <div className="space-y-3">
+                  {ps.map((p, i) => {
+                    const answered = submittedMap[p.id];
+                    return (
+                      <motion.button
+                        key={p.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04, duration: 0.3 }}
+                        onClick={() => setSelected(p.id)}
+                        className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-5 py-4 transition-all hover:border-primary/20 hover:shadow-sm group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-display font-bold text-foreground text-[15px] tracking-tight">
+                            {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
                           </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2.5 shrink-0 ml-3">
-                        {answered && <Check className="h-3.5 w-3.5 text-primary" />}
-                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground/50">
-                          <Users className="h-3 w-3" />
-                          {totalCounts[p.id] ?? 0}
-                        </span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-primary/50 transition-colors" />
-                      </div>
-                    </motion.button>
-                  );
-                })}
+                          {answered && userAnswers[p.id] && (
+                            <p className="text-[10px] text-muted-foreground/40 mt-1 font-display">
+                              → {userAnswers[p.id].raw_answer}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 ml-4">
+                          {answered && <Check className="h-3 w-3 text-primary/60" />}
+                          <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums flex items-center gap-1">
+                            <Users className="h-2.5 w-2.5" />
+                            {totalCounts[p.id] ?? 0}
+                          </span>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+
+      {/* Footer — matches Play */}
+      <footer className="border-t border-border py-3 shrink-0">
+        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
+      </footer>
     </div>
   );
 }
