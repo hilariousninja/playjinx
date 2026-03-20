@@ -86,13 +86,17 @@ export function levenshtein(a: string, b: string): number {
  * Very conservative: only merges when confidence is high.
  * Guards: minimum word length, count-ratio, multi-word stricter rules.
  */
+export interface MergeLogEntry { from: string; to: string; dist: number }
+export interface NearMissEntry { a: string; b: string; dist: number; countA: number; countB: number; reason: string }
+
 export function fuzzyMergeGroups(
   counts: Record<string, number>
 ): Record<string, number> {
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const canonical: Record<string, string> = {};
   const merged: Record<string, number> = {};
-  const mergeLog: Array<{ from: string; to: string; dist: number }> = [];
+  const mergeLog: MergeLogEntry[] = [];
+  const nearMisses: NearMissEntry[] = [];
 
   for (const [answer] of entries) {
     canonical[answer] = answer;
@@ -106,16 +110,28 @@ export function fuzzyMergeGroups(
       const [answerB, countB] = entries[j];
       if (canonical[answerB] !== answerB) continue;
 
-      // Count-ratio guard: B must look like a typo of A (rare vs popular)
-      if (countB > 2 && countB > countA * 0.3) continue;
-
       const maxDist = getMaxEditDistance(answerA, answerB);
-      if (maxDist === 0) continue;
-
       const dist = levenshtein(answerA, answerB);
+
+      // Count-ratio guard: B must look like a typo of A (rare vs popular)
+      if (maxDist > 0 && dist <= maxDist && countB > 2 && countB > countA * 0.3) {
+        nearMisses.push({ a: answerA, b: answerB, dist, countA, countB, reason: 'count-ratio too high' });
+        continue;
+      }
+
+      if (maxDist === 0) {
+        // Track near-misses: words that are close but below length threshold
+        if (dist <= 2 && dist > 0 && answerA.length >= 4 && answerB.length >= 4) {
+          nearMisses.push({ a: answerA, b: answerB, dist, countA, countB, reason: 'below length threshold' });
+        }
+        continue;
+      }
+
       if (dist <= maxDist) {
         canonical[answerB] = answerA;
         mergeLog.push({ from: answerB, to: answerA, dist });
+      } else if (dist <= maxDist + 1 && dist <= 3) {
+        nearMisses.push({ a: answerA, b: answerB, dist, countA, countB, reason: 'just outside distance threshold' });
       }
     }
   }
@@ -125,9 +141,10 @@ export function fuzzyMergeGroups(
     merged[canon] = (merged[canon] || 0) + count;
   }
 
-  // Expose merge log for admin debugging (console: window.__jinxLastMergeLog)
-  if (mergeLog.length > 0 && typeof window !== 'undefined') {
+  // Expose debug info for admin visibility
+  if (typeof window !== 'undefined') {
     (window as any).__jinxLastMergeLog = mergeLog;
+    (window as any).__jinxLastNearMisses = nearMisses;
   }
 
   return merged;
