@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
-function getTimeUntilMidnight() {
+function getTimeUntilMidnightUTC() {
   const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setHours(24, 0, 0, 0);
+  // Next UTC midnight
+  const tomorrow = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1,
+    0, 0, 0, 0
+  ));
   const diff = tomorrow.getTime() - now.getTime();
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -12,10 +17,10 @@ function getTimeUntilMidnight() {
 }
 
 export default function Countdown() {
-  const [time, setTime] = useState(getTimeUntilMidnight);
+  const [time, setTime] = useState(getTimeUntilMidnightUTC);
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(getTimeUntilMidnight()), 60000);
+    const interval = setInterval(() => setTime(getTimeUntilMidnightUTC()), 60000);
     return () => clearInterval(interval);
   }, []);
 
