@@ -205,11 +205,12 @@ export default function PromptAdmin() {
           <p className="mt-1">Safe = high confidence · Test = uncertain, for learning</p>
         </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v); if (v === 'daily' && !auditData) loadAudit(); }}>
           <TabsList className="bg-secondary rounded-xl h-9">
             <TabsTrigger value="review" className="rounded-lg text-xs">Review ({pending.length})</TabsTrigger>
             <TabsTrigger value="approved" className="rounded-lg text-xs">Approved ({approved.length})</TabsTrigger>
             <TabsTrigger value="feedback" className="rounded-lg text-xs">Feedback ({played.length})</TabsTrigger>
+            <TabsTrigger value="daily" className="rounded-lg text-xs"><Calendar className="h-3 w-3 mr-1" />Daily Set</TabsTrigger>
           </TabsList>
 
           {/* Review tab */}
