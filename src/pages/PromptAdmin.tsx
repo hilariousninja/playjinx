@@ -352,6 +352,120 @@ export default function PromptAdmin() {
               );
             })}
           </TabsContent>
+
+          {/* Daily Set Audit tab */}
+          <TabsContent value="daily" className="mt-4 space-y-4">
+            {auditLoading && (
+              <div className="text-center py-10">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mx-auto" />
+                <p className="text-xs text-muted-foreground mt-2">Analysing daily set…</p>
+              </div>
+            )}
+            {auditData && !auditLoading && (
+              <>
+                {/* Current/Next trio */}
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {auditData.dry_run ? 'Next Selection Preview' : "Today's Active Set"}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-display font-bold text-primary">
+                        Score: {auditData.trio_quality_score}
+                      </span>
+                      <Button size="sm" variant="outline" className="rounded-lg text-[10px] h-7" onClick={loadAudit}>
+                        <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+                      </Button>
+                    </div>
+                  </div>
+
+                  <p className="font-display font-bold text-lg mb-3">{auditData.trio}</p>
+
+                  {/* Individual prompt details */}
+                  {auditData.prompts?.map((p: any, i: number) => (
+                    <div key={i} className="border-t border-border pt-3 mt-3">
+                      <div className="flex items-center justify-between">
+                        <p className="font-display font-semibold text-sm">{p.pair}</p>
+                        <div className="flex items-center gap-2">
+                          {p.tag && <Badge className={`${TAG_BADGE[p.tag]?.cls ?? 'bg-secondary'} text-[9px] border-0`}>{p.tag}</Badge>}
+                          {p.performance && (
+                            <Badge className={`${PERF_BADGE[p.performance]?.cls ?? ''} text-[9px] border-0 bg-transparent`}>
+                              {p.performance}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-4 text-[10px] text-muted-foreground mt-1">
+                        {p.total_players > 0 ? (
+                          <>
+                            <span>{p.total_players} players</span>
+                            <span>{p.unique_answers} unique</span>
+                            <span>Top: {p.top_answer_pct}%</span>
+                          </>
+                        ) : (
+                          <span className="italic">Unplayed — no history</span>
+                        )}
+                      </div>
+                      {p.quality && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {Object.entries(p.quality.details as Record<string, number>).map(([key, val]) => (
+                            <span key={key} className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                              val > 0 ? 'bg-primary/10 text-primary' : val < 0 ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'
+                            }`}>
+                              {key}: {val > 0 ? '+' : ''}{val}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Score breakdown */}
+                {auditData.score_breakdown && (
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Trio Score Breakdown</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      {Object.entries(auditData.score_breakdown as Record<string, number>).map(([key, val]) => (
+                        <div key={key} className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{key.replace(/_/g, ' ')}</span>
+                          <span className={`font-display font-bold ${
+                            val > 0 ? 'text-primary' : val < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          }`}>
+                            {val > 0 ? '+' : ''}{val}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Runner-ups */}
+                {auditData.runner_ups?.length > 0 && (
+                  <div className="bg-card border border-border rounded-xl p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      Runner-up Trios <span className="text-foreground/40">({auditData.candidates_sampled} sampled)</span>
+                    </p>
+                    {auditData.runner_ups.map((r: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between py-1.5 border-t border-border first:border-t-0">
+                        <span className="text-[11px] font-display">{r.trio}</span>
+                        <span className="text-[10px] font-display font-bold text-muted-foreground">{r.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {!auditData && !auditLoading && (
+              <div className="text-center py-10">
+                <Eye className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">Click to inspect today's daily set selection</p>
+                <Button size="sm" variant="outline" className="mt-3 rounded-lg text-xs" onClick={loadAudit}>
+                  Load Audit
+                </Button>
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
