@@ -370,8 +370,20 @@ export default function PromptAdmin() {
                       {auditData.dry_run ? 'Next Selection Preview' : "Today's Active Set"}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-display font-bold text-primary">
-                        Score: {auditData.trio_quality_score}
+                      {auditData.editorial_confidence && (
+                        <span className={`text-[10px] font-display font-bold px-2 py-0.5 rounded-full ${
+                          auditData.editorial_confidence === 'strong'
+                            ? 'bg-primary/15 text-primary'
+                            : auditData.editorial_confidence === 'acceptable'
+                            ? 'bg-secondary text-muted-foreground'
+                            : 'bg-destructive/15 text-destructive'
+                        }`}>
+                          {auditData.editorial_confidence === 'strong' ? '✦ Strong' :
+                           auditData.editorial_confidence === 'acceptable' ? '● Acceptable' : '⚠ Risky'}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-display font-bold text-muted-foreground">
+                        {auditData.trio_quality_score}
                       </span>
                       <Button size="sm" variant="outline" className="rounded-lg text-[10px] h-7" onClick={loadAudit}>
                         <RefreshCw className="h-3 w-3 mr-1" /> Refresh

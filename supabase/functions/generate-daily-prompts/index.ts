@@ -186,8 +186,28 @@ function scoreTrio(
     breakdown.discovery_mix = 0;
   }
 
+  // ── Surprise bonus: reward one "wild card" prompt in an otherwise safe trio ──
+  // A wild card is a test-tagged or unplayed prompt among 2+ strong/decent prompts.
+  // This prevents over-optimising toward safe-only trios.
+  const solidCount = trio.filter(p => p.performance === "strong" || p.performance === "decent").length;
+  const wildCards = trio.filter(p => p.prompt_tag === "test" || (p.total_players === 0 && p.performance === null));
+  if (solidCount >= 2 && wildCards.length === 1) {
+    breakdown.surprise_factor = 12; // one risky pick in a strong set = interesting
+  } else if (solidCount === 3) {
+    breakdown.surprise_factor = -3; // all proven = slightly boring, still fine
+  } else {
+    breakdown.surprise_factor = 0;
+  }
+
   const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  return { score, breakdown };
+
+  // ── Editorial confidence label ──
+  let confidence: string;
+  if (score >= 100) confidence = "strong";
+  else if (score >= 50) confidence = "acceptable";
+  else confidence = "risky";
+
+  return { score, breakdown, confidence };
 }
 
 // ─── Main handler ───────────────────────────────────────────────────
@@ -240,7 +260,7 @@ Deno.serve(async (req) => {
         total_players: p.total_players ?? 0,
       })) as PromptCandidate[];
 
-      const { score, breakdown } = scoreTrio(currentTrio, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap);
       const individualDetails = currentTrio.map(p => ({
         pair: `${p.word_a} + ${p.word_b}`,
         tag: p.prompt_tag,
@@ -257,6 +277,7 @@ Deno.serve(async (req) => {
           count: existing.length,
           trio: currentTrio.map(p => `${p.word_a}+${p.word_b}`).join(", "),
           trio_quality_score: score,
+          editorial_confidence: confidence,
           score_breakdown: breakdown,
           prompts: individualDetails,
         }),
@@ -332,10 +353,11 @@ Deno.serve(async (req) => {
     let bestTrio: PromptCandidate[] = [];
     let bestScore = -Infinity;
     let bestBreakdown: Record<string, number> = {};
+    let bestConfidence = "risky";
     const topCandidates: TrioReport[] = [];
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
-      const { score, breakdown } = scoreTrio(candidates, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap);
       const report: TrioReport = {
         trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
         score,
@@ -347,6 +369,7 @@ Deno.serve(async (req) => {
         bestScore = score;
         bestTrio = candidates;
         bestBreakdown = breakdown;
+        bestConfidence = confidence;
       }
     };
 
@@ -409,6 +432,7 @@ Deno.serve(async (req) => {
           count: toActivate.length,
           trio: summary,
           trio_quality_score: bestScore,
+          editorial_confidence: bestConfidence,
           score_breakdown: bestBreakdown,
           prompts: individualDetails,
           runner_ups: auditLog.slice(1, 4),
