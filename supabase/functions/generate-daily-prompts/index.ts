@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
     const topCandidates: TrioReport[] = [];
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
-      const { score, breakdown } = scoreTrio(candidates, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap);
       const report: TrioReport = {
         trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
         score,
@@ -368,6 +368,7 @@ Deno.serve(async (req) => {
         bestScore = score;
         bestTrio = candidates;
         bestBreakdown = breakdown;
+        bestConfidence = confidence;
       }
     };
 
