@@ -159,43 +159,53 @@ export default function ResultsView({ promptId }: Props) {
       >
         <p className="text-[9px] text-muted-foreground/25 uppercase tracking-[0.15em] mb-2 font-medium">Answers</p>
         <div className="space-y-px">
-          {stats.slice(0, 6).map((s, i) => {
-            const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
-            return (
-              <motion.div
-                key={s.normalized_answer}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.35 + i * 0.03 }}
-                className={`py-1.5 px-2 rounded-md ${isUser ? 'bg-primary/5' : ''}`}
-              >
-                <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                  <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className={`font-display text-[9px] tabular-nums shrink-0 w-3 text-right ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/20'}`}>
-                      {i + 1}
-                    </span>
-                    <span className={`font-display text-[13px] break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground/65 font-medium'}`}>
-                      {s.normalized_answer}
+          {(() => {
+            const top6 = stats.slice(0, 6);
+            const userInTop6 = userCanonical ? top6.some(s => s.normalized_answer === userCanonical) : true;
+            const userStatEntry = !userInTop6 && userCanonical ? stats.find(s => s.normalized_answer === userCanonical) : null;
+            const displayStats = userStatEntry ? [...top6, userStatEntry] : top6;
+
+            return displayStats.map((s, i) => {
+              const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
+              const isAppended = userStatEntry && s === userStatEntry;
+              const displayRank = isAppended ? s.rank : i + 1;
+
+              return (
+                <motion.div
+                  key={s.normalized_answer}
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.35 + i * 0.03 }}
+                  className={`py-1.5 px-2 rounded-md ${isUser ? 'bg-primary/5' : ''} ${isAppended ? 'mt-1 border-t border-border/20 pt-2' : ''}`}
+                >
+                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                      <span className={`font-display text-[9px] tabular-nums shrink-0 w-3 text-right ${displayRank === 1 ? 'text-primary font-bold' : 'text-muted-foreground/20'}`}>
+                        {displayRank}
+                      </span>
+                      <span className={`font-display text-[13px] break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground/65 font-medium'}`}>
+                        {s.normalized_answer}
+                      </span>
+                    </div>
+                    <span className={`text-[9px] tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/25'}`}>
+                      {s.percentage}%
+                      <span className="text-muted-foreground/12 ml-0.5">({s.count})</span>
                     </span>
                   </div>
-                  <span className={`text-[9px] tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/25'}`}>
-                    {s.percentage}%
-                    <span className="text-muted-foreground/12 ml-0.5">({s.count})</span>
-                  </span>
-                </div>
-                <div className="relative h-[2px] rounded-full bg-border/30 ml-4.5 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(s.percentage, 3)}%` }}
-                    transition={{ duration: 0.5, delay: 0.4 + i * 0.03, ease: 'easeOut' }}
-                    className={`absolute inset-y-0 left-0 rounded-full ${
-                      isUser ? 'bg-primary/40' : i === 0 ? 'bg-primary/15' : 'bg-muted-foreground/10'
-                    }`}
-                  />
-                </div>
-              </motion.div>
-            );
-          })}
+                  <div className="relative h-[2px] rounded-full bg-border/30 ml-4.5 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.max(s.percentage, 3)}%` }}
+                      transition={{ duration: 0.5, delay: 0.4 + i * 0.03, ease: 'easeOut' }}
+                      className={`absolute inset-y-0 left-0 rounded-full ${
+                        isUser ? 'bg-primary/40' : displayRank === 1 ? 'bg-primary/15' : 'bg-muted-foreground/10'
+                      }`}
+                    />
+                  </div>
+                </motion.div>
+              );
+            });
+          })()}
         </div>
         {stats.length === 0 && (
           <p className="text-xs text-muted-foreground/40 text-center py-3">No answers yet</p>
