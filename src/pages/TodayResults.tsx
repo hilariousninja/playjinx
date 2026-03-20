@@ -143,7 +143,7 @@ export default function TodayResults() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
 
           {/* Hero */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             {allAnswered ? (
               <>
                 <motion.div
@@ -152,14 +152,14 @@ export default function TodayResults() {
                   transition={{ duration: 0.4 }}
                   className="mb-3"
                 >
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-                    <Trophy className="h-6 w-6 text-primary" />
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-3">
+                    <Trophy className="h-7 w-7 text-primary" />
                   </div>
                 </motion.div>
-                <h1 className="text-xl font-bold tracking-tight mb-1 text-foreground">
+                <h1 className="text-2xl font-bold tracking-tight mb-1.5 text-foreground">
                   Today's JINX complete
                 </h1>
-                <p className="text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-2">
+                <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-1">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
                   Results update live
                 </p>
@@ -167,7 +167,7 @@ export default function TodayResults() {
             ) : (
               <>
                 <p className="text-[11px] text-muted-foreground font-display tracking-[0.25em] uppercase mb-2">Today's Results</p>
-                <h1 className="text-xl font-bold tracking-tight mb-1 text-foreground">
+                <h1 className="text-2xl font-bold tracking-tight mb-1 text-foreground">
                   {answeredCount} of {summaries.length} answered
                 </h1>
               </>
