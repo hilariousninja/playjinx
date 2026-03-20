@@ -184,7 +184,7 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col items-center pt-[12vh] md:pt-[14vh]">
+      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[12vh] md:pt-[14vh]'} transition-all duration-300`}>
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div
@@ -284,43 +284,32 @@ export default function Play() {
 
               {/* Results */}
               {currentPhase === 'results' && isSubmitted && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-6">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-4">
                   <ResultsView promptId={prompt.id} />
-                </motion.div>
-              )}
 
-              {/* Next prompt CTA */}
-              {currentPhase === 'results' && isSubmitted && currentIdx < prompts.length - 1 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-4">
-                  <Button onClick={goNext} className="w-full rounded-xl h-12 font-semibold text-base active:scale-[0.97] transition-transform">
-                    Next prompt <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </motion.div>
-              )}
+                  {/* Next prompt CTA — inside results flow */}
+                  {currentIdx < prompts.length - 1 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5">
+                      <Button onClick={goNext} className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform">
+                        Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                      </Button>
+                    </motion.div>
+                  )}
 
-              {/* All done — end-of-run */}
-              {allDone && currentPhase === 'results' && currentIdx === prompts.length - 1 && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="pt-4">
-                  <div className="game-card-elevated text-center py-8 px-6">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                      <Trophy className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-bold text-foreground mb-1">All done for today!</h3>
-                    <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">
-                      Your results are live. Ranks update as more players join.
-                    </p>
-                    <div className="flex gap-3 justify-center flex-wrap">
-                      <Button className="rounded-xl font-semibold" asChild>
-                        <Link to="/results">View results</Link>
-                      </Button>
-                      <Button variant="outline" className="rounded-xl" asChild>
-                        <Link to="/archive">Play archive</Link>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-5">
-                    <Countdown />
-                  </div>
+                  {/* All done — integrated, not a separate card */}
+                  {allDone && currentIdx === prompts.length - 1 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 text-center space-y-3">
+                      <div className="flex gap-2.5 justify-center">
+                        <Button className="rounded-xl h-10 font-semibold text-sm px-5" asChild>
+                          <Link to="/results">View all results</Link>
+                        </Button>
+                        <Button variant="outline" className="rounded-xl h-10 text-sm px-4" asChild>
+                          <Link to="/archive">Archive</Link>
+                        </Button>
+                      </div>
+                      <Countdown />
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </motion.div>
