@@ -20,9 +20,19 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
-    const isSchedulerToken = token === Deno.env.get("SUPABASE_ANON_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
 
-    // Allow scheduled invocations that use the anon key, and authenticated user calls.
+    let tokenRole: string | null = null;
+    try {
+      const [, payload] = token.split(".");
+      if (payload) tokenRole = JSON.parse(atob(payload)).role ?? null;
+    } catch {
+      tokenRole = null;
+    }
+
+    const isSchedulerToken = token === anonKey || tokenRole === "anon";
+
+    // Allow scheduled invocations that use the anon token, and authenticated user calls.
     if (!isSchedulerToken) {
       const anonClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
