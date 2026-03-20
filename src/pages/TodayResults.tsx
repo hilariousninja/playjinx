@@ -130,10 +130,10 @@ export default function TodayResults() {
           </Link>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs h-8" asChild>
-              <Link to="/play">Play</Link>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs h-8" asChild>
               <Link to="/archive">Archive</Link>
+            </Button>
+            <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
+              <Link to="/play">Play</Link>
             </Button>
           </div>
         </div>

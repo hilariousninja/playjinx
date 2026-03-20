@@ -192,7 +192,7 @@ export default function Archive() {
               <Link to="/results">Results</Link>
             </Button>
             <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
-              <Link to="/play">Play today</Link>
+              <Link to="/play">Play</Link>
             </Button>
           </div>
         </div>
