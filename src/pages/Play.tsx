@@ -184,8 +184,8 @@ export default function Play() {
       </header>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col items-center justify-start pt-10 md:pt-14 pb-20">
-        <div className="w-full max-w-[26rem] mx-auto px-5">
+      <div className="flex-1 flex flex-col items-center justify-center pb-16">
+        <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div
               key={prompt.id}
@@ -195,42 +195,35 @@ export default function Play() {
               transition={{ duration: 0.2 }}
             >
 
-              {/* Prompt counter — subtle label */}
-              <p className="text-center text-[10px] text-muted-foreground/40 font-display tracking-[0.2em] uppercase mb-5">
-                {currentIdx + 1} / {prompts.length}
-              </p>
-
-              {/* Prompt hero — the star */}
-              <div className="text-center mb-2">
-                <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
-              </div>
-
               {/* Input phase */}
               {currentPhase === 'input' && !isSubmitted ? (
-                <div>
+                <div className="text-center">
+                  {/* Prompt hero */}
+                  <div className="mb-3">
+                    <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
+                  </div>
+
                   {/* Core instruction — tight to prompt */}
-                  <p className="text-[13px] font-semibold text-primary text-center mt-3 mb-7">
+                  <p className="text-[14px] font-bold text-primary mb-8">
                     What will most people say?
                   </p>
 
                   {/* Answer input row */}
-                  <div className="flex gap-2.5 max-w-[17rem] mx-auto">
-                    <div className="relative flex-1">
-                      <Input
-                        value={inputVal}
-                        onChange={e => { setInputVal(e.target.value); setInputError(null); }}
-                        onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                        placeholder="Type your answer"
-                        className={`rounded-xl text-center font-display bg-background h-12 text-base border-2 focus:border-primary focus:ring-0 placeholder:text-muted-foreground/25 ${inputError ? 'border-destructive' : 'border-border'}`}
-                        maxLength={80}
-                        disabled={submitting}
-                        autoFocus
-                      />
-                    </div>
+                  <div className="relative">
+                    <Input
+                      value={inputVal}
+                      onChange={e => { setInputVal(e.target.value); setInputError(null); }}
+                      onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                      placeholder="Your answer"
+                      className={`rounded-xl text-center font-display bg-card h-14 text-lg border-2 focus:border-primary focus:ring-0 placeholder:text-muted-foreground/20 pr-14 shadow-sm ${inputError ? 'border-destructive' : 'border-border/60'}`}
+                      maxLength={80}
+                      disabled={submitting}
+                      autoFocus
+                    />
                     <Button
                       onClick={handleSubmit}
                       disabled={!inputVal.trim() || submitting}
-                      className="rounded-xl shrink-0 h-12 w-12 bg-primary hover:bg-primary/90 shadow-sm active:scale-[0.96] transition-transform"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg h-10 w-10 bg-primary hover:bg-primary/90 shadow-sm active:scale-[0.93] transition-transform"
                     >
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
@@ -238,21 +231,16 @@ export default function Play() {
 
                   {/* Error */}
                   {inputError && (
-                    <p className="text-[11px] text-destructive text-center mt-2">{inputError}</p>
+                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
                   )}
 
-                  {/* Player count — social proof */}
+                  {/* Social proof */}
                   {(playerCounts[prompt.id] ?? 0) > 0 && (
-                    <p className="text-[10px] text-muted-foreground/30 text-center flex items-center justify-center gap-1 mt-4">
+                    <p className="text-[10px] text-muted-foreground/40 flex items-center justify-center gap-1 mt-4">
                       <Users className="h-2.5 w-2.5" />
                       {playerCounts[prompt.id]} answers so far
                     </p>
                   )}
-
-                  {/* Single subtle tip — not a whole section */}
-                  <p className="text-[10px] text-muted-foreground/30 text-center mt-5">
-                    Single words work best · Match the crowd
-                  </p>
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' ? (
                 /* Submitted confirmation chip */
