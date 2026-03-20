@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, X, Shield, FlaskConical, Loader2, RefreshCw, TrendingUp, TrendingDown, Gauge } from 'lucide-react';
+import { ArrowLeft, Check, X, Shield, FlaskConical, Loader2, RefreshCw, TrendingUp, TrendingDown, Gauge, Calendar, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
