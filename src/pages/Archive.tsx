@@ -84,9 +84,11 @@ export default function Archive() {
   // ─── DETAIL SCREEN ───
   if (selectedPrompt) {
     const isSubmitted = submittedMap[selectedPrompt.id];
+    const dateLabel = new Date(selectedPrompt.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        {/* Header — matches Play */}
+        {/* Header */}
         <header className="border-b border-border/80 shrink-0">
           <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
             <button onClick={() => { setSelected(null); setInputVal(''); setInputError(null); }} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -95,16 +97,17 @@ export default function Archive() {
             <Link to="/">
               <JinxLogo size={18} className="text-foreground text-base" />
             </Link>
-            <span className="text-[10px] text-muted-foreground/50 font-display tabular-nums">
-              {new Date(selectedPrompt.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-            </span>
+            <span className="w-4" />
           </div>
         </header>
 
-        {/* Main — matches Play layout */}
-        <div className="flex-1 flex flex-col items-center pt-[12vh] md:pt-[14vh]">
+        {/* Main */}
+        <div className={`flex-1 flex flex-col items-center ${isSubmitted ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[12vh] md:pt-[14vh]'} transition-all duration-300`}>
           <div className="w-full max-w-[22rem] mx-auto px-5">
             <div className="text-center">
+              {/* Archive context — subtle date */}
+              <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-display mb-4">{dateLabel}</p>
+
               {/* Prompt hero */}
               <div className="mb-4">
                 <PromptPair wordA={selectedPrompt.word_a} wordB={selectedPrompt.word_b} size="lg" />
@@ -112,12 +115,10 @@ export default function Archive() {
 
               {!isSubmitted ? (
                 <>
-                  {/* Core instruction — matches Play */}
                   <p className="text-[14px] font-bold text-primary mb-7">
                     What will most people say?
                   </p>
 
-                  {/* Answer input row — matches Play */}
                   <div className="relative">
                     <Input
                       value={inputVal}
@@ -142,7 +143,6 @@ export default function Archive() {
                     <p className="text-[11px] text-destructive mt-2">{inputError}</p>
                   )}
 
-                  {/* Social proof */}
                   {(totalCounts[selectedPrompt.id] ?? 0) > 0 && (
                     <p className="text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-5">
                       <Users className="h-3 w-3" />
@@ -150,38 +150,29 @@ export default function Archive() {
                     </p>
                   )}
                 </>
-              ) : (
-                <>
-                  {/* Submitted chip — matches Play */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-2 bg-primary/8 text-primary px-5 py-2 rounded-full mt-2"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    <span className="text-sm font-display font-bold">{userAnswers[selectedPrompt.id]?.raw_answer}</span>
-                  </motion.div>
-
-                  {(totalCounts[selectedPrompt.id] ?? 0) > 0 && (
-                    <p className="text-[10px] text-muted-foreground/25 text-center flex items-center justify-center gap-1 mt-2.5">
-                      <Users className="h-2.5 w-2.5" />
-                      {totalCounts[selectedPrompt.id]} responses
-                    </p>
-                  )}
-                </>
-              )}
+              ) : null}
             </div>
 
-            {/* Results */}
+            {/* Results — no redundant chip above */}
             {isSubmitted && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-6">
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-2">
                 <ResultsView promptId={selectedPrompt.id} />
+
+                {/* Archive nav */}
+                <div className="mt-5 text-center">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl h-10 text-sm px-5"
+                    onClick={() => { setSelected(null); setInputVal(''); setInputError(null); }}
+                  >
+                    ← Back to archive
+                  </Button>
+                </div>
               </motion.div>
             )}
           </div>
         </div>
 
-        {/* Footer — matches Play */}
         <footer className="border-t border-border py-3 shrink-0">
           <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
         </footer>
