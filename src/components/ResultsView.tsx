@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Hash, TrendingUp, Award, Crown } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, getCanonicalAnswer, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
 interface Props {
@@ -26,15 +26,12 @@ export default function ResultsView({ promptId }: Props) {
     setPrompt(p);
     setUserAnswer(ua);
     setTotal(t);
-    // Resolve user's answer to canonical form for stat matching
     if (ua) {
       const canon = await getCanonicalAnswer(ua.normalized_answer);
-      // Also check fuzzy match against stat keys
       const exactMatch = s.find(st => st.normalized_answer === canon);
       if (exactMatch) {
         setUserCanonical(canon);
       } else {
-        // Fuzzy merged into another form — find which stat contains this answer
         const { levenshtein } = await import('@/lib/normalize');
         const fuzzyMatch = s.find(st => {
           const dist = levenshtein(canon, st.normalized_answer);
@@ -59,9 +56,9 @@ export default function ResultsView({ promptId }: Props) {
   }, [refresh]);
 
   if (loading) return (
-    <div className="game-card text-center py-10">
-      <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-3" />
-      <p className="text-sm text-muted-foreground">Loading results…</p>
+    <div className="text-center py-8">
+      <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-2" />
+      <p className="text-[11px] text-muted-foreground/50">Loading results…</p>
     </div>
   );
 
@@ -71,132 +68,149 @@ export default function ResultsView({ promptId }: Props) {
   const rank = userStat?.rank ?? 0;
   const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
   const topPercent = Math.max(1, 100 - percentile);
-  const isEarly = total < 5;
   const matchCount = userStat?.count ?? 0;
   const topAnswerPct = topAnswer?.percentage ?? 0;
 
-  // Low consensus framing
-  const isFragmented = topAnswerPct > 0 && topAnswerPct < 15 && total >= 5;
+  // Result quality label
+  const getResultLabel = () => {
+    if (topPercent <= 5) return 'Perfect match';
+    if (topPercent <= 15) return 'Strong match';
+    if (topPercent <= 35) return 'Good match';
+    if (topPercent <= 60) return 'Decent match';
+    return 'Unique answer';
+  };
+
+  const getResultColor = () => {
+    if (topPercent <= 15) return 'text-primary';
+    if (topPercent <= 35) return 'text-primary/80';
+    if (topPercent <= 60) return 'text-muted-foreground';
+    return 'text-muted-foreground/60';
+  };
 
   return (
-    <div className="space-y-3">
-      {/* Early bird */}
-      {isEarly && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-card text-center py-4">
-          <p className="text-xs text-muted-foreground">🌅 Early results — rankings will shift as more players join.</p>
-        </motion.div>
-      )}
-
-      {/* Your answer card — the main reveal */}
+    <div className="space-y-6">
+      {/* Main reveal — your answer + result */}
       {userStat && (
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35 }}
-          className="game-card-elevated text-center py-7 px-5"
+          transition={{ duration: 0.4 }}
+          className="text-center"
         >
-          <Award className="h-5 w-5 text-primary mx-auto mb-2" />
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2">You chose</p>
-          <p className="font-display text-3xl font-bold mb-4 text-primary break-words">{userAnswer?.raw_answer}</p>
+          {/* Result quality label */}
+          <motion.p
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className={`text-xs font-display font-bold uppercase tracking-[0.2em] mb-3 ${getResultColor()}`}
+          >
+            {getResultLabel()}
+          </motion.p>
 
-          <div className="flex justify-center gap-2 flex-wrap">
-            <span className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-display font-bold">
-              Top {topPercent}%
-            </span>
-            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
+          {/* The answer — hero */}
+          <motion.p
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15, duration: 0.35 }}
+            className="font-display text-3xl font-bold text-foreground break-words mb-4"
+          >
+            {userAnswer?.raw_answer}
+          </motion.p>
+
+          {/* Stats chips — inline */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground/60"
+          >
+            <span className="font-display">
               Rank <span className="font-bold text-foreground">#{rank}</span>
             </span>
-            <span className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-xs font-display">
+            <span className="text-border">·</span>
+            <span className="font-display">
+              Top <span className="font-bold text-primary">{topPercent}%</span>
+            </span>
+            <span className="text-border">·</span>
+            <span className="font-display">
               <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'match' : 'matches'}
             </span>
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
-      {/* #1 Answer */}
-      {topAnswer && (
+      {/* #1 Answer comparison */}
+      {topAnswer && userStat && topAnswer.normalized_answer !== userCanonical && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.08 }}
-          className="game-card text-center py-5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-center"
         >
-          <div className="flex items-center justify-center gap-1.5 mb-2">
-            <Crown className="h-4 w-4 text-primary" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">#1 Answer</span>
+          <div className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/40 uppercase tracking-[0.15em]">
+            <Crown className="h-3 w-3" />
+            <span>#1 answer</span>
           </div>
-          <p className="font-display text-xl font-bold text-foreground mb-1 break-words">{topAnswer.normalized_answer}</p>
-          <p className="text-sm text-muted-foreground">
-            <span className="font-bold text-foreground">{topAnswer.percentage}%</span>
-            <span className="text-muted-foreground/40 mx-1.5">·</span>
-            <span>{topAnswer.count} {topAnswer.count === 1 ? 'player' : 'players'}</span>
+          <p className="font-display text-lg font-bold text-foreground/70 mt-0.5 break-words">{topAnswer.normalized_answer}</p>
+          <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+            {topAnswer.percentage}% · {topAnswer.count} {topAnswer.count === 1 ? 'player' : 'players'}
           </p>
         </motion.div>
       )}
 
-      {/* Fragmented prompt context */}
-      {isFragmented && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-card text-center py-4 px-5">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            🧩 This prompt split the crowd — lots of unique answers! Rankings may shift as more players weigh in.
+      {/* If user IS the top answer */}
+      {topAnswer && userStat && topAnswer.normalized_answer === userCanonical && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-center"
+        >
+          <p className="text-[11px] text-primary/60 font-display font-medium">
+            You picked the #1 answer
           </p>
         </motion.div>
       )}
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { icon: Users, value: total, label: 'Players' },
-          { icon: Hash, value: unique, label: 'Unique' },
-          { icon: TrendingUp, value: `${topAnswerPct}%`, label: 'Consensus' },
-        ].map((stat) => (
-          <div key={stat.label} className="game-card text-center py-3.5 px-2">
-            <stat.icon className="h-3.5 w-3.5 mx-auto mb-1.5 text-muted-foreground/40" />
-            <p className="text-lg font-display font-bold text-foreground">{stat.value}</p>
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Answer clusters */}
-      <div className="game-card">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-4 font-medium">Answer Clusters</p>
-        <div className="space-y-1">
-          {stats.slice(0, 8).map((s, i) => {
+      {/* Answer distribution */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+      >
+        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.15em] mb-3 font-medium">Distribution</p>
+        <div className="space-y-0.5">
+          {stats.slice(0, 6).map((s, i) => {
             const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
             return (
               <motion.div
                 key={s.normalized_answer}
-                initial={{ opacity: 0, x: -8 }}
+                initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className={`py-2.5 px-3 rounded-xl -mx-1 ${isUser ? 'bg-primary/5 ring-1 ring-primary/10' : ''}`}
+                transition={{ delay: 0.4 + i * 0.04 }}
+                className={`py-2 px-2.5 rounded-lg ${isUser ? 'bg-primary/5' : ''}`}
               >
-                <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                  <div className="flex items-baseline gap-2.5 min-w-0">
-                    <span className={`font-display text-xs tabular-nums shrink-0 w-4 text-right ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/40'}`}>
+                <div className="flex items-baseline justify-between gap-3 mb-1">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className={`font-display text-[10px] tabular-nums shrink-0 w-3.5 text-right ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/30'}`}>
                       {i + 1}
                     </span>
-                    <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground font-medium'}`}>
+                    <span className={`font-display text-sm break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground/80 font-medium'}`}>
                       {s.normalized_answer}
                     </span>
                   </div>
-                  <span className={`text-xs tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/60'}`}>
+                  <span className={`text-[10px] tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/40'}`}>
                     {s.percentage}%
-                    <span className="text-muted-foreground/30 ml-1 text-[10px]">({s.count})</span>
+                    <span className="text-muted-foreground/20 ml-0.5">({s.count})</span>
                   </span>
                 </div>
-                <div className="cluster-bar ml-6" style={{ height: '5px' }}>
+                <div className="relative h-[3px] rounded-full bg-border/40 ml-5.5 overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(s.percentage, 4)}%` }}
-                    transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: 'easeOut' }}
-                    className={`absolute inset-y-0 left-0 rounded-lg ${
-                      isUser
-                        ? 'bg-primary/50'
-                        : i === 0
-                          ? 'bg-primary/20'
-                          : 'bg-muted-foreground/10'
+                    animate={{ width: `${Math.max(s.percentage, 3)}%` }}
+                    transition={{ duration: 0.6, delay: 0.45 + i * 0.04, ease: 'easeOut' }}
+                    className={`absolute inset-y-0 left-0 rounded-full ${
+                      isUser ? 'bg-primary/50' : i === 0 ? 'bg-primary/20' : 'bg-muted-foreground/15'
                     }`}
                   />
                 </div>
@@ -205,49 +219,29 @@ export default function ResultsView({ promptId }: Props) {
           })}
         </div>
         {stats.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-6">No answers yet — be the first!</p>
+          <p className="text-xs text-muted-foreground/40 text-center py-4">No answers yet — be the first!</p>
         )}
-      </div>
+      </motion.div>
 
-      {/* Wild answers */}
-      {(() => {
-        const wildAnswers = stats.filter(s => s.count === 1).slice(0, 5);
-        if (wildAnswers.length === 0 || total < 5) return null;
-        return (
-          <div className="game-card">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-3 font-medium">🎲 Wild Answers</p>
-            <div className="flex flex-wrap gap-1.5">
-              {wildAnswers.map(s => {
-                const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
-                return (
-                  <span
-                    key={s.normalized_answer}
-                    className={`px-2.5 py-1 rounded-full text-xs font-display ${
-                      isUser ? 'bg-primary/10 text-primary font-bold' : 'bg-secondary text-secondary-foreground'
-                    }`}
-                  >
-                    {s.normalized_answer}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Scoring explainer */}
-      <div className="game-card text-center py-4 px-5">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-2 font-medium">How scoring works</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          You score higher when more people match your answer. Your rank depends on how popular your answer is.
-        </p>
-      </div>
+      {/* Summary stats — single light row */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.55 }}
+        className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground/35 pt-1"
+      >
+        <span>{total} players</span>
+        <span className="text-border/60">·</span>
+        <span>{unique} unique</span>
+        <span className="text-border/60">·</span>
+        <span>{topAnswerPct}% consensus</span>
+      </motion.div>
 
       {/* Live indicator */}
-      <div className="text-center py-1">
-        <p className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
-          Results update as more players answer
+      <div className="text-center pt-1">
+        <p className="text-[9px] text-muted-foreground/25 flex items-center justify-center gap-1">
+          <span className="inline-block w-1 h-1 rounded-full bg-primary/30 animate-pulse" />
+          Live
         </p>
       </div>
     </div>
