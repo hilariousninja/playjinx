@@ -5,102 +5,189 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Trio quality helpers ───────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────
 
-/** Extract the categories of both words in a prompt */
-function getWordCategories(prompt: { word_a: string; word_b: string }, wordMap: Map<string, string>): [string, string] {
+interface PromptCandidate {
+  id: string;
+  word_a: string;
+  word_b: string;
+  prompt_score: number;
+  top_answer_pct: number;
+  unique_answers: number;
+  total_players: number;
+  performance: string | null;
+  prompt_tag: string | null;
+}
+
+interface TrioReport {
+  trio: string;
+  score: number;
+  breakdown: Record<string, number>;
+}
+
+// ─── Trio quality scoring ───────────────────────────────────────────
+
+function getWordCategories(
+  prompt: { word_a: string; word_b: string },
+  wordMap: Map<string, string>
+): [string, string] {
   return [
     wordMap.get(prompt.word_a.toLowerCase()) ?? "unknown",
     wordMap.get(prompt.word_b.toLowerCase()) ?? "unknown",
   ];
 }
 
-/** Check if two words in a pair share a category (too overlapping) */
-function isSelfOverlapping(prompt: { word_a: string; word_b: string }, wordMap: Map<string, string>): boolean {
-  const [catA, catB] = getWordCategories(prompt, wordMap);
-  return catA !== "unknown" && catA === catB;
+/**
+ * Score an individual prompt based on historical play data.
+ * Higher = better quality prompt.
+ */
+function scorePromptQuality(p: PromptCandidate): { total: number; details: Record<string, number> } {
+  const details: Record<string, number> = {};
+
+  // Has the prompt ever been played? If not, neutral score.
+  const hasHistory = p.total_players > 0;
+
+  // 1. Consensus quality: top_answer_pct in the sweet spot (25-55%)
+  //    Too high (>70%) = trivially obvious. Too low (<15%) = fragmented chaos.
+  if (hasHistory) {
+    const pct = p.top_answer_pct;
+    if (pct >= 25 && pct <= 55) {
+      details.consensus = 20; // sweet spot
+    } else if (pct >= 15 && pct <= 70) {
+      details.consensus = 10; // acceptable
+    } else if (pct > 70) {
+      details.consensus = -15; // too obvious
+    } else {
+      details.consensus = -10; // too fragmented
+    }
+  } else {
+    details.consensus = 5; // neutral for unplayed
+  }
+
+  // 2. Fragmentation risk: too many unique answers relative to players
+  if (hasHistory && p.total_players >= 5) {
+    const ratio = p.unique_answers / p.total_players;
+    if (ratio > 0.8) {
+      details.fragmentation = -15; // almost everyone said something different
+    } else if (ratio > 0.6) {
+      details.fragmentation = -5;
+    } else if (ratio <= 0.4) {
+      details.fragmentation = 10; // healthy clustering
+    } else {
+      details.fragmentation = 0;
+    }
+  } else {
+    details.fragmentation = 0;
+  }
+
+  // 3. Performance tag bonus/penalty
+  if (p.performance === "strong") {
+    details.performance = 15;
+  } else if (p.performance === "decent") {
+    details.performance = 5;
+  } else if (p.performance === "weak") {
+    details.performance = -20;
+  } else {
+    details.performance = 0;
+  }
+
+  // 4. Prompt score (pre-calculated from word jinx_scores)
+  //    Prefer mid-range (40-70) over extremes
+  const ps = p.prompt_score;
+  if (ps >= 40 && ps <= 70) {
+    details.prompt_score_range = 5;
+  } else if (ps < 25 || ps > 85) {
+    details.prompt_score_range = -5;
+  } else {
+    details.prompt_score_range = 0;
+  }
+
+  const total = Object.values(details).reduce((s, v) => s + v, 0);
+  return { total, details };
 }
 
-/** Score a trio of prompts for variety/quality (higher = better) */
+/**
+ * Score a trio of prompts for set-level quality.
+ * Combines individual prompt quality + set composition signals.
+ */
 function scoreTrio(
-  trio: Array<{ word_a: string; word_b: string; prompt_score: number }>,
+  trio: PromptCandidate[],
   wordMap: Map<string, string>
-): number {
-  let score = 0;
+): { score: number; breakdown: Record<string, number> } {
+  const breakdown: Record<string, number> = {};
 
-  // 1. Collect all categories used across the trio
+  // ── Individual prompt quality (sum) ──
+  let individualSum = 0;
+  for (const p of trio) {
+    individualSum += scorePromptQuality(p).total;
+  }
+  breakdown.individual_quality = individualSum;
+
+  // ── Category diversity ──
   const allCats = new Set<string>();
   for (const p of trio) {
     const [a, b] = getWordCategories(p, wordMap);
     allCats.add(a);
     allCats.add(b);
   }
-  // Reward category diversity (max 6 unique categories across 3 pairs)
-  score += allCats.size * 15;
+  breakdown.category_diversity = allCats.size * 12;
 
-  // 2. Penalise repeated words across prompts
+  // ── Word uniqueness (no repeated words across trio) ──
   const allWords = trio.flatMap(p => [p.word_a.toLowerCase(), p.word_b.toLowerCase()]);
   const uniqueWords = new Set(allWords);
   if (uniqueWords.size < allWords.length) {
-    score -= (allWords.length - uniqueWords.size) * 50; // heavy penalty
+    breakdown.word_overlap = (allWords.length - uniqueWords.size) * -50;
+  } else {
+    breakdown.word_overlap = 0;
   }
 
-  // 3. Prefer a spread of prompt_scores (mix of easy + hard)
+  // ── Difficulty spread (mix of prompt_scores) ──
   const scores = trio.map(p => p.prompt_score);
   const range = Math.max(...scores) - Math.min(...scores);
-  score += Math.min(range, 40); // reward up to 40 points of spread
+  breakdown.difficulty_spread = Math.min(range, 40);
 
-  // 4. Penalise self-overlapping pairs (both words same category)
+  // ── Self-overlap penalty (both words same category in a pair) ──
+  let selfOverlapPenalty = 0;
   for (const p of trio) {
-    if (isSelfOverlapping(p, wordMap)) {
-      score -= 30;
+    const [catA, catB] = getWordCategories(p, wordMap);
+    if (catA !== "unknown" && catA === catB) {
+      selfOverlapPenalty -= 25;
     }
   }
+  breakdown.self_overlap = selfOverlapPenalty;
 
-  // 5. Penalise if any pair's categories fully overlap with another pair's
+  // ── Cross-pair category overlap ──
+  let crossOverlap = 0;
   for (let i = 0; i < trio.length; i++) {
     for (let j = i + 1; j < trio.length; j++) {
       const catsI = new Set(getWordCategories(trio[i], wordMap));
       const catsJ = new Set(getWordCategories(trio[j], wordMap));
       const overlap = [...catsI].filter(c => catsJ.has(c) && c !== "unknown").length;
-      if (overlap >= 2) score -= 25;
-      else if (overlap === 1) score -= 5;
+      if (overlap >= 2) crossOverlap -= 20;
+      else if (overlap === 1) crossOverlap -= 3;
     }
   }
+  breakdown.cross_overlap = crossOverlap;
 
-  return score;
-}
+  // ── Penalise all-weak or all-unplayed trios ──
+  const weakCount = trio.filter(p => p.performance === "weak").length;
+  const unplayedCount = trio.filter(p => p.total_players === 0).length;
+  if (weakCount >= 2) breakdown.weak_cluster = -20;
+  else breakdown.weak_cluster = 0;
+  if (unplayedCount >= 3) breakdown.untested_risk = -10;
+  else breakdown.untested_risk = 0;
 
-/** Pick the best trio from a pool of candidates via sampling */
-function selectBestTrio<T extends { word_a: string; word_b: string; prompt_score: number; id: string }>(
-  candidates: T[],
-  wordMap: Map<string, string>,
-  needed: number,
-  maxAttempts = 80
-): T[] {
-  if (candidates.length <= needed) return candidates.slice(0, needed);
-
-  let bestTrio: T[] = [];
-  let bestScore = -Infinity;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // Fisher-Yates partial shuffle to pick `needed` items
-    const pool = [...candidates];
-    const picked: T[] = [];
-    for (let i = 0; i < needed && pool.length > 0; i++) {
-      const idx = Math.floor(Math.random() * pool.length);
-      picked.push(pool[idx]);
-      pool.splice(idx, 1);
-    }
-
-    const s = scoreTrio(picked, wordMap);
-    if (s > bestScore) {
-      bestScore = s;
-      bestTrio = picked;
-    }
+  // ── Bonus for having a mix of strong + test/unplayed (discovery) ──
+  const hasStrong = trio.some(p => p.performance === "strong");
+  const hasTest = trio.some(p => p.prompt_tag === "test" || p.total_players === 0);
+  if (hasStrong && hasTest) {
+    breakdown.discovery_mix = 10;
+  } else {
+    breakdown.discovery_mix = 0;
   }
 
-  return bestTrio;
+  const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
+  return { score, breakdown };
 }
 
 // ─── Main handler ───────────────────────────────────────────────────
@@ -119,6 +206,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if this is a dry-run / audit request
+    let dryRun = false;
+    try {
+      const body = await req.clone().json();
+      if (body?.dry_run) dryRun = true;
+    } catch { /* no body is fine */ }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -129,35 +223,67 @@ Deno.serve(async (req) => {
     // Check if we already have active prompts for today
     const { data: existing } = await supabase
       .from("prompts")
-      .select("id")
+      .select("*")
       .eq("active", true)
       .eq("date", today);
 
-    if (existing && existing.length >= 3) {
+    if (!dryRun && existing && existing.length >= 3) {
+      // Return audit info for the current set
+      const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
+      const wordMap = new Map<string, string>();
+      for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
+
+      const currentTrio = existing.map(p => ({
+        ...p,
+        top_answer_pct: p.top_answer_pct ?? 0,
+        unique_answers: p.unique_answers ?? 0,
+        total_players: p.total_players ?? 0,
+      })) as PromptCandidate[];
+
+      const { score, breakdown } = scoreTrio(currentTrio, wordMap);
+      const individualDetails = currentTrio.map(p => ({
+        pair: `${p.word_a} + ${p.word_b}`,
+        tag: p.prompt_tag,
+        performance: p.performance,
+        top_answer_pct: p.top_answer_pct,
+        unique_answers: p.unique_answers,
+        total_players: p.total_players,
+        quality: scorePromptQuality(p),
+      }));
+
       return new Response(
-        JSON.stringify({ message: "Prompts already exist for today", count: existing.length }),
+        JSON.stringify({
+          message: "Prompts already exist for today",
+          count: existing.length,
+          trio: currentTrio.map(p => `${p.word_a}+${p.word_b}`).join(", "),
+          trio_quality_score: score,
+          score_breakdown: breakdown,
+          prompts: individualDetails,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Deactivate old active prompts and move to archive
-    await supabase
-      .from("prompts")
-      .update({ active: false, mode: "archive" })
-      .eq("active", true)
-      .neq("date", today);
+    if (!dryRun) {
+      // Deactivate old active prompts
+      await supabase
+        .from("prompts")
+        .update({ active: false, mode: "archive" })
+        .eq("active", true)
+        .neq("date", today);
+    }
 
     const existingCount = existing?.length ?? 0;
     const needed = 3 - existingCount;
 
-    if (needed <= 0) {
+    if (needed <= 0 && !dryRun) {
       return new Response(
         JSON.stringify({ message: "Already have enough prompts", count: existingCount }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ─── Build word→category map for quality scoring ───
+    // ─── Build word→category map ───
     const { data: wordRows } = await supabase
       .from("words")
       .select("word, category")
@@ -187,61 +313,115 @@ Deno.serve(async (req) => {
       .is("date", null)
       .limit(50);
 
-    const safePool = safePrompts ?? [];
-    const testPool = testPrompts ?? [];
+    const toCandidate = (p: any): PromptCandidate => ({
+      id: p.id,
+      word_a: p.word_a,
+      word_b: p.word_b,
+      prompt_score: p.prompt_score ?? 50,
+      top_answer_pct: p.top_answer_pct ?? 0,
+      unique_answers: p.unique_answers ?? 0,
+      total_players: p.total_players ?? 0,
+      performance: p.performance ?? null,
+      prompt_tag: p.prompt_tag ?? null,
+    });
 
-    // ─── Assemble the best trio: 2 safe + 1 test (ideal) ───
-    let finalTrio: typeof safePool = [];
+    const safePool = (safePrompts ?? []).map(toCandidate);
+    const testPool = (testPrompts ?? []).map(toCandidate);
+
+    // ─── Sample trios and pick the best ───
+    let bestTrio: PromptCandidate[] = [];
+    let bestScore = -Infinity;
+    let bestBreakdown: Record<string, number> = {};
+    const topCandidates: TrioReport[] = [];
+
+    const sampleTrio = (candidates: PromptCandidate[]) => {
+      const { score, breakdown } = scoreTrio(candidates, wordMap);
+      const report: TrioReport = {
+        trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
+        score,
+        breakdown,
+      };
+      topCandidates.push(report);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTrio = candidates;
+        bestBreakdown = breakdown;
+      }
+    };
 
     if (safePool.length >= 2 && testPool.length >= 1) {
-      // Strategy: sample many combos of 2-safe + 1-test, score each trio
-      let bestScore = -Infinity;
-      const attempts = Math.min(100, safePool.length * (safePool.length - 1) * testPool.length);
-
+      const attempts = Math.min(120, safePool.length * (safePool.length - 1) * testPool.length);
       for (let a = 0; a < attempts; a++) {
         const si = Math.floor(Math.random() * safePool.length);
         let sj = Math.floor(Math.random() * safePool.length);
         while (sj === si && safePool.length > 1) sj = Math.floor(Math.random() * safePool.length);
         const ti = Math.floor(Math.random() * testPool.length);
-
-        const candidate = [safePool[si], safePool[sj], testPool[ti]];
-        const s = scoreTrio(candidate, wordMap);
-        if (s > bestScore) {
-          bestScore = s;
-          finalTrio = candidate;
-        }
+        sampleTrio([safePool[si], safePool[sj], testPool[ti]]);
       }
     } else {
-      // Not enough tagged prompts; use best-trio selection from combined pool
       const combined = [...safePool, ...testPool];
-      finalTrio = selectBestTrio(combined, wordMap, needed);
+      const attempts = Math.min(100, combined.length * (combined.length - 1));
+      for (let a = 0; a < attempts; a++) {
+        const pool = [...combined];
+        const picked: PromptCandidate[] = [];
+        for (let i = 0; i < needed && pool.length > 0; i++) {
+          const idx = Math.floor(Math.random() * pool.length);
+          picked.push(pool[idx]);
+          pool.splice(idx, 1);
+        }
+        if (picked.length >= needed) sampleTrio(picked);
+      }
     }
 
-    // ─── Activate the chosen prompts ───
-    if (finalTrio.length >= needed) {
-      const toActivate = finalTrio.slice(0, needed);
-      for (const p of toActivate) {
-        await supabase
-          .from("prompts")
-          .update({ active: true, date: today, mode: "daily" })
-          .eq("id", p.id);
+    // Sort top candidates for the audit log (top 5)
+    topCandidates.sort((a, b) => b.score - a.score);
+    const auditLog = topCandidates.slice(0, 5);
+
+    // ─── Activate or return dry-run results ───
+    if (bestTrio.length >= needed) {
+      const toActivate = bestTrio.slice(0, needed);
+
+      if (!dryRun) {
+        for (const p of toActivate) {
+          await supabase
+            .from("prompts")
+            .update({ active: true, date: today, mode: "daily" })
+            .eq("id", p.id);
+        }
       }
 
       const summary = toActivate.map(p => `${p.word_a}+${p.word_b}`).join(", ");
-      const trioScore = scoreTrio(toActivate, wordMap);
+      const individualDetails = toActivate.map(p => ({
+        pair: `${p.word_a} + ${p.word_b}`,
+        tag: p.prompt_tag,
+        performance: p.performance,
+        top_answer_pct: p.top_answer_pct,
+        unique_answers: p.unique_answers,
+        total_players: p.total_players,
+        quality: scorePromptQuality(p),
+      }));
 
       return new Response(
         JSON.stringify({
-          message: "Activated curated daily set",
+          message: dryRun ? "Dry run — would select this trio" : "Activated curated daily set",
+          dry_run: dryRun,
           count: toActivate.length,
           trio: summary,
-          trio_quality_score: trioScore,
+          trio_quality_score: bestScore,
+          score_breakdown: bestBreakdown,
+          prompts: individualDetails,
+          runner_ups: auditLog.slice(1, 4),
+          candidates_sampled: topCandidates.length,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ─── FALLBACK: Generate from word pairs with quality filtering ───
+    // ─── FALLBACK: Generate from word pairs ───
+    const shuffle = <T>(arr: T[]): T[] =>
+      arr.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
+
     let { data: words } = await supabase
       .from("words")
       .select("word, jinx_score, category")
@@ -263,54 +443,72 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate candidate pairs, score them as a trio, pick the best
-    const shuffle = <T>(arr: T[]): T[] =>
-      arr.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
-
-    let bestFallbackTrio: Array<{ word_a: string; word_b: string; prompt_score: number }> = [];
+    let bestFallbackTrio: PromptCandidate[] = [];
     let bestFallbackScore = -Infinity;
 
     for (let attempt = 0; attempt < 60; attempt++) {
       const shuffled = shuffle(words);
-      const candidateTrio = [];
+      const candidateTrio: PromptCandidate[] = [];
       for (let i = 0; i < needed; i++) {
         const wA = shuffled[i * 2];
         const wB = shuffled[i * 2 + 1];
         if (!wA || !wB) break;
-
-        // Skip pairs where both words share a category
         if (wA.category === wB.category && wA.category !== "Uncategorized") continue;
-
         candidateTrio.push({
+          id: `fallback-${i}`,
           word_a: wA.word.toUpperCase(),
           word_b: wB.word.toUpperCase(),
           prompt_score: Math.round(((wA.jinx_score ?? 50) + (wB.jinx_score ?? 50)) / 2),
+          top_answer_pct: 0,
+          unique_answers: 0,
+          total_players: 0,
+          performance: null,
+          prompt_tag: null,
         });
       }
 
       if (candidateTrio.length >= needed) {
-        const s = scoreTrio(candidateTrio, wordMap);
-        if (s > bestFallbackScore) {
-          bestFallbackScore = s;
+        const { score } = scoreTrio(candidateTrio, wordMap);
+        if (score > bestFallbackScore) {
+          bestFallbackScore = score;
           bestFallbackTrio = candidateTrio;
         }
       }
     }
 
     if (bestFallbackTrio.length < needed) {
-      // Last resort: just take anything
       const shuffled = shuffle(words);
       for (let i = 0; i < needed; i++) {
         bestFallbackTrio.push({
+          id: `fallback-last-${i}`,
           word_a: shuffled[i * 2].word.toUpperCase(),
           word_b: shuffled[i * 2 + 1].word.toUpperCase(),
           prompt_score: Math.round(((shuffled[i * 2].jinx_score ?? 50) + (shuffled[i * 2 + 1].jinx_score ?? 50)) / 2),
+          top_answer_pct: 0,
+          unique_answers: 0,
+          total_players: 0,
+          performance: null,
+          prompt_tag: null,
         });
       }
     }
 
+    if (dryRun) {
+      return new Response(
+        JSON.stringify({
+          message: "Dry run — would generate fallback trio",
+          dry_run: true,
+          trio: bestFallbackTrio.map(p => `${p.word_a}+${p.word_b}`).join(", "),
+          trio_quality_score: bestFallbackScore,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const newPrompts = bestFallbackTrio.map(p => ({
-      ...p,
+      word_a: p.word_a,
+      word_b: p.word_b,
+      prompt_score: p.prompt_score,
       active: true,
       date: today,
       mode: "daily",
@@ -333,6 +531,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("generate-daily-prompts error:", err);
     return new Response(
       JSON.stringify({ error: "An internal error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
