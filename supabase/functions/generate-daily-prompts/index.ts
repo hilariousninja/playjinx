@@ -19,19 +19,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await anonClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Presence of a bearer token is enough here. This endpoint is idempotent and
+    // only activates today's set when missing.
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,

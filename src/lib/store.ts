@@ -63,6 +63,10 @@ export async function syncCompletionStatus(prompts: DbPrompt[]): Promise<Record<
 }
 
 // --- Prompts ---
+function getUTCDateKey(date = new Date()): string {
+  return date.toISOString().split('T')[0];
+}
+
 export async function getActivePrompts(): Promise<DbPrompt[]> {
   const { data, error } = await supabase
     .from('prompts')
@@ -73,33 +77,43 @@ export async function getActivePrompts(): Promise<DbPrompt[]> {
   return data ?? [];
 }
 
-// Ensure daily prompts exist — calls edge function if none found, falls back to most recent
+async function getActivePromptsForUTCDate(dateKey: string): Promise<DbPrompt[]> {
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('*')
+    .eq('active', true)
+    .eq('date', dateKey)
+    .order('created_at');
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Ensure the live set is today's UTC set; if missing, trigger regeneration.
 export async function ensureDailyPrompts(): Promise<DbPrompt[]> {
-  let prompts = await getActivePrompts();
+  const todayUTC = getUTCDateKey();
+  let prompts = await getActivePromptsForUTCDate(todayUTC);
   if (prompts.length >= 3) return prompts;
 
-  // Call edge function to generate prompts
+  // Try to generate/activate today's set when stale or missing.
   try {
     const { error } = await supabase.functions.invoke('generate-daily-prompts');
     if (!error) {
-      prompts = await getActivePrompts();
+      prompts = await getActivePromptsForUTCDate(todayUTC);
       if (prompts.length >= 3) return prompts;
     }
   } catch {
-    // Silently fail
+    // Silently fail and use fallback below.
   }
 
-  // Fallback: return most recent day's prompts so users never see empty state
-  if (prompts.length === 0) {
-    const { data } = await supabase
-      .from('prompts')
-      .select('*')
-      .order('date', { ascending: false })
-      .order('created_at')
-      .limit(3);
-    return data ?? [];
-  }
-  return prompts;
+  // Fallback: return most recent prompts so users never see empty state.
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('*')
+    .order('date', { ascending: false })
+    .order('created_at')
+    .limit(3);
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function getArchivePrompts(): Promise<DbPrompt[]> {
