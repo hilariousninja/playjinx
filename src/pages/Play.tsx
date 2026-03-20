@@ -279,23 +279,23 @@ export default function Play() {
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-4">
                   <ResultsView promptId={prompt.id} />
 
-                  {/* Next prompt CTA — inside results flow */}
+                  {/* Next prompt CTA */}
                   {currentIdx < prompts.length - 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5">
-                      <Button onClick={goNext} className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4">
+                      <Button onClick={goNext} className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
                     </motion.div>
                   )}
 
-                  {/* All done — integrated, not a separate card */}
+                  {/* All done */}
                   {allDone && currentIdx === prompts.length - 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 text-center space-y-3">
-                      <div className="flex gap-2.5 justify-center">
-                        <Button className="rounded-xl h-10 font-semibold text-sm px-5" asChild>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
+                      <div className="flex gap-2 justify-center">
+                        <Button className="rounded-xl h-9 font-semibold text-xs px-4" asChild>
                           <Link to="/results">View all results</Link>
                         </Button>
-                        <Button variant="outline" className="rounded-xl h-10 text-sm px-4" asChild>
+                        <Button variant="outline" className="rounded-xl h-9 text-xs px-3 border-border/50" asChild>
                           <Link to="/archive">Archive</Link>
                         </Button>
                       </div>

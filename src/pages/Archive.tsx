@@ -102,7 +102,7 @@ export default function Archive() {
         </header>
 
         {/* Main */}
-        <div className={`flex-1 flex flex-col items-center ${isSubmitted ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[12vh] md:pt-[14vh]'} transition-all duration-300`}>
+        <div className={`flex-1 flex flex-col items-center ${isSubmitted ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[10vh] md:pt-[12vh]'} transition-all duration-300`}>
           <div className="w-full max-w-[22rem] mx-auto px-5">
             <div className="text-center">
               {/* Archive context — subtle date */}
@@ -115,8 +115,8 @@ export default function Archive() {
 
               {!isSubmitted ? (
                 <>
-                  <p className="text-[14px] font-bold text-primary mb-7">
-                    What will most people say?
+                  <p className="text-[13px] font-bold text-primary/80 mb-6">
+                    What would most people say?
                   </p>
 
                   <div className="relative">
@@ -144,29 +144,27 @@ export default function Archive() {
                   )}
 
                   {(totalCounts[selectedPrompt.id] ?? 0) > 0 && (
-                    <p className="text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-5">
+                    <p className="text-[11px] text-muted-foreground/40 flex items-center justify-center gap-1.5 mt-5">
                       <Users className="h-3 w-3" />
-                      {totalCounts[selectedPrompt.id]} players answered
+                      {totalCounts[selectedPrompt.id]} players answered this
                     </p>
                   )}
                 </>
               ) : null}
             </div>
 
-            {/* Results — no redundant chip above */}
+            {/* Results */}
             {isSubmitted && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-2">
                 <ResultsView promptId={selectedPrompt.id} />
 
-                {/* Archive nav */}
-                <div className="mt-5 text-center">
-                  <Button
-                    variant="outline"
-                    className="rounded-xl h-10 text-sm px-5"
+                <div className="mt-4 text-center">
+                  <button
                     onClick={() => { setSelected(null); setInputVal(''); setInputError(null); }}
+                    className="text-[10px] uppercase tracking-wide text-muted-foreground/30 hover:text-muted-foreground transition-colors"
                   >
                     ← Back to archive
-                  </Button>
+                  </button>
                 </div>
               </motion.div>
             )}

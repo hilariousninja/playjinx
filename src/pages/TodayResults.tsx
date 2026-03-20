@@ -123,173 +123,144 @@ export default function TodayResults() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border shrink-0">
+      <header className="border-b border-border/80 shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/">
-            <JinxLogo size={20} className="text-foreground text-lg" />
+            <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs h-8" asChild>
               <Link to="/play">Play</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs h-8" asChild>
               <Link to="/archive">Archive</Link>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 max-w-lg mx-auto px-5 py-8 w-full">
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex-1">
+        <div className="max-w-[22rem] mx-auto px-5 pt-8 w-full">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
 
-          {/* Hero */}
-          <div className="text-center mb-6">
-            {allAnswered ? (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4 }}
-                  className="mb-3"
-                >
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-3">
-                    <Trophy className="h-7 w-7 text-primary" />
-                  </div>
-                </motion.div>
-                <h1 className="text-2xl font-bold tracking-tight mb-1.5 text-foreground">
-                  Today's JINX complete
-                </h1>
-                <p className="text-xs text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
-                  Results update live
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-[11px] text-muted-foreground font-display tracking-[0.25em] uppercase mb-2">Today's Results</p>
-                <h1 className="text-2xl font-bold tracking-tight mb-1 text-foreground">
-                  {answeredCount} of {summaries.length} answered
-                </h1>
-              </>
-            )}
-          </div>
+            {/* Hero */}
+            <div className="text-center mb-6">
+              {allAnswered ? (
+                <>
+                  <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-display mb-3">{today}</p>
+                  <h1 className="text-xl font-bold tracking-tight text-foreground mb-1">
+                    Today's JINX complete
+                  </h1>
+                  <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1.5 mt-1.5">
+                    <span className="inline-block w-1 h-1 rounded-full bg-primary/30 animate-pulse" />
+                    Results update live
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-display mb-3">{today}</p>
+                  <h1 className="text-xl font-bold tracking-tight text-foreground">
+                    {answeredCount} of {summaries.length} answered
+                  </h1>
+                </>
+              )}
+            </div>
 
-          {/* Share buttons — two-action system */}
-          {allAnswered && (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mb-8 space-y-3"
-            >
-              {/* Primary: Challenge a friend */}
-              <Button
-                className="w-full rounded-xl h-13 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-base shadow-md active:scale-[0.96] transition-transform"
-                onClick={handleCopyChallenge}
-              >
-                {challengeCopied ? (
-                  <>
-                    <Check className="h-4.5 w-4.5 mr-2" />
-                    Challenge copied!
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-4.5 w-4.5 mr-2" />
-                    Challenge a friend
-                  </>
-                )}
-              </Button>
-
-              {/* Secondary: Share my results */}
-              <Button
-                variant="outline"
-                className="w-full rounded-xl h-11 font-medium text-sm border-border active:scale-[0.97] transition-transform"
-                onClick={handleCopyResults}
-              >
-                {resultsCopied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-2" />
-                    Results copied!
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="h-3.5 w-3.5 mr-2" />
-                    Share my results
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Prompt cards */}
-          <div className="space-y-2.5">
-            {summaries.map((s, i) => (
+            {/* Share buttons — lighter weight */}
+            {allAnswered && (
               <motion.div
-                key={s.prompt.id}
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 + i * 0.06 }}
+                transition={{ delay: 0.15 }}
+                className="mb-6 space-y-2"
               >
-                <Link
-                  to={`/play?prompt=${i}`}
-                  className="game-card block hover:border-primary/20 transition-all group py-4 px-5"
+                <Button
+                  className="w-full rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm active:scale-[0.97] transition-transform"
+                  onClick={handleCopyChallenge}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      {/* Prompt pair inline */}
-                      <p className="font-display font-bold text-sm tracking-tight text-foreground mb-1.5">
-                        {s.prompt.word_a} <span className="text-primary/60">+</span> {s.prompt.word_b}
-                      </p>
+                  {challengeCopied ? (
+                    <><Check className="h-3.5 w-3.5 mr-1.5" /> Challenge copied!</>
+                  ) : (
+                    <><Zap className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend</>
+                  )}
+                </Button>
 
-                      {s.answer ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-muted-foreground">
-                            → <span className="font-display font-bold text-foreground">{s.answer.raw_answer}</span>
-                          </span>
-                          <span className="text-[10px] bg-primary/8 text-primary px-2 py-0.5 rounded-full font-display font-bold">
-                            #{s.rank}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground/40">
-                            {s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}
-                          </span>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground/40">Not answered</p>
-                      )}
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-primary transition-colors shrink-0" />
-                  </div>
-                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl h-10 font-medium text-xs border-border/60 active:scale-[0.97] transition-transform"
+                  onClick={handleCopyResults}
+                >
+                  {resultsCopied ? (
+                    <><Check className="h-3 w-3 mr-1.5" /> Results copied!</>
+                  ) : (
+                    <><Share2 className="h-3 w-3 mr-1.5" /> Share my results</>
+                  )}
+                </Button>
               </motion.div>
-            ))}
-          </div>
+            )}
 
-          {/* Continue playing */}
-          {!allAnswered && (
-            <div className="mt-6">
-              <Button className="w-full rounded-xl h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base" asChild>
-                <Link to="/play">
-                  Continue playing <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
+            {/* Prompt cards */}
+            <div className="space-y-2">
+              {summaries.map((s, i) => (
+                <motion.div
+                  key={s.prompt.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 + i * 0.05 }}
+                >
+                  <Link
+                    to={`/play?prompt=${i}`}
+                    className="block bg-card border border-border/50 rounded-xl px-5 py-3.5 hover:border-primary/20 transition-all group"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display font-bold text-[14px] tracking-tight text-foreground mb-1">
+                          {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
+                        </p>
+                        {s.answer ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] text-muted-foreground/50">
+                              → <span className="font-display font-bold text-foreground/70">{s.answer.raw_answer}</span>
+                            </span>
+                            <span className="text-[9px] text-muted-foreground/30">
+                              #{s.rank} · {s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground/30">Not answered</p>
+                        )}
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors shrink-0" />
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Continue playing */}
+            {!allAnswered && (
+              <div className="mt-5">
+                <Button className="w-full rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm" asChild>
+                  <Link to="/play">
+                    Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+
+            {/* Archive link */}
+            <div className="mt-3">
+              <Button variant="outline" className="w-full rounded-xl h-9 text-xs border-border/50" asChild>
+                <Link to="/archive">Browse archive</Link>
               </Button>
             </div>
-          )}
 
-          {/* Archive link */}
-          <div className="mt-4">
-            <Button variant="outline" className="w-full rounded-xl h-10 text-sm" asChild>
-              <Link to="/archive">Browse archive</Link>
-            </Button>
-          </div>
-
-          {/* Countdown */}
-          <div className="text-center mt-8 space-y-1.5">
-            <Countdown />
-            <p className="text-[10px] text-muted-foreground/30">
-              Ranks shift as more players answer
-            </p>
-          </div>
-        </motion.div>
+            {/* Countdown */}
+            <div className="text-center mt-6">
+              <Countdown />
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       <footer className="border-t border-border py-3 shrink-0">
