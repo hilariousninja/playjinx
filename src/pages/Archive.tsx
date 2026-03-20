@@ -44,7 +44,8 @@ export default function Archive() {
   }, {});
 
   const selectedPrompt = prompts.find(p => p.id === selected);
-  const todayStr = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
 
   const handleSubmit = async () => {
     if (!selected || !inputVal.trim() || submittedMap[selected] || submitting) return;

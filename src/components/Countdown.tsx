@@ -17,10 +17,10 @@ function getTimeUntilMidnightUTC() {
 }
 
 export default function Countdown() {
-  const [time, setTime] = useState(getTimeUntilMidnight);
+  const [time, setTime] = useState(getTimeUntilMidnightUTC);
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(getTimeUntilMidnight()), 60000);
+    const interval = setInterval(() => setTime(getTimeUntilMidnightUTC()), 60000);
     return () => clearInterval(interval);
   }, []);
 
