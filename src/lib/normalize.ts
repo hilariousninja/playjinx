@@ -17,12 +17,33 @@ export function normalizeAnswer(raw: string): string {
   return answer;
 }
 
+// Words that should never be depluralized (irregular, mass nouns, or would mangle)
+const DEPLURAL_SKIP = new Set([
+  'gas', 'has', 'was', 'his', 'this', 'yes', 'bus', 'plus', 'minus',
+  'series', 'species', 'lens', 'atlas', 'alias', 'canvas', 'chaos',
+  'news', 'mathematics', 'physics', 'economics', 'politics',
+  'glasses', 'scissors', 'pants', 'shorts', 'jeans',
+  'chess', 'moss', 'ross', 'boss', 'loss', 'toss',
+  'moose', 'goose', 'geese', 'dice', 'mice', 'lice',
+]);
+
 function depluralize(word: string): string {
+  if (DEPLURAL_SKIP.has(word)) return word;
   if (word.endsWith('ies') && word.length > 4) {
     return word.slice(0, -3) + 'y';
-  } else if (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('zes') || word.endsWith('ches') || word.endsWith('shes')) {
+  } else if (word.endsWith('shes') || word.endsWith('ches')) {
     return word.slice(0, -2);
-  } else if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && word.length > 2) {
+  } else if (word.endsWith('xes') || word.endsWith('zes')) {
+    return word.slice(0, -2);
+  } else if (word.endsWith('ses') && word.length > 4) {
+    // Only deplural "ses" for longer words to avoid mangling (roses→ros)
+    // Check if removing "s" gives a valid-looking word ending in "se"
+    const base = word.slice(0, -1); // e.g. "houses" → "house"
+    if (base.endsWith('se') || base.endsWith('ose') || base.endsWith('ase') || base.endsWith('use') || base.endsWith('ise')) {
+      return base;
+    }
+    return word; // Don't mangle ambiguous -ses words
+  } else if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && word.length > 3) {
     return word.slice(0, -1);
   }
   return word;
@@ -65,13 +86,17 @@ export function levenshtein(a: string, b: string): number {
  * Very conservative: only merges when confidence is high.
  * Guards: minimum word length, count-ratio, multi-word stricter rules.
  */
+export interface MergeLogEntry { from: string; to: string; dist: number }
+export interface NearMissEntry { a: string; b: string; dist: number; countA: number; countB: number; reason: string }
+
 export function fuzzyMergeGroups(
   counts: Record<string, number>
 ): Record<string, number> {
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const canonical: Record<string, string> = {};
   const merged: Record<string, number> = {};
-  const mergeLog: Array<{ from: string; to: string; dist: number }> = [];
+  const mergeLog: MergeLogEntry[] = [];
+  const nearMisses: NearMissEntry[] = [];
 
   for (const [answer] of entries) {
     canonical[answer] = answer;
@@ -85,16 +110,28 @@ export function fuzzyMergeGroups(
       const [answerB, countB] = entries[j];
       if (canonical[answerB] !== answerB) continue;
 
-      // Count-ratio guard: B must look like a typo of A (rare vs popular)
-      if (countB > 2 && countB > countA * 0.3) continue;
-
       const maxDist = getMaxEditDistance(answerA, answerB);
-      if (maxDist === 0) continue;
-
       const dist = levenshtein(answerA, answerB);
+
+      // Count-ratio guard: B must look like a typo of A (rare vs popular)
+      if (maxDist > 0 && dist <= maxDist && countB > 2 && countB > countA * 0.3) {
+        nearMisses.push({ a: answerA, b: answerB, dist, countA, countB, reason: 'count-ratio too high' });
+        continue;
+      }
+
+      if (maxDist === 0) {
+        // Track near-misses: words that are close but below length threshold
+        if (dist <= 2 && dist > 0 && answerA.length >= 4 && answerB.length >= 4) {
+          nearMisses.push({ a: answerA, b: answerB, dist, countA, countB, reason: 'below length threshold' });
+        }
+        continue;
+      }
+
       if (dist <= maxDist) {
         canonical[answerB] = answerA;
         mergeLog.push({ from: answerB, to: answerA, dist });
+      } else if (dist <= maxDist + 1 && dist <= 3) {
+        nearMisses.push({ a: answerA, b: answerB, dist, countA, countB, reason: 'just outside distance threshold' });
       }
     }
   }
@@ -104,9 +141,10 @@ export function fuzzyMergeGroups(
     merged[canon] = (merged[canon] || 0) + count;
   }
 
-  // Expose merge log for admin debugging (console: window.__jinxLastMergeLog)
-  if (mergeLog.length > 0 && typeof window !== 'undefined') {
+  // Expose debug info for admin visibility
+  if (typeof window !== 'undefined') {
     (window as any).__jinxLastMergeLog = mergeLog;
+    (window as any).__jinxLastNearMisses = nearMisses;
   }
 
   return merged;

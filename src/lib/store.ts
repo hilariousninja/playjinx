@@ -190,6 +190,75 @@ export async function getCanonicalAnswer(normalizedAnswer: string): Promise<stri
   return applyAlias(normalizedAnswer, aliasMap);
 }
 
+export interface SuggestedAlias {
+  source: string;
+  canonical: string;
+  distance: number;
+  sourceCount: number;
+  canonicalCount: number;
+  reason: string;
+}
+
+/**
+ * Scan recent prompts for near-miss answer pairs that weren't auto-merged.
+ * Returns deduplicated suggestions for admin review.
+ */
+export async function getSuggestedAliases(): Promise<SuggestedAlias[]> {
+  const { fuzzyMergeGroups } = await import('./normalize');
+  const aliasMap = await getAliasMap();
+  const { applyAlias } = await import('./normalize');
+
+  // Fetch recent prompts with answers
+  const { data: prompts } = await supabase
+    .from('prompts')
+    .select('id')
+    .order('date', { ascending: false })
+    .limit(30);
+
+  if (!prompts?.length) return [];
+
+  const seenPairs = new Set<string>();
+  const suggestions: SuggestedAlias[] = [];
+
+  for (const p of prompts) {
+    const { data: answers } = await supabase
+      .from('answers')
+      .select('normalized_answer')
+      .eq('prompt_id', p.id);
+
+    if (!answers?.length) continue;
+
+    // Build counts with alias applied
+    const counts: Record<string, number> = {};
+    for (const row of answers) {
+      const canonical = applyAlias(row.normalized_answer, aliasMap);
+      counts[canonical] = (counts[canonical] || 0) + 1;
+    }
+
+    // Run fuzzy merge to populate near-misses
+    fuzzyMergeGroups(counts);
+
+    // Read near-misses from window
+    const nearMisses = (typeof window !== 'undefined' && (window as any).__jinxLastNearMisses) || [];
+    for (const nm of nearMisses) {
+      const key = [nm.a, nm.b].sort().join('|||');
+      if (seenPairs.has(key)) continue;
+      seenPairs.add(key);
+      suggestions.push({
+        source: nm.countA >= nm.countB ? nm.b : nm.a,
+        canonical: nm.countA >= nm.countB ? nm.a : nm.b,
+        distance: nm.dist,
+        sourceCount: Math.min(nm.countA, nm.countB),
+        canonicalCount: Math.max(nm.countA, nm.countB),
+        reason: nm.reason,
+      });
+    }
+  }
+
+  // Sort by canonical count descending (most impactful first)
+  return suggestions.sort((a, b) => b.canonicalCount - a.canonicalCount);
+}
+
 export async function getStats(promptId: string): Promise<AnswerStat[]> {
   const [answersResult, aliasMap] = await Promise.all([
     supabase.from('answers').select('normalized_answer').eq('prompt_id', promptId),
