@@ -242,8 +242,8 @@ export default function Play() {
                     </p>
                   )}
                 </div>
-              ) : isSubmitted && currentPhase !== 'calculating' ? (
-                /* Submitted confirmation chip */
+              ) : isSubmitted && currentPhase !== 'calculating' && currentPhase !== 'results' ? (
+                /* Submitted confirmation chip — only before results load */
                 <div className="text-center">
                   <div className="mb-3">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
@@ -258,14 +258,6 @@ export default function Play() {
                   </motion.div>
                 </div>
               ) : null}
-
-              {/* Player count — post-submit */}
-              {isSubmitted && (playerCounts[prompt.id] ?? 0) > 0 && currentPhase !== 'calculating' && (
-                <p className="text-[10px] text-muted-foreground/25 text-center flex items-center justify-center gap-1 mt-2.5">
-                  <Users className="h-2.5 w-2.5" />
-                  {playerCounts[prompt.id]} responses
-                </p>
-              )}
 
               {/* Calculating */}
               {currentPhase === 'calculating' && (

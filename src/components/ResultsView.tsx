@@ -66,27 +66,31 @@ export default function ResultsView({ promptId }: Props) {
   const userStat = userCanonical ? stats.find(s => s.normalized_answer === userCanonical) : undefined;
   const topAnswer = stats.length > 0 ? stats[0] : null;
   const rank = userStat?.rank ?? 0;
-  const percentile = total > 0 && userStat ? Math.round(((total - rank) / total) * 100) : 0;
-  const topPercent = Math.max(1, 100 - percentile);
   const matchCount = userStat?.count ?? 0;
-  const topAnswerPct = topAnswer?.percentage ?? 0;
+
+  const isTopAnswer = topAnswer && userCanonical && topAnswer.normalized_answer === userCanonical;
 
   const getResultLabel = () => {
-    if (topPercent <= 5) return '🎯 Nailed it';
-    if (topPercent <= 15) return 'Strong match';
-    if (topPercent <= 35) return 'Good match';
-    if (topPercent <= 60) return 'Decent match';
+    if (isTopAnswer) return 'Most popular';
+    if (rank <= 2) return 'Strong match';
+    if (rank <= 4) return 'Good match';
+    if (matchCount > 1) return 'Decent match';
     return 'One of a kind';
   };
 
   const getResultColor = () => {
-    if (topPercent <= 15) return 'text-primary';
-    if (topPercent <= 35) return 'text-primary/70';
-    if (topPercent <= 60) return 'text-muted-foreground';
+    if (isTopAnswer || rank <= 2) return 'text-primary';
+    if (rank <= 4) return 'text-primary/70';
+    if (matchCount > 1) return 'text-muted-foreground';
     return 'text-muted-foreground/60';
   };
 
-  const isTopAnswer = topAnswer && userCanonical && topAnswer.normalized_answer === userCanonical;
+  // Supporting line — concise, avoids artificial percentiles for small samples
+  const getSupportingLine = () => {
+    if (isTopAnswer) return `${matchCount} of ${total} players said this`;
+    if (matchCount > 1) return `${matchCount} of ${total} players matched`;
+    return `${total} players answered`;
+  };
 
   return (
     <div className="space-y-4">
@@ -98,7 +102,6 @@ export default function ResultsView({ promptId }: Props) {
           transition={{ duration: 0.4 }}
           className="text-center"
         >
-          {/* Result label */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -108,61 +111,43 @@ export default function ResultsView({ promptId }: Props) {
             {getResultLabel()}
           </motion.p>
 
-          {/* The answer */}
           <motion.p
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.12, duration: 0.3 }}
-            className="font-display text-3xl font-bold text-foreground break-words mb-3"
+            className="font-display text-3xl font-bold text-foreground break-words mb-2"
           >
             {userAnswer?.raw_answer}
           </motion.p>
 
-          {/* Stats — inline */}
-          <motion.div
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground/50"
+            className="text-[11px] text-muted-foreground/45 font-display"
           >
-            <span className="font-display">
-              Rank <span className="font-bold text-foreground">#{rank}</span>
-            </span>
-            <span className="text-border">·</span>
-            <span className="font-display">
-              Top <span className="font-bold text-primary">{topPercent}%</span>
-            </span>
-            <span className="text-border">·</span>
-            <span className="font-display">
-              <span className="font-bold text-foreground">{matchCount}</span> {matchCount === 1 ? 'match' : 'matches'}
-            </span>
-          </motion.div>
+            {getSupportingLine()}
+            {!isTopAnswer && <span className="ml-1.5 text-muted-foreground/25">· #{rank}</span>}
+          </motion.p>
         </motion.div>
       )}
 
-      {/* Top answer — only if different from user's */}
+      {/* Top answer — only if different */}
       {topAnswer && !isTopAnswer && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
-          className="text-center pt-1"
+          className="text-center"
         >
-          <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/35 uppercase tracking-[0.12em]">
+          <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/30 uppercase tracking-[0.12em]">
             <Crown className="h-2.5 w-2.5" />
             Most popular
           </div>
-          <p className="font-display text-base font-bold text-foreground/60 mt-0.5 break-words">
+          <p className="font-display text-base font-bold text-foreground/55 mt-0.5 break-words">
             {topAnswer.normalized_answer}
-            <span className="text-[10px] font-normal text-muted-foreground/30 ml-1.5">{topAnswer.percentage}%</span>
+            <span className="text-[10px] font-normal text-muted-foreground/25 ml-1.5">{topAnswer.percentage}%</span>
           </p>
-        </motion.div>
-      )}
-
-      {/* You matched #1 */}
-      {isTopAnswer && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="text-center pt-1">
-          <p className="text-[11px] text-primary/50 font-display font-medium">You matched the most popular answer</p>
         </motion.div>
       )}
 
@@ -171,9 +156,8 @@ export default function ResultsView({ promptId }: Props) {
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="pt-1"
       >
-        <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.15em] mb-2 font-medium">Answers</p>
+        <p className="text-[9px] text-muted-foreground/25 uppercase tracking-[0.15em] mb-2 font-medium">Answers</p>
         <div className="space-y-px">
           {stats.slice(0, 6).map((s, i) => {
             const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
@@ -187,16 +171,16 @@ export default function ResultsView({ promptId }: Props) {
               >
                 <div className="flex items-baseline justify-between gap-2 mb-0.5">
                   <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className={`font-display text-[9px] tabular-nums shrink-0 w-3 text-right ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/25'}`}>
+                    <span className={`font-display text-[9px] tabular-nums shrink-0 w-3 text-right ${i === 0 ? 'text-primary font-bold' : 'text-muted-foreground/20'}`}>
                       {i + 1}
                     </span>
-                    <span className={`font-display text-[13px] break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground/70 font-medium'}`}>
+                    <span className={`font-display text-[13px] break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground/65 font-medium'}`}>
                       {s.normalized_answer}
                     </span>
                   </div>
-                  <span className={`text-[9px] tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/30'}`}>
+                  <span className={`text-[9px] tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/25'}`}>
                     {s.percentage}%
-                    <span className="text-muted-foreground/15 ml-0.5">({s.count})</span>
+                    <span className="text-muted-foreground/12 ml-0.5">({s.count})</span>
                   </span>
                 </div>
                 <div className="relative h-[2px] rounded-full bg-border/30 ml-4.5 overflow-hidden">
@@ -218,12 +202,12 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </motion.div>
 
-      {/* Footer stats + live */}
+      {/* Footer — stats + live */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="flex items-center justify-center gap-3 text-[9px] text-muted-foreground/25 pt-0.5"
+        className="flex items-center justify-center gap-3 text-[9px] text-muted-foreground/20"
       >
         <span>{total} players</span>
         <span>·</span>
