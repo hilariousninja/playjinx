@@ -186,8 +186,28 @@ function scoreTrio(
     breakdown.discovery_mix = 0;
   }
 
+  // ── Surprise bonus: reward one "wild card" prompt in an otherwise safe trio ──
+  // A wild card is a test-tagged or unplayed prompt among 2+ strong/decent prompts.
+  // This prevents over-optimising toward safe-only trios.
+  const solidCount = trio.filter(p => p.performance === "strong" || p.performance === "decent").length;
+  const wildCards = trio.filter(p => p.prompt_tag === "test" || (p.total_players === 0 && p.performance === null));
+  if (solidCount >= 2 && wildCards.length === 1) {
+    breakdown.surprise_factor = 12; // one risky pick in a strong set = interesting
+  } else if (solidCount === 3) {
+    breakdown.surprise_factor = -3; // all proven = slightly boring, still fine
+  } else {
+    breakdown.surprise_factor = 0;
+  }
+
   const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  return { score, breakdown };
+
+  // ── Editorial confidence label ──
+  let confidence: string;
+  if (score >= 100) confidence = "strong";
+  else if (score >= 50) confidence = "acceptable";
+  else confidence = "risky";
+
+  return { score, breakdown, confidence };
 }
 
 // ─── Main handler ───────────────────────────────────────────────────
