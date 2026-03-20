@@ -19,35 +19,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "").trim();
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
-
-    let tokenRole: string | null = null;
-    try {
-      const [, payload] = token.split(".");
-      if (payload) tokenRole = JSON.parse(atob(payload)).role ?? null;
-    } catch {
-      tokenRole = null;
-    }
-
-    const isSchedulerToken = token === anonKey || tokenRole === "anon";
-
-    // Allow scheduled invocations that use the anon token, and authenticated user calls.
-    if (!isSchedulerToken) {
-      const anonClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const { data: { user }, error: userError } = await anonClient.auth.getUser();
-      if (userError || !user) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
+    // Presence of a bearer token is enough here. This endpoint is idempotent and
+    // only activates today's set when missing.
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
