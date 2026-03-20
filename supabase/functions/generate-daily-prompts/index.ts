@@ -432,6 +432,7 @@ Deno.serve(async (req) => {
           count: toActivate.length,
           trio: summary,
           trio_quality_score: bestScore,
+          editorial_confidence: bestConfidence,
           score_breakdown: bestBreakdown,
           prompts: individualDetails,
           runner_ups: auditLog.slice(1, 4),
