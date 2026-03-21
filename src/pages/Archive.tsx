@@ -5,7 +5,7 @@ import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap } from 'lucid
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getArchivePrompts, hasSubmitted, getTotalSubmissions, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { getArchivePrompts, hasSubmitted, getTotalSubmissions, submitAnswer, getUserAnswer, getDailyUniquePlayers, type DbPrompt, type DbAnswer } from '@/lib/store';
 import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import JinxLogo from '@/components/JinxLogo';
