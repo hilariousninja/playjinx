@@ -205,67 +205,83 @@ export default function Archive() {
 
       <div className="flex-1">
         <div className="max-w-[22rem] mx-auto px-5 pt-10">
-          {/* Title — minimal */}
           <div className="mb-10">
             <h1 className="text-lg font-bold text-foreground tracking-tight">Archive</h1>
             <p className="text-[11px] text-muted-foreground/50 mt-1">Past prompts and results.</p>
           </div>
 
-          {/* Grouped list */}
-          {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
-            const isToday = date === todayStr;
-            return (
-              <div key={date} className="mb-10">
-                {/* Date label */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
-                    {isToday ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </span>
-                  {isToday && (
-                    <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-display font-bold flex items-center gap-1">
-                      <Zap className="h-2 w-2" /> Live
-                    </span>
-                  )}
-                </div>
-
-                {/* Cards */}
-                <div className="space-y-3">
-                  {ps.map((p, i) => {
-                    const answered = submittedMap[p.id];
-                    return (
-                      <motion.button
-                        key={p.id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04, duration: 0.3 }}
-                        onClick={() => setSelected(p.id)}
-                        className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-5 py-4 transition-all hover:border-primary/20 hover:shadow-sm group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="font-display font-bold text-foreground text-[15px] tracking-tight">
-                            {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
-                          </p>
-                          {answered && userAnswers[p.id] && (
-                            <p className="text-[10px] text-muted-foreground/40 mt-1 font-display">
-                              → {userAnswers[p.id].raw_answer}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0 ml-4">
-                          {answered && <Check className="h-3 w-3 text-primary/60" />}
-                          <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums flex items-center gap-1">
-                            <Users className="h-2.5 w-2.5" />
-                            {totalCounts[p.id] ?? 0}
-                          </span>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </div>
+          {/* Today bridge — minimal link to live play */}
+          {todayPrompts.length > 0 && (
+            <div className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">Today</span>
+                <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-display font-bold flex items-center gap-1">
+                  <Zap className="h-2 w-2" /> Live
+                </span>
               </div>
-            );
-          })}
+              <Link
+                to="/play"
+                className="w-full flex items-center justify-between bg-card border border-primary/15 rounded-xl px-5 py-4 transition-all hover:border-primary/30 hover:shadow-sm group"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-display font-bold text-foreground text-[15px] tracking-tight">
+                    {todayPrompts.map(p => `${p.word_a} + ${p.word_b}`).join('  ·  ')}
+                  </p>
+                  <p className="text-[10px] text-primary/60 mt-1 font-display">Play today's set →</p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-primary/30 group-hover:text-primary/50 transition-colors shrink-0 ml-4" />
+              </Link>
+            </div>
+          )}
+
+          {/* True archive history */}
+          {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => (
+            <div key={date} className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
+                  {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </span>
+                <span className="text-[10px] text-muted-foreground/25 font-display tabular-nums">
+                  {ps.reduce((sum, p) => sum + (totalCounts[p.id] ?? 0), 0)} players
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {ps.map((p, i) => {
+                  const answered = submittedMap[p.id];
+                  return (
+                    <motion.button
+                      key={p.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.3 }}
+                      onClick={() => setSelected(p.id)}
+                      className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-5 py-4 transition-all hover:border-primary/20 hover:shadow-sm group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display font-bold text-foreground text-[15px] tracking-tight">
+                          {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
+                        </p>
+                        {answered && userAnswers[p.id] && (
+                          <p className="text-[10px] text-muted-foreground/40 mt-1 font-display">
+                            → {userAnswers[p.id].raw_answer}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 ml-4">
+                        {answered && <Check className="h-3 w-3 text-primary/60" />}
+                        <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums flex items-center gap-1">
+                          <Users className="h-2.5 w-2.5" />
+                          {totalCounts[p.id] ?? 0}
+                        </span>
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
