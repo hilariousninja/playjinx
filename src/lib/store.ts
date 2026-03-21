@@ -117,9 +117,12 @@ export async function ensureDailyPrompts(): Promise<DbPrompt[]> {
 }
 
 export async function getArchivePrompts(): Promise<DbPrompt[]> {
+  // Only return prompts that have actual play history (historical/archived)
+  // Exclude future bank, candidates, and scheduled-but-unplayed prompts
   const { data, error } = await supabase
     .from('prompts')
     .select('*')
+    .gt('total_players', 0)
     .order('date', { ascending: false })
     .order('created_at');
   if (error) throw error;
