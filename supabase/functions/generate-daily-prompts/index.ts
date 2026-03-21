@@ -345,8 +345,8 @@ Deno.serve(async (req) => {
       prompt_tag: p.prompt_tag ?? null,
     });
 
-    const safePool = (safePrompts ?? []).map(toCandidate);
-    const testPool = (testPrompts ?? []).map(toCandidate);
+    const safePool = safePrompts.map(toCandidate);
+    const testPool = testPrompts.map(toCandidate);
 
     // ─── Sample trios and pick the best ───
     let bestTrio: PromptCandidate[] = [];
