@@ -41,13 +41,18 @@ export default function Archive() {
     })();
   }, []);
 
-  const grouped = prompts.reduce<Record<string, DbPrompt[]>>((acc, p) => {
+  // Separate today's live prompts from true archive history
+  const now = new Date();
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+
+  const todayPrompts = prompts.filter(p => p.date === todayStr);
+  const archivePrompts = prompts.filter(p => p.date !== todayStr);
+
+  const grouped = archivePrompts.reduce<Record<string, DbPrompt[]>>((acc, p) => {
     const d = p.date; (acc[d] = acc[d] || []).push(p); return acc;
   }, {});
 
   const selectedPrompt = prompts.find(p => p.id === selected);
-  const now = new Date();
-  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
 
   const handleSubmit = async () => {
     if (!selected || submitting) return;
