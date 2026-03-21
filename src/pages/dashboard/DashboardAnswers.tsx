@@ -70,7 +70,7 @@ function Section({ title, count, icon: Icon, children, defaultOpen = true }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-border/50 rounded-xl overflow-hidden">
+    <div className="border border-border/50 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 bg-card hover:bg-accent/30 transition-colors"
@@ -299,7 +299,7 @@ export default function DashboardAnswers() {
           <ArrowLeft className="h-3.5 w-3.5" /> Back to answer hygiene
         </button>
 
-        <div className="bg-card border border-border/50 rounded-xl p-4">
+        <div className="bg-card border border-border/50 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-display font-bold text-base">
@@ -326,7 +326,7 @@ export default function DashboardAnswers() {
         ) : (
           <div className="space-y-1">
             {stats.map(s => (
-              <div key={s.normalized_answer} className="bg-card border border-border/50 rounded-xl px-4 py-2.5 flex items-center gap-2">
+              <div key={s.normalized_answer} className="bg-card border border-border/50 rounded-lg px-4 py-2.5 flex items-center gap-2">
                 <span className="font-display text-[10px] text-muted-foreground/40 w-5 text-right shrink-0">#{s.rank}</span>
                 <div className="flex-1 min-w-0">
                   <span className="font-display text-sm font-semibold break-words">{s.normalized_answer}</span>
@@ -363,7 +363,7 @@ export default function DashboardAnswers() {
 
         {/* Dialogs */}
         <AlertDialog open={mergeConfirmOpen} onOpenChange={setMergeConfirmOpen}>
-          <AlertDialogContent className="rounded-xl">
+          <AlertDialogContent className="rounded-lg">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2"><Merge className="h-4 w-4" /> Merge answers</AlertDialogTitle>
               <AlertDialogDescription>
@@ -381,7 +381,7 @@ export default function DashboardAnswers() {
         </AlertDialog>
 
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <AlertDialogContent className="rounded-xl">
+          <AlertDialogContent className="rounded-lg">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Delete answer</AlertDialogTitle>
               <AlertDialogDescription>
@@ -406,7 +406,7 @@ export default function DashboardAnswers() {
   const otherSuggestions = classifiedSuggestions.filter(s => s.classification.confidence !== 'high');
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

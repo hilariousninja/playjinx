@@ -67,22 +67,22 @@ export default function DashboardInsights() {
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h1 className="text-sm font-semibold">Insights</h1>
 
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
+        <div className="bg-card border border-border/50 rounded-lg p-3 text-center">
           <Users className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
           <p className="text-xl font-display font-bold">{insights.totalPlayers}</p>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Total plays</p>
         </div>
-        <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
+        <div className="bg-card border border-border/50 rounded-lg p-3 text-center">
           <Zap className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
           <p className="text-xl font-display font-bold">{insights.played.length}</p>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Prompts played</p>
         </div>
-        <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
+        <div className="bg-card border border-border/50 rounded-lg p-3 text-center">
           <Target className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
           <p className="text-xl font-display font-bold">{insights.avgTopPct}%</p>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Avg top answer</p>
@@ -199,7 +199,7 @@ function InsightSection<T>({ title, icon: Icon, iconCls, items, renderItem }: {
           const { label, meta, cls } = renderItem(item);
           return (
             <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-              className="bg-card border border-border/50 rounded-xl px-4 py-2.5 flex items-center justify-between">
+              className="bg-card border border-border/50 rounded-lg px-4 py-2.5 flex items-center justify-between">
               <span className="font-display text-sm font-bold">{label}</span>
               <span className={`text-[10px] font-display ${cls}`}>{meta}</span>
             </motion.div>

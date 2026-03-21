@@ -112,7 +112,7 @@ function CandidateCard({ c, onAccept, onReject, accepting }: {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border/50 rounded-xl overflow-hidden"
+      className="bg-card border border-border/50 rounded-lg overflow-hidden"
     >
       <div className="p-4">
         {/* Header */}
@@ -223,7 +223,7 @@ function SuggestedWordCard({ w, onAdd, adding }: {
   adding: boolean;
 }) {
   return (
-    <div className="bg-card border border-border/50 rounded-xl p-4">
+    <div className="bg-card border border-border/50 rounded-lg p-4">
       <div className="flex items-center justify-between mb-1.5">
         <span className="font-display font-bold text-sm">{w.word.toUpperCase()}</span>
         <div className="flex items-center gap-2">
@@ -260,7 +260,7 @@ function ExistingPromptCard({ p, onApprove, onReject, onTagSafe, onTagTest, upda
   const scoreColor = p.prompt_score >= 70 ? 'text-[hsl(var(--keep))]' : p.prompt_score >= 45 ? 'text-primary' : 'text-destructive';
 
   return (
-    <div className="bg-card border border-border/50 rounded-xl p-4">
+    <div className="bg-card border border-border/50 rounded-lg p-4">
       <div className="flex items-center justify-between mb-1">
         <p className="font-display font-bold text-sm">
           {p.word_a} <span className="text-primary">+</span> {p.word_b}
@@ -443,7 +443,7 @@ export default function DashboardPrompts() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-sm font-semibold">Prompt Quality</h1>
@@ -474,7 +474,7 @@ export default function DashboardPrompts() {
       {tab === 'discover' && (
         <div className="space-y-4">
           {/* Generate button */}
-          <div className="bg-card border border-border/50 rounded-xl p-4">
+          <div className="bg-card border border-border/50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-xs font-semibold">AI Pair Discovery</p>
@@ -557,7 +557,7 @@ export default function DashboardPrompts() {
             <p className="text-center text-xs text-muted-foreground py-10">No pending prompts.</p>
           ) : (
             <>
-              <div className="bg-card border border-border/50 rounded-xl p-3 text-[10px] text-muted-foreground mb-2">
+              <div className="bg-card border border-border/50 rounded-lg p-3 text-[10px] text-muted-foreground mb-2">
                 <p className="font-semibold text-foreground text-xs mb-1">Quality Gate</p>
                 <p>✅ Approve: clear shared pathway, likely convergence · ❌ Reject: too abstract or scattered</p>
               </div>
@@ -613,7 +613,7 @@ export default function DashboardPrompts() {
             <p className="text-center text-xs text-muted-foreground py-10">No played prompts yet.</p>
           ) : (
             played.map(p => (
-              <div key={p.id} className="bg-card border border-border/50 rounded-xl p-4">
+              <div key={p.id} className="bg-card border border-border/50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-display font-bold text-sm">
                     {p.word_a} <span className="text-primary">+</span> {p.word_b}
