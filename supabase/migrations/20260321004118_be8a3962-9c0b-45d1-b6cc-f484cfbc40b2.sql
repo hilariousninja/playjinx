@@ -1,0 +1,1 @@
+UPDATE prompts SET active = false, mode = 'archive' WHERE date = '2026-03-21' AND id NOT IN ('f554f102-52e3-4dad-8c4d-51af9bcf68e5', 'f9ca89fc-c00f-41d5-b1da-681726d39347', 'fc8e6b8e-9dff-4114-bd57-022de9ec8e50');
