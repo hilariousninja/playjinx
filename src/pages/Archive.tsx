@@ -255,7 +255,7 @@ export default function Archive() {
                   {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                 </span>
                 <span className="text-[10px] text-muted-foreground/25 font-display tabular-nums">
-                  {ps.reduce((sum, p) => sum + (totalCounts[p.id] ?? 0), 0)} players
+                  {dailyPlayers[date] ?? 0} players
                 </span>
               </div>
 
