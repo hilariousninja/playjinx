@@ -122,15 +122,18 @@ export default function DashboardDaily() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold">Daily Sets</h1>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-sm font-semibold">Daily Sets</h1>
+          <p className="text-[10px] text-muted-foreground">Select today’s 3 from future bank or generate clean replacements.</p>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={loadAudit}>
             <RefreshCw className="h-3 w-3 mr-1" /> Refresh
           </Button>
           <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={handleRegenerate} disabled={regenerating}>
             {regenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Calendar className="h-3 w-3 mr-1" />}
-            Regenerate
+            Generate today
           </Button>
         </div>
       </div>
