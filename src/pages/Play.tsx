@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,13 +82,8 @@ export default function Play() {
     const prompt = prompts[currentIdx];
     if (!prompt) return;
     const trimmed = inputVal.trim();
-    
     const validationError = validateInput(trimmed);
-    if (validationError) {
-      setInputError(validationError);
-      return;
-    }
-    
+    if (validationError) { setInputError(validationError); return; }
     if (submitted[prompt.id] || submitting) return;
 
     setSubmitting(true);
@@ -144,12 +139,10 @@ export default function Play() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Onboarding overlay */}
       <AnimatePresence>
         {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       </AnimatePresence>
 
-      {/* Header */}
       <header className="border-b border-border/80 shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/">
@@ -174,7 +167,7 @@ export default function Play() {
             </span>
             {completedCount > 0 && (
               <Button variant="ghost" size="sm" className="text-muted-foreground/60 hover:text-foreground h-7 w-7 p-0" asChild>
-                <Link to="/results">
+                <Link to="/archive">
                   <BarChart3 className="h-3.5 w-3.5" />
                 </Link>
               </Button>
@@ -183,32 +176,17 @@ export default function Play() {
         </div>
       </header>
 
-      {/* Main */}
       <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[12vh] md:pt-[14vh]'} transition-all duration-300`}>
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={prompt.id}
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.2 }}
-            >
+            <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
 
-              {/* Input phase */}
               {currentPhase === 'input' && !isSubmitted ? (
                 <div className="text-center">
-                  {/* Prompt hero */}
                   <div className="mb-4">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
                   </div>
-
-                  {/* Core instruction — tight to prompt */}
-                  <p className="text-[14px] font-bold text-primary mb-7">
-                    What will most people say?
-                  </p>
-
-                  {/* Answer input row */}
+                  <p className="text-[14px] font-bold text-primary mb-7">What will most people say?</p>
                   <div className="relative">
                     <Input
                       value={inputVal}
@@ -228,13 +206,7 @@ export default function Play() {
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
-
-                  {/* Error */}
-                  {inputError && (
-                    <p className="text-[11px] text-destructive mt-2">{inputError}</p>
-                  )}
-
-                  {/* Social proof */}
+                  {inputError && <p className="text-[11px] text-destructive mt-2">{inputError}</p>}
                   {(playerCounts[prompt.id] ?? 0) > 0 && (
                     <p className="text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1.5 mt-5">
                       <Users className="h-3 w-3" />
@@ -243,43 +215,29 @@ export default function Play() {
                   )}
                 </div>
               ) : isSubmitted && currentPhase !== 'calculating' && currentPhase !== 'results' ? (
-                /* Submitted confirmation chip — only before results load */
                 <div className="text-center">
                   <div className="mb-3">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
                   </div>
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-2 bg-primary/8 text-primary px-5 py-2 rounded-full mt-2"
-                  >
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-2 bg-primary/8 text-primary px-5 py-2 rounded-full mt-2">
                     <Check className="h-3.5 w-3.5" />
                     <span className="text-sm font-display font-bold">{userAnswers[prompt.id]?.raw_answer}</span>
                   </motion.div>
                 </div>
               ) : null}
 
-              {/* Calculating */}
               {currentPhase === 'calculating' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-10 space-y-3"
-                >
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10 space-y-3">
                   <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
                   <p className="text-sm text-foreground font-display font-semibold">Finding matches…</p>
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[10px] text-muted-foreground/50">
-                    Comparing with other players
-                  </motion.p>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[10px] text-muted-foreground/50">Comparing with other players</motion.p>
                 </motion.div>
               )}
 
-              {/* Results */}
               {currentPhase === 'results' && isSubmitted && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-4">
                   <ResultsView promptId={prompt.id} />
 
-                  {/* Next prompt CTA */}
                   {currentIdx < prompts.length - 1 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4">
                       <Button onClick={goNext} className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform">
@@ -288,17 +246,11 @@ export default function Play() {
                     </motion.div>
                   )}
 
-                  {/* All done */}
                   {allDone && currentIdx === prompts.length - 1 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
-                      <div className="flex gap-2 justify-center">
-                        <Button className="rounded-xl h-9 font-semibold text-xs px-4" asChild>
-                          <Link to="/results">View all results</Link>
-                        </Button>
-                        <Button variant="outline" className="rounded-xl h-9 text-xs px-3 border-border/50" asChild>
-                          <Link to="/archive">Archive</Link>
-                        </Button>
-                      </div>
+                      <Button className="w-full rounded-xl h-9 font-semibold text-xs" asChild>
+                        <Link to="/archive">View all results</Link>
+                      </Button>
                       <Countdown />
                     </motion.div>
                   )}
@@ -307,7 +259,6 @@ export default function Play() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Nav arrows */}
           {showBottomNav && (
             <div className="flex justify-between mt-6">
               <button onClick={goPrev} disabled={currentIdx === 0} className="text-[10px] uppercase tracking-wide text-muted-foreground/30 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
@@ -321,7 +272,6 @@ export default function Play() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-border py-3 shrink-0">
         <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
       </footer>

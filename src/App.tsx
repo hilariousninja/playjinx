@@ -1,12 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Landing from "./pages/Landing";
 import Play from "./pages/Play";
 import Archive from "./pages/Archive";
-import TodayResults from "./pages/TodayResults";
 import AdminLogin from "./pages/AdminLogin";
 import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -38,8 +37,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/play" element={<Play />} />
-          <Route path="/results" element={<TodayResults />} />
           <Route path="/archive" element={<Archive />} />
+          <Route path="/results" element={<Navigate to="/archive" replace />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<DashboardPage><DashboardOverview /></DashboardPage>} />
