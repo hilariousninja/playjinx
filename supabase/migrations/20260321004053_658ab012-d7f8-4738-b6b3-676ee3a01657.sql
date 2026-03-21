@@ -1,0 +1,1 @@
+UPDATE prompts SET active = false, mode = 'archive' WHERE active = true AND date = '2026-03-21';
