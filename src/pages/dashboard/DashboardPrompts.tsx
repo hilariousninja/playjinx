@@ -284,13 +284,21 @@ function ExistingPromptCard({ p, onApprove, onReject, onTagSafe, onTagTest, upda
         </div>
       </div>
 
-      {p.total_players > 0 && (
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
-          <span>{p.total_players} players</span>
-          <span>{p.unique_answers} unique</span>
-          <span>Top: {p.top_answer_pct}%</span>
-        </div>
-      )}
+      {/* Lifecycle label */}
+      <div className="flex items-center gap-2 mb-2">
+        {p.total_players > 0 ? (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">⚠ Historical — {p.total_players} players</span>
+        ) : p.mode === 'archive' ? (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">Archived</span>
+        ) : p.active ? (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Live</span>
+        ) : (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground font-medium">Future bank</span>
+        )}
+        {p.total_players > 0 && (
+          <span className="text-[10px] text-muted-foreground">{p.unique_answers} unique · Top: {p.top_answer_pct}%</span>
+        )}
+      </div>
 
       {p.prompt_status === 'pending' && (
         <div className="flex gap-2 mt-2">

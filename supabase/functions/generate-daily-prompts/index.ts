@@ -17,12 +17,23 @@ interface PromptCandidate {
   total_players: number;
   performance: string | null;
   prompt_tag: string | null;
+  source?: "future_bank" | "generated_new" | "reused_archive";
 }
 
 interface TrioReport {
   trio: string;
   score: number;
   breakdown: Record<string, number>;
+}
+
+// ─── Prompt lifecycle helpers ───────────────────────────────────────
+
+/**
+ * A prompt is "played" (historical) if it has ever received answers.
+ * total_players > 0 is the primary signal.
+ */
+function isHistorical(p: { total_players: number; mode?: string }): boolean {
+  return p.total_players > 0 || p.mode === "archive";
 }
 
 // ─── Trio quality scoring ───────────────────────────────────────────
@@ -37,93 +48,54 @@ function getWordCategories(
   ];
 }
 
-/**
- * Score an individual prompt based on historical play data.
- * Higher = better quality prompt.
- */
 function scorePromptQuality(p: PromptCandidate): { total: number; details: Record<string, number> } {
   const details: Record<string, number> = {};
-
-  // Has the prompt ever been played? If not, neutral score.
   const hasHistory = p.total_players > 0;
 
-  // 1. Consensus quality: top_answer_pct in the sweet spot (25-55%)
-  //    Too high (>70%) = trivially obvious. Too low (<15%) = fragmented chaos.
   if (hasHistory) {
     const pct = p.top_answer_pct;
-    if (pct >= 25 && pct <= 55) {
-      details.consensus = 20; // sweet spot
-    } else if (pct >= 15 && pct <= 70) {
-      details.consensus = 10; // acceptable
-    } else if (pct > 70) {
-      details.consensus = -15; // too obvious
-    } else {
-      details.consensus = -10; // too fragmented
-    }
+    if (pct >= 25 && pct <= 55) details.consensus = 20;
+    else if (pct >= 15 && pct <= 70) details.consensus = 10;
+    else if (pct > 70) details.consensus = -15;
+    else details.consensus = -10;
   } else {
-    details.consensus = 5; // neutral for unplayed
+    details.consensus = 5;
   }
 
-  // 2. Fragmentation risk: too many unique answers relative to players
   if (hasHistory && p.total_players >= 5) {
     const ratio = p.unique_answers / p.total_players;
-    if (ratio > 0.8) {
-      details.fragmentation = -15; // almost everyone said something different
-    } else if (ratio > 0.6) {
-      details.fragmentation = -5;
-    } else if (ratio <= 0.4) {
-      details.fragmentation = 10; // healthy clustering
-    } else {
-      details.fragmentation = 0;
-    }
+    if (ratio > 0.8) details.fragmentation = -15;
+    else if (ratio > 0.6) details.fragmentation = -5;
+    else if (ratio <= 0.4) details.fragmentation = 10;
+    else details.fragmentation = 0;
   } else {
     details.fragmentation = 0;
   }
 
-  // 3. Performance tag bonus/penalty
-  if (p.performance === "strong") {
-    details.performance = 15;
-  } else if (p.performance === "decent") {
-    details.performance = 5;
-  } else if (p.performance === "weak") {
-    details.performance = -20;
-  } else {
-    details.performance = 0;
-  }
+  if (p.performance === "strong") details.performance = 15;
+  else if (p.performance === "decent") details.performance = 5;
+  else if (p.performance === "weak") details.performance = -20;
+  else details.performance = 0;
 
-  // 4. Prompt score (pre-calculated from word jinx_scores)
-  //    Prefer mid-range (40-70) over extremes
   const ps = p.prompt_score;
-  if (ps >= 40 && ps <= 70) {
-    details.prompt_score_range = 5;
-  } else if (ps < 25 || ps > 85) {
-    details.prompt_score_range = -5;
-  } else {
-    details.prompt_score_range = 0;
-  }
+  if (ps >= 40 && ps <= 70) details.prompt_score_range = 5;
+  else if (ps < 25 || ps > 85) details.prompt_score_range = -5;
+  else details.prompt_score_range = 0;
 
   const total = Object.values(details).reduce((s, v) => s + v, 0);
   return { total, details };
 }
 
-/**
- * Score a trio of prompts for set-level quality.
- * Combines individual prompt quality + set composition signals.
- */
 function scoreTrio(
   trio: PromptCandidate[],
   wordMap: Map<string, string>
 ): { score: number; breakdown: Record<string, number>; confidence: string } {
   const breakdown: Record<string, number> = {};
 
-  // ── Individual prompt quality (sum) ──
   let individualSum = 0;
-  for (const p of trio) {
-    individualSum += scorePromptQuality(p).total;
-  }
+  for (const p of trio) individualSum += scorePromptQuality(p).total;
   breakdown.individual_quality = individualSum;
 
-  // ── Category diversity ──
   const allCats = new Set<string>();
   for (const p of trio) {
     const [a, b] = getWordCategories(p, wordMap);
@@ -132,31 +104,21 @@ function scoreTrio(
   }
   breakdown.category_diversity = allCats.size * 12;
 
-  // ── Word uniqueness (no repeated words across trio) ──
   const allWords = trio.flatMap(p => [p.word_a.toLowerCase(), p.word_b.toLowerCase()]);
   const uniqueWords = new Set(allWords);
-  if (uniqueWords.size < allWords.length) {
-    breakdown.word_overlap = (allWords.length - uniqueWords.size) * -50;
-  } else {
-    breakdown.word_overlap = 0;
-  }
+  breakdown.word_overlap = uniqueWords.size < allWords.length
+    ? (allWords.length - uniqueWords.size) * -50 : 0;
 
-  // ── Difficulty spread (mix of prompt_scores) ──
   const scores = trio.map(p => p.prompt_score);
-  const range = Math.max(...scores) - Math.min(...scores);
-  breakdown.difficulty_spread = Math.min(range, 40);
+  breakdown.difficulty_spread = Math.min(Math.max(...scores) - Math.min(...scores), 40);
 
-  // ── Self-overlap penalty (both words same category in a pair) ──
   let selfOverlapPenalty = 0;
   for (const p of trio) {
     const [catA, catB] = getWordCategories(p, wordMap);
-    if (catA !== "unknown" && catA === catB) {
-      selfOverlapPenalty -= 25;
-    }
+    if (catA !== "unknown" && catA === catB) selfOverlapPenalty -= 25;
   }
   breakdown.self_overlap = selfOverlapPenalty;
 
-  // ── Cross-pair category overlap ──
   let crossOverlap = 0;
   for (let i = 0; i < trio.length; i++) {
     for (let j = i + 1; j < trio.length; j++) {
@@ -169,44 +131,24 @@ function scoreTrio(
   }
   breakdown.cross_overlap = crossOverlap;
 
-  // ── Penalise all-weak or all-unplayed trios ──
   const weakCount = trio.filter(p => p.performance === "weak").length;
-  const unplayedCount = trio.filter(p => p.total_players === 0).length;
-  if (weakCount >= 2) breakdown.weak_cluster = -20;
-  else breakdown.weak_cluster = 0;
-  if (unplayedCount >= 3) breakdown.untested_risk = -10;
-  else breakdown.untested_risk = 0;
+  breakdown.weak_cluster = weakCount >= 2 ? -20 : 0;
 
-  // ── Bonus for having a mix of strong + test/unplayed (discovery) ──
+  const unplayedCount = trio.filter(p => p.total_players === 0).length;
+  breakdown.untested_risk = unplayedCount >= 3 ? -10 : 0;
+
   const hasStrong = trio.some(p => p.performance === "strong");
   const hasTest = trio.some(p => p.prompt_tag === "test" || p.total_players === 0);
-  if (hasStrong && hasTest) {
-    breakdown.discovery_mix = 10;
-  } else {
-    breakdown.discovery_mix = 0;
-  }
+  breakdown.discovery_mix = hasStrong && hasTest ? 10 : 0;
 
-  // ── Surprise bonus: reward one "wild card" prompt in an otherwise safe trio ──
-  // A wild card is a test-tagged or unplayed prompt among 2+ strong/decent prompts.
-  // This prevents over-optimising toward safe-only trios.
   const solidCount = trio.filter(p => p.performance === "strong" || p.performance === "decent").length;
   const wildCards = trio.filter(p => p.prompt_tag === "test" || (p.total_players === 0 && p.performance === null));
-  if (solidCount >= 2 && wildCards.length === 1) {
-    breakdown.surprise_factor = 12; // one risky pick in a strong set = interesting
-  } else if (solidCount === 3) {
-    breakdown.surprise_factor = -3; // all proven = slightly boring, still fine
-  } else {
-    breakdown.surprise_factor = 0;
-  }
+  if (solidCount >= 2 && wildCards.length === 1) breakdown.surprise_factor = 12;
+  else if (solidCount === 3) breakdown.surprise_factor = -3;
+  else breakdown.surprise_factor = 0;
 
   const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
-
-  // ── Editorial confidence label ──
-  let confidence: string;
-  if (score >= 100) confidence = "strong";
-  else if (score >= 50) confidence = "acceptable";
-  else confidence = "risky";
-
+  const confidence = score >= 100 ? "strong" : score >= 50 ? "acceptable" : "risky";
   return { score, breakdown, confidence };
 }
 
@@ -226,11 +168,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if this is a dry-run / audit request
     let dryRun = false;
+    let forceAiGenerate = false;
     try {
       const body = await req.clone().json();
       if (body?.dry_run) dryRun = true;
+      if (body?.ai_generate) forceAiGenerate = true;
     } catch { /* no body is fine */ }
 
     const supabase = createClient(
@@ -240,15 +183,14 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Check if we already have active prompts for today
+    // ─── Audit: return info about current active set ───
     const { data: existing } = await supabase
       .from("prompts")
       .select("*")
       .eq("active", true)
       .eq("date", today);
 
-    if (existing && existing.length >= 3) {
-      // Return audit info for the current set
+    if (existing && existing.length >= 3 && !forceAiGenerate) {
       const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
       const wordMap = new Map<string, string>();
       for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
@@ -269,7 +211,16 @@ Deno.serve(async (req) => {
         unique_answers: p.unique_answers,
         total_players: p.total_players,
         quality: scorePromptQuality(p),
+        source: isHistorical(p) ? "reused_archive" : "future_bank",
+        has_answer_history: p.total_players > 0,
       }));
+
+      // Check for lifecycle warnings
+      const reusedCount = individualDetails.filter(p => p.has_answer_history).length;
+      const warnings: string[] = [];
+      if (reusedCount > 0) {
+        warnings.push(`⚠ ${reusedCount} prompt(s) in today's set have existing answer history — these are reused archive prompts, not fresh.`);
+      }
 
       return new Response(
         JSON.stringify({
@@ -280,13 +231,212 @@ Deno.serve(async (req) => {
           editorial_confidence: confidence,
           score_breakdown: breakdown,
           prompts: individualDetails,
+          warnings,
+          lifecycle: {
+            reused_archive: reusedCount,
+            fresh: individualDetails.length - reusedCount,
+          },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // ─── AI-powered trio generation ───
+    if (forceAiGenerate) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch word database
+      const { data: wordRows } = await supabase
+        .from("words")
+        .select("word, category, jinx_score, times_used, status")
+        .in("status", ["keep", "approved", "unreviewed"])
+        .limit(500);
+
+      if (!wordRows || wordRows.length < 6) {
+        return new Response(JSON.stringify({ error: "Not enough words in database" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get historical prompts to avoid reuse
+      const { data: historicalPrompts } = await supabase
+        .from("prompts")
+        .select("word_a, word_b")
+        .gt("total_players", 0)
+        .limit(500);
+
+      const usedPairs = new Set((historicalPrompts ?? []).map(p =>
+        [p.word_a.toLowerCase(), p.word_b.toLowerCase()].sort().join("|")
+      ));
+
+      // Get all existing prompts to avoid exact duplicates
+      const { data: allPrompts } = await supabase
+        .from("prompts")
+        .select("word_a, word_b")
+        .limit(2000);
+
+      const existingPairs = new Set((allPrompts ?? []).map(p =>
+        [p.word_a.toLowerCase(), p.word_b.toLowerCase()].sort().join("|")
+      ));
+
+      const categories = [...new Set(wordRows.map(w => w.category).filter(c => c !== "Uncategorized"))];
+      const wordList = wordRows.map(w => `${w.word} (${w.category}, score: ${w.jinx_score})`).join(", ");
+
+      const systemPrompt = `You are a game designer for JINX Daily. Players see two words and type one linking word they think most people will say. The goal is crowd convergence — mind-matching.
+
+A great JINX trio needs 3 pairs where each pair:
+- Is instantly understandable (2-second comprehension)
+- Has strong shared-answer gravity (at least 1 obvious crowd answer)
+- Has controlled spread (some variation, not chaos)
+- Creates a satisfying reveal
+- Feels natural and playable
+
+The trio together should feel varied, not repetitive. Different categories, different energies, different likely answers.
+
+HARD RULES:
+- Do NOT use these already-played pairs: ${[...usedPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
+- Do NOT duplicate: ${[...existingPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
+- Each word can appear at most ONCE across the trio
+- Prefer cross-category pairs
+- The "instant JINX feel" test: Would a player immediately think "I know what most people would say"?`;
+
+      const userPrompt = `Generate 3 strong JINX pairs for a daily set, using words from this database:
+
+${wordList}
+
+Categories available: ${categories.join(", ")}
+
+For each pair, return:
+- word_a, word_b (from the database above)
+- predicted_top_5 likely crowd answers
+- consensus_strength (0-100)
+- fragmentation_risk (0-100, lower = better)
+- fast_comprehension (0-100)
+- reveal_satisfaction (0-100)
+- naturalness (0-100)
+- total_score (0-100)
+- why_jinxable
+- why_might_fail
+
+Also return trio_reasoning explaining why these 3 work well together and any warnings.
+
+Return JSON with this structure:
+{
+  "pairs": [
+    { "word_a": "WORD", "word_b": "WORD", "predicted_top_5": [...], "consensus_strength": 80, "fragmentation_risk": 15, "fast_comprehension": 90, "reveal_satisfaction": 85, "naturalness": 90, "total_score": 85, "why_jinxable": "...", "why_might_fail": "..." }
+  ],
+  "trio_reasoning": "Why these 3 pairs work well as a daily set",
+  "trio_confidence": "strong",
+  "warnings": ["any concerns"],
+  "runner_ups": [
+    { "word_a": "WORD", "word_b": "WORD", "total_score": 75, "reason": "why this was close" }
+  ]
+}`;
+
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "generate_trio",
+              description: "Generate a scored JINX daily trio",
+              parameters: {
+                type: "object",
+                properties: {
+                  pairs: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        word_a: { type: "string" },
+                        word_b: { type: "string" },
+                        predicted_top_5: { type: "array", items: { type: "string" } },
+                        consensus_strength: { type: "number" },
+                        fragmentation_risk: { type: "number" },
+                        fast_comprehension: { type: "number" },
+                        reveal_satisfaction: { type: "number" },
+                        naturalness: { type: "number" },
+                        total_score: { type: "number" },
+                        why_jinxable: { type: "string" },
+                        why_might_fail: { type: "string" },
+                      },
+                      required: ["word_a", "word_b", "predicted_top_5", "total_score", "why_jinxable", "why_might_fail"],
+                    },
+                  },
+                  trio_reasoning: { type: "string" },
+                  trio_confidence: { type: "string", enum: ["strong", "acceptable", "risky"] },
+                  warnings: { type: "array", items: { type: "string" } },
+                  runner_ups: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        word_a: { type: "string" },
+                        word_b: { type: "string" },
+                        total_score: { type: "number" },
+                        reason: { type: "string" },
+                      },
+                    },
+                  },
+                },
+                required: ["pairs", "trio_reasoning", "trio_confidence"],
+              },
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "generate_trio" } },
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errText = await aiResponse.text();
+        console.error("AI gateway error:", aiResponse.status, errText);
+        return new Response(JSON.stringify({ error: "AI generation failed" }), {
+          status: aiResponse.status === 429 ? 429 : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const aiData = await aiResponse.json();
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      let parsed: any;
+      try {
+        parsed = JSON.parse(toolCall.function.arguments);
+      } catch {
+        return new Response(JSON.stringify({ error: "Failed to parse AI response" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        message: "AI-generated trio candidates",
+        ai_generated: true,
+        pairs: parsed.pairs ?? [],
+        trio_reasoning: parsed.trio_reasoning ?? "",
+        trio_confidence: parsed.trio_confidence ?? "unknown",
+        warnings: parsed.warnings ?? [],
+        runner_ups: parsed.runner_ups ?? [],
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── Standard generation: only from UNUSED approved future bank ───
     if (!dryRun) {
-      // Deactivate old active prompts
       await supabase
         .from("prompts")
         .update({ active: false, mode: "archive" })
@@ -304,36 +454,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── Build word→category map ───
-    const { data: wordRows } = await supabase
-      .from("words")
-      .select("word, category")
-      .limit(1000);
-
+    const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
     const wordMap = new Map<string, string>();
-    for (const w of wordRows ?? []) {
-      wordMap.set(w.word.toLowerCase(), w.category);
-    }
+    for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
 
-    // ─── Fetch approved prompt candidates ───
-    // Fetch approved prompt candidates (safe or untagged = safe, test = test)
-    // Allow reuse of previously played prompts (don't filter by date IS NULL)
-    const { data: approvedPrompts } = await supabase
+    // ─── STRICT LIFECYCLE: Only fetch UNUSED approved prompts ───
+    // "Unused" = approved, not active, has NEVER been played (total_players = 0),
+    // and mode is NOT 'archive' (never been live before)
+    const { data: futureBank } = await supabase
       .from("prompts")
       .select("*")
       .eq("prompt_status", "approved")
       .eq("active", false)
-      .neq("date", today) // don't pick today's deactivated ones
+      .eq("total_players", 0)        // HARD SAFEGUARD: never played
+      .neq("mode", "archive")        // never been live
       .limit(100);
 
-    const safePrompts = (approvedPrompts ?? []).filter(
-      p => !p.prompt_tag || p.prompt_tag === "safe"
-    );
-    const testPrompts = (approvedPrompts ?? []).filter(
-      p => p.prompt_tag === "test"
-    );
-
-    const toCandidate = (p: any): PromptCandidate => ({
+    const toCandidate = (p: any, source: "future_bank" | "generated_new"): PromptCandidate => ({
       id: p.id,
       word_a: p.word_a,
       word_b: p.word_b,
@@ -343,12 +480,12 @@ Deno.serve(async (req) => {
       total_players: p.total_players ?? 0,
       performance: p.performance ?? null,
       prompt_tag: p.prompt_tag ?? null,
+      source,
     });
 
-    const safePool = safePrompts.map(toCandidate);
-    const testPool = testPrompts.map(toCandidate);
+    const futurePool = (futureBank ?? []).map(p => toCandidate(p, "future_bank"));
 
-    // ─── Sample trios and pick the best ───
+    // ─── Try to build trio from future bank ───
     let bestTrio: PromptCandidate[] = [];
     let bestScore = -Infinity;
     let bestBreakdown: Record<string, number> = {};
@@ -357,13 +494,11 @@ Deno.serve(async (req) => {
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
       const { score, breakdown, confidence } = scoreTrio(candidates, wordMap);
-      const report: TrioReport = {
+      topCandidates.push({
         trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
         score,
         breakdown,
-      };
-      topCandidates.push(report);
-
+      });
       if (score > bestScore) {
         bestScore = score;
         bestTrio = candidates;
@@ -372,20 +507,10 @@ Deno.serve(async (req) => {
       }
     };
 
-    if (safePool.length >= 2 && testPool.length >= 1) {
-      const attempts = Math.min(120, safePool.length * (safePool.length - 1) * testPool.length);
+    if (futurePool.length >= needed) {
+      const attempts = Math.min(200, futurePool.length ** 2);
       for (let a = 0; a < attempts; a++) {
-        const si = Math.floor(Math.random() * safePool.length);
-        let sj = Math.floor(Math.random() * safePool.length);
-        while (sj === si && safePool.length > 1) sj = Math.floor(Math.random() * safePool.length);
-        const ti = Math.floor(Math.random() * testPool.length);
-        sampleTrio([safePool[si], safePool[sj], testPool[ti]]);
-      }
-    } else {
-      const combined = [...safePool, ...testPool];
-      const attempts = Math.min(100, combined.length * (combined.length - 1));
-      for (let a = 0; a < attempts; a++) {
-        const pool = [...combined];
+        const pool = [...futurePool];
         const picked: PromptCandidate[] = [];
         for (let i = 0; i < needed && pool.length > 0; i++) {
           const idx = Math.floor(Math.random() * pool.length);
@@ -396,11 +521,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Sort top candidates for the audit log (top 5)
     topCandidates.sort((a, b) => b.score - a.score);
-    const auditLog = topCandidates.slice(0, 5);
 
-    // ─── Activate or return dry-run results ───
+    // ─── Activate best trio if found ───
     if (bestTrio.length >= needed) {
       const toActivate = bestTrio.slice(0, needed);
 
@@ -413,42 +536,43 @@ Deno.serve(async (req) => {
         }
       }
 
-      const summary = toActivate.map(p => `${p.word_a}+${p.word_b}`).join(", ");
-      const individualDetails = toActivate.map(p => ({
-        pair: `${p.word_a} + ${p.word_b}`,
-        tag: p.prompt_tag,
-        performance: p.performance,
-        top_answer_pct: p.top_answer_pct,
-        unique_answers: p.unique_answers,
-        total_players: p.total_players,
-        quality: scorePromptQuality(p),
-      }));
-
       return new Response(
         JSON.stringify({
           message: dryRun ? "Dry run — would select this trio" : "Activated curated daily set",
           dry_run: dryRun,
           count: toActivate.length,
-          trio: summary,
+          trio: toActivate.map(p => `${p.word_a}+${p.word_b}`).join(", "),
           trio_quality_score: bestScore,
           editorial_confidence: bestConfidence,
           score_breakdown: bestBreakdown,
-          prompts: individualDetails,
-          runner_ups: auditLog.slice(1, 4),
+          prompts: toActivate.map(p => ({
+            pair: `${p.word_a} + ${p.word_b}`,
+            tag: p.prompt_tag,
+            performance: p.performance,
+            top_answer_pct: p.top_answer_pct,
+            unique_answers: p.unique_answers,
+            total_players: p.total_players,
+            quality: scorePromptQuality(p),
+            source: p.source,
+            has_answer_history: false,
+          })),
+          runner_ups: topCandidates.slice(1, 4),
           candidates_sampled: topCandidates.length,
+          warnings: [],
+          lifecycle: { future_bank: toActivate.length, generated_new: 0, reused_archive: 0 },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ─── FALLBACK: Generate from word pairs ───
+    // ─── FALLBACK: Generate from source words (never reuse archive) ───
     const shuffle = <T>(arr: T[]): T[] =>
       arr.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
 
     let { data: words } = await supabase
       .from("words")
       .select("word, jinx_score, category")
-      .eq("status", "approved")
+      .in("status", ["approved", "keep"])
       .limit(500);
 
     if (!words || words.length < needed * 2) {
@@ -461,33 +585,53 @@ Deno.serve(async (req) => {
 
     if (!words || words.length < needed * 2) {
       return new Response(
-        JSON.stringify({ error: "Not enough words in database" }),
+        JSON.stringify({ error: "Not enough words in database. Add approved words or generate AI candidates." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Exclude pairs that already exist as prompts (played or not)
+    const { data: allExisting } = await supabase
+      .from("prompts")
+      .select("word_a, word_b")
+      .limit(2000);
+
+    const existingPairKeys = new Set((allExisting ?? []).map(p =>
+      [p.word_a.toLowerCase(), p.word_b.toLowerCase()].sort().join("|")
+    ));
+
     let bestFallbackTrio: PromptCandidate[] = [];
     let bestFallbackScore = -Infinity;
 
-    for (let attempt = 0; attempt < 60; attempt++) {
+    for (let attempt = 0; attempt < 80; attempt++) {
       const shuffled = shuffle(words);
       const candidateTrio: PromptCandidate[] = [];
-      for (let i = 0; i < needed; i++) {
-        const wA = shuffled[i * 2];
-        const wB = shuffled[i * 2 + 1];
-        if (!wA || !wB) break;
-        if (wA.category === wB.category && wA.category !== "Uncategorized") continue;
-        candidateTrio.push({
-          id: `fallback-${i}`,
-          word_a: wA.word.toUpperCase(),
-          word_b: wB.word.toUpperCase(),
-          prompt_score: Math.round(((wA.jinx_score ?? 50) + (wB.jinx_score ?? 50)) / 2),
-          top_answer_pct: 0,
-          unique_answers: 0,
-          total_players: 0,
-          performance: null,
-          prompt_tag: null,
-        });
+      const usedWords = new Set<string>();
+
+      for (let i = 0; i < shuffled.length - 1 && candidateTrio.length < needed; i++) {
+        for (let j = i + 1; j < shuffled.length && candidateTrio.length < needed; j++) {
+          const wA = shuffled[i];
+          const wB = shuffled[j];
+          if (usedWords.has(wA.word) || usedWords.has(wB.word)) continue;
+          if (wA.category === wB.category && wA.category !== "Uncategorized") continue;
+          const key = [wA.word.toLowerCase(), wB.word.toLowerCase()].sort().join("|");
+          if (existingPairKeys.has(key)) continue;
+
+          usedWords.add(wA.word);
+          usedWords.add(wB.word);
+          candidateTrio.push({
+            id: `generated-${candidateTrio.length}`,
+            word_a: wA.word.toUpperCase(),
+            word_b: wB.word.toUpperCase(),
+            prompt_score: Math.round(((wA.jinx_score ?? 50) + (wB.jinx_score ?? 50)) / 2),
+            top_answer_pct: 0,
+            unique_answers: 0,
+            total_players: 0,
+            performance: null,
+            prompt_tag: null,
+            source: "generated_new",
+          });
+        }
       }
 
       if (candidateTrio.length >= needed) {
@@ -500,35 +644,32 @@ Deno.serve(async (req) => {
     }
 
     if (bestFallbackTrio.length < needed) {
-      const shuffled = shuffle(words);
-      for (let i = 0; i < needed; i++) {
-        bestFallbackTrio.push({
-          id: `fallback-last-${i}`,
-          word_a: shuffled[i * 2].word.toUpperCase(),
-          word_b: shuffled[i * 2 + 1].word.toUpperCase(),
-          prompt_score: Math.round(((shuffled[i * 2].jinx_score ?? 50) + (shuffled[i * 2 + 1].jinx_score ?? 50)) / 2),
-          top_answer_pct: 0,
-          unique_answers: 0,
-          total_players: 0,
-          performance: null,
-          prompt_tag: null,
-        });
-      }
+      return new Response(
+        JSON.stringify({ error: "Could not generate enough unique pairs. Consider adding more approved words or generating AI candidates." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (dryRun) {
       return new Response(
         JSON.stringify({
-          message: "Dry run — would generate fallback trio",
+          message: "Dry run — would generate new trio from source words",
           dry_run: true,
           trio: bestFallbackTrio.map(p => `${p.word_a}+${p.word_b}`).join(", "),
           trio_quality_score: bestFallbackScore,
+          prompts: bestFallbackTrio.map(p => ({
+            pair: `${p.word_a} + ${p.word_b}`,
+            source: "generated_new",
+            has_answer_history: false,
+          })),
+          warnings: ["Generated from source words — not from approved future bank. Consider generating AI candidates first."],
+          lifecycle: { future_bank: 0, generated_new: needed, reused_archive: 0 },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const newPrompts = bestFallbackTrio.map(p => ({
+    const newPrompts = bestFallbackTrio.slice(0, needed).map(p => ({
       word_a: p.word_a,
       word_b: p.word_b,
       prompt_score: p.prompt_score,
@@ -547,9 +688,11 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        message: "Generated curated daily prompts (fallback)",
+        message: "Generated new daily prompts from source words",
         prompts: inserted,
         trio_quality_score: bestFallbackScore,
+        warnings: ["These pairs were auto-generated from source words, not from the approved future bank."],
+        lifecycle: { future_bank: 0, generated_new: needed, reused_archive: 0 },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
