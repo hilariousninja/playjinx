@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
       .eq("active", true)
       .eq("date", today);
 
-    if (!dryRun && existing && existing.length >= 3) {
+    if (existing && existing.length >= 3) {
       // Return audit info for the current set
       const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
       const wordMap = new Map<string, string>();
