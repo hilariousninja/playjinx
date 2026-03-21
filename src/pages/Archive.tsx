@@ -20,6 +20,7 @@ export default function Archive() {
   const [submittedMap, setSubmittedMap] = useState<Record<string, boolean>>({});
   const [userAnswers, setUserAnswers] = useState<Record<string, DbAnswer>>({});
   const [totalCounts, setTotalCounts] = useState<Record<string, number>>({});
+  const [dailyPlayers, setDailyPlayers] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
