@@ -5,7 +5,7 @@ import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap } from 'lucid
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getArchivePrompts, hasSubmitted, getTotalSubmissions, submitAnswer, getUserAnswer, type DbPrompt, type DbAnswer } from '@/lib/store';
+import { getArchivePrompts, hasSubmitted, getTotalSubmissions, submitAnswer, getUserAnswer, getDailyUniquePlayers, type DbPrompt, type DbAnswer } from '@/lib/store';
 import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import JinxLogo from '@/components/JinxLogo';
@@ -20,6 +20,7 @@ export default function Archive() {
   const [submittedMap, setSubmittedMap] = useState<Record<string, boolean>>({});
   const [userAnswers, setUserAnswers] = useState<Record<string, DbAnswer>>({});
   const [totalCounts, setTotalCounts] = useState<Record<string, number>>({});
+  const [dailyPlayers, setDailyPlayers] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -37,6 +38,18 @@ export default function Archive() {
       setSubmittedMap(subMap);
       setUserAnswers(ansMap);
       setTotalCounts(totals);
+
+      // Compute unique players per day
+      const byDate: Record<string, string[]> = {};
+      for (const p of ps) {
+        (byDate[p.date] = byDate[p.date] || []).push(p.id);
+      }
+      const dpMap: Record<string, number> = {};
+      await Promise.all(Object.entries(byDate).map(async ([date, ids]) => {
+        dpMap[date] = await getDailyUniquePlayers(ids);
+      }));
+      setDailyPlayers(dpMap);
+
       setLoading(false);
     })();
   }, []);
@@ -242,7 +255,7 @@ export default function Archive() {
                   {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                 </span>
                 <span className="text-[10px] text-muted-foreground/25 font-display tabular-nums">
-                  {ps.reduce((sum, p) => sum + (totalCounts[p.id] ?? 0), 0)} players
+                  {dailyPlayers[date] ?? 0} players
                 </span>
               </div>
 
