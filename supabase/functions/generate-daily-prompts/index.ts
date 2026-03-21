@@ -316,23 +316,22 @@ Deno.serve(async (req) => {
     }
 
     // ─── Fetch approved prompt candidates ───
-    const { data: safePrompts } = await supabase
+    // Fetch approved prompt candidates (safe or untagged = safe, test = test)
+    // Allow reuse of previously played prompts (don't filter by date IS NULL)
+    const { data: approvedPrompts } = await supabase
       .from("prompts")
       .select("*")
       .eq("prompt_status", "approved")
-      .eq("prompt_tag", "safe")
       .eq("active", false)
-      .is("date", null)
-      .limit(50);
+      .neq("date", today) // don't pick today's deactivated ones
+      .limit(100);
 
-    const { data: testPrompts } = await supabase
-      .from("prompts")
-      .select("*")
-      .eq("prompt_status", "approved")
-      .eq("prompt_tag", "test")
-      .eq("active", false)
-      .is("date", null)
-      .limit(50);
+    const safePrompts = (approvedPrompts ?? []).filter(
+      p => !p.prompt_tag || p.prompt_tag === "safe"
+    );
+    const testPrompts = (approvedPrompts ?? []).filter(
+      p => p.prompt_tag === "test"
+    );
 
     const toCandidate = (p: any): PromptCandidate => ({
       id: p.id,
