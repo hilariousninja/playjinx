@@ -113,7 +113,7 @@ function scorePromptQuality(p: PromptCandidate): { total: number; details: Recor
 function scoreTrio(
   trio: PromptCandidate[],
   wordMap: Map<string, string>
-): { score: number; breakdown: Record<string, number> } {
+): { score: number; breakdown: Record<string, number>; confidence: string } {
   const breakdown: Record<string, number> = {};
 
   // ── Individual prompt quality (sum) ──
