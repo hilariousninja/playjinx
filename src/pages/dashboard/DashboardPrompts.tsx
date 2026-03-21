@@ -566,24 +566,24 @@ export default function DashboardPrompts() {
         </div>
       )}
 
-      {/* ─── Review tab ─── */}
+      {/* ─── Candidate review tab ─── */}
       {tab === 'review' && (
         <div className="space-y-2">
-          {pending.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-10">No pending prompts.</p>
+          {candidateQueue.length === 0 ? (
+            <p className="py-10 text-center text-xs text-muted-foreground">No candidate pairs waiting for review.</p>
           ) : (
             <>
-              <div className="bg-card border border-border/50 rounded-lg p-3 text-[10px] text-muted-foreground mb-2">
-                <p className="font-semibold text-foreground text-xs mb-1">Quality Gate</p>
-                <p>✅ Approve: clear shared pathway, likely convergence · ❌ Reject: too abstract or scattered</p>
+              <div className="mb-2 rounded-lg border border-border/50 bg-card p-3 text-[10px] text-muted-foreground">
+                <p className="mb-1 text-xs font-semibold text-foreground">Candidate gate</p>
+                <p>Approve pairs with clear convergence potential; reject abstract or fragmentation-prone pairs.</p>
               </div>
-              {pending.map(p => (
+              {candidateQueue.map((p) => (
                 <ExistingPromptCard
                   key={p.id}
                   p={p}
                   updating={updating}
-                  onApprove={id => updatePrompt(id, { prompt_status: 'approved' })}
-                  onReject={id => updatePrompt(id, { prompt_status: 'rejected' })}
+                  onApprove={(id) => updatePrompt(id, { prompt_status: 'approved' })}
+                  onReject={(id) => updatePrompt(id, { prompt_status: 'rejected' })}
                 />
               ))}
             </>
@@ -591,30 +591,31 @@ export default function DashboardPrompts() {
         </div>
       )}
 
-      {/* ─── Library tab ─── */}
+      {/* ─── Future bank tab ─── */}
       {tab === 'approved' && (
         <div className="space-y-2">
-          {approved.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-10">No approved prompts yet.</p>
+          {futureBank.length === 0 ? (
+            <p className="py-10 text-center text-xs text-muted-foreground">No future-bank prompts yet.</p>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] text-muted-foreground">{approved.length} approved prompts</p>
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-[10px] text-muted-foreground">{futureBank.length} approved unplayed prompts</p>
                 <button
-                  onClick={() => setSortBy(s => s === 'score' ? 'recent' : 'score')}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setSortBy((s) => (s === 'score' ? 'recent' : 'score'))}
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <ArrowUpDown className="h-3 w-3" />
                   {sortBy === 'score' ? 'By score' : 'By date'}
                 </button>
               </div>
-              {approved.map(p => (
+              <p className="text-[10px] text-muted-foreground">“Safe” and “Test” are lightweight editorial tags, not scheduling states.</p>
+              {futureBank.map((p) => (
                 <ExistingPromptCard
                   key={p.id}
                   p={p}
                   updating={updating}
-                  onTagSafe={id => updatePrompt(id, { prompt_tag: 'safe' })}
-                  onTagTest={id => updatePrompt(id, { prompt_tag: 'test' })}
+                  onTagSafe={(id) => updatePrompt(id, { prompt_tag: 'safe' })}
+                  onTagTest={(id) => updatePrompt(id, { prompt_tag: 'test' })}
                 />
               ))}
             </>
@@ -622,21 +623,29 @@ export default function DashboardPrompts() {
         </div>
       )}
 
-      {/* ─── Feedback tab ─── */}
+      {/* ─── Learning tab ─── */}
       {tab === 'feedback' && (
         <div className="space-y-2">
-          {played.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-10">No played prompts yet.</p>
+          {playedLearning.length === 0 ? (
+            <p className="py-10 text-center text-xs text-muted-foreground">No historical play data yet.</p>
           ) : (
-            played.map(p => (
-              <div key={p.id} className="bg-card border border-border/50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="font-display font-bold text-sm">
+            playedLearning.map((p) => (
+              <div key={p.id} className="rounded-lg border border-border/50 bg-card p-4">
+                <div className="mb-1 flex items-center justify-between">
+                  <p className="font-display text-sm font-bold">
                     {p.word_a} <span className="text-primary">+</span> {p.word_b}
                   </p>
-                  <span className={`text-[10px] font-display font-bold ${
-                    p.performance === 'strong' ? 'text-[hsl(var(--keep))]' : p.performance === 'weak' ? 'text-destructive' : 'text-muted-foreground'
-                  }`}>{p.performance ?? '—'}</span>
+                  <span
+                    className={`text-[10px] font-display font-bold ${
+                      p.performance === 'strong'
+                        ? 'text-[hsl(var(--keep))]'
+                        : p.performance === 'weak'
+                          ? 'text-destructive'
+                          : 'text-muted-foreground'
+                    }`}
+                  >
+                    {p.performance ?? '—'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
                   <span>{p.total_players} players</span>
