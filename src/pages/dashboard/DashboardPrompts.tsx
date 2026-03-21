@@ -424,33 +424,49 @@ export default function DashboardPrompts() {
 
   const visibleCandidates = candidates.filter(c => !dismissed.has(c.pair));
 
-  const pending = useMemo(() => prompts.filter(p => p.prompt_status === 'pending').sort((a, b) => b.prompt_score - a.prompt_score), [prompts]);
-  const approved = useMemo(() => {
-    const list = prompts.filter(p => p.prompt_status === 'approved');
+  const candidateQueue = useMemo(
+    () =>
+      prompts
+        .filter(p => p.prompt_status === 'pending' && p.total_players === 0 && p.mode !== 'archive')
+        .sort((a, b) => b.prompt_score - a.prompt_score),
+    [prompts]
+  );
+
+  const futureBank = useMemo(() => {
+    const list = prompts.filter(
+      p => p.prompt_status === 'approved' && p.total_players === 0 && !p.active && p.mode !== 'archive'
+    );
     return sortBy === 'score' ? list.sort((a, b) => b.prompt_score - a.prompt_score) : list;
   }, [prompts, sortBy]);
-  const played = useMemo(() => prompts.filter(p => p.total_players > 0).sort((a, b) => b.total_players - a.total_players), [prompts]);
+
+  const playedLearning = useMemo(
+    () => prompts.filter(p => p.total_players > 0).sort((a, b) => b.total_players - a.total_players),
+    [prompts]
+  );
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   }
 
   const tabs = [
-    { key: 'discover', label: 'Discover', icon: Sparkles },
-    { key: 'review', label: `Review (${pending.length})`, icon: Eye },
-    { key: 'approved', label: `Library (${approved.length})`, icon: Shield },
-    { key: 'feedback', label: `Feedback (${played.length})`, icon: Gauge },
+    { key: 'discover', label: 'Generate', icon: Sparkles },
+    { key: 'review', label: `Candidates (${candidateQueue.length})`, icon: Eye },
+    { key: 'approved', label: `Future Bank (${futureBank.length})`, icon: Shield },
+    { key: 'feedback', label: `Learn (${playedLearning.length})`, icon: Gauge },
   ];
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold">Prompt Quality</h1>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-sm font-semibold">Prompt candidates</h1>
+          <p className="text-[10px] text-muted-foreground">Generate from words → review → move strong pairs into future bank.</p>
+        </div>
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-          <span>{pending.length} pending</span>
-          <span>{approved.filter(p => p.prompt_tag === 'safe').length} safe</span>
-          <span>{approved.filter(p => p.prompt_tag === 'test').length} test</span>
+          <span>{candidateQueue.length} to review</span>
+          <span>{futureBank.filter(p => p.prompt_tag === 'safe').length} safe-tagged</span>
+          <span>{futureBank.filter(p => p.prompt_tag === 'test').length} test-tagged</span>
         </div>
       </div>
 
