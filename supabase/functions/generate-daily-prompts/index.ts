@@ -182,20 +182,67 @@ Deno.serve(async (req) => {
     );
 
     const today = new Date().toISOString().split("T")[0];
+    const pairKey = (a: string, b: string) => [a.toLowerCase(), b.toLowerCase()].sort().join("|");
 
-    // ─── Audit: return info about current active set ───
-    const { data: existing } = await supabase
+    // Historical prompt pairs: any pair that has actual answer history
+    const { data: historicalPairs } = await supabase
+      .from("prompts")
+      .select("word_a, word_b")
+      .gt("total_players", 0)
+      .limit(2000);
+
+    const historicalPairKeys = new Set((historicalPairs ?? []).map((p) => pairKey(p.word_a, p.word_b)));
+
+    let { data: existingForToday } = await supabase
       .from("prompts")
       .select("*")
       .eq("active", true)
       .eq("date", today);
 
-    if (existing && existing.length >= 3 && !forceAiGenerate) {
+    const isInvalidActivePrompt = (p: any) => {
+      const hasAnswerHistory = (p.total_players ?? 0) > 0;
+      const pairWasHistorical = historicalPairKeys.has(pairKey(p.word_a, p.word_b));
+      return hasAnswerHistory || p.mode === "archive" || pairWasHistorical;
+    };
+
+    const invalidActivePrompts = (existingForToday ?? []).filter(isInvalidActivePrompt);
+
+    // Hard safeguard cleanup: historical prompts must not stay in today's active set
+    if (invalidActivePrompts.length > 0 && !dryRun) {
+      for (const p of invalidActivePrompts) {
+        const createdDate = new Date(p.created_at).toISOString().split("T")[0];
+        const hasAnswerHistory = (p.total_players ?? 0) > 0;
+
+        const patch: Record<string, unknown> = { active: false };
+        if (hasAnswerHistory) {
+          patch.mode = "archive";
+          patch.date = createdDate;
+        }
+
+        await supabase
+          .from("prompts")
+          .update(patch)
+          .eq("id", p.id);
+      }
+
+      const { data: refreshed } = await supabase
+        .from("prompts")
+        .select("*")
+        .eq("active", true)
+        .eq("date", today);
+
+      existingForToday = refreshed ?? [];
+    }
+
+    const validExisting = (existingForToday ?? []).filter((p) => !isInvalidActivePrompt(p));
+
+    // ─── Audit: return info about current valid active set ───
+    if (validExisting.length >= 3 && !forceAiGenerate) {
       const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
       const wordMap = new Map<string, string>();
       for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
 
-      const currentTrio = existing.map(p => ({
+      const currentTrio = validExisting.slice(0, 3).map(p => ({
         ...p,
         top_answer_pct: p.top_answer_pct ?? 0,
         unique_answers: p.unique_answers ?? 0,
@@ -215,17 +262,16 @@ Deno.serve(async (req) => {
         has_answer_history: p.total_players > 0,
       }));
 
-      // Check for lifecycle warnings
       const reusedCount = individualDetails.filter(p => p.has_answer_history).length;
       const warnings: string[] = [];
-      if (reusedCount > 0) {
-        warnings.push(`⚠ ${reusedCount} prompt(s) in today's set have existing answer history — these are reused archive prompts, not fresh.`);
+      if (invalidActivePrompts.length > 0) {
+        warnings.push(`Lifecycle safeguard removed ${invalidActivePrompts.length} invalid active prompt(s) from today's set.`);
       }
 
       return new Response(
         JSON.stringify({
           message: "Prompts already exist for today",
-          count: existing.length,
+          count: currentTrio.length,
           trio: currentTrio.map(p => `${p.word_a}+${p.word_b}`).join(", "),
           trio_quality_score: score,
           editorial_confidence: confidence,
@@ -444,7 +490,7 @@ Return JSON with this structure:
         .neq("date", today);
     }
 
-    const existingCount = existing?.length ?? 0;
+    const existingCount = validExisting.length;
     const needed = 3 - existingCount;
 
     if (needed <= 0 && !dryRun) {
@@ -483,7 +529,9 @@ Return JSON with this structure:
       source,
     });
 
-    const futurePool = (futureBank ?? []).map(p => toCandidate(p, "future_bank"));
+    const futurePool = (futureBank ?? [])
+      .map((p) => toCandidate(p, "future_bank"))
+      .filter((p) => !historicalPairKeys.has(pairKey(p.word_a, p.word_b)));
 
     // ─── Try to build trio from future bank ───
     let bestTrio: PromptCandidate[] = [];
