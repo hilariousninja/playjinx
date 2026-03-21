@@ -55,7 +55,7 @@ function WordRow({ word, onClick }: { word: DbWord; onClick: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       onClick={onClick}
-      className="bg-card border border-border/50 rounded-xl w-full text-left flex items-center gap-2 px-4 py-2.5 hover:border-primary/20 transition-colors"
+      className="bg-card border border-border/50 rounded-lg w-full text-left flex items-center gap-2 px-4 py-2.5 hover:border-primary/20 transition-colors"
     >
       <span className="font-display text-sm font-semibold flex-1 break-words min-w-0">{word.word}</span>
       <span className="text-[10px] text-muted-foreground/40 hidden sm:inline w-16 truncate">{word.category}</span>
@@ -204,7 +204,7 @@ export default function DashboardWords() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Header row */}
       <div className="flex items-center justify-between">
         <h1 className="text-sm font-semibold">Words</h1>
@@ -243,7 +243,7 @@ export default function DashboardWords() {
       </div>
 
       {view === 'queue' ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {sections.needsReview.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -338,7 +338,7 @@ export default function DashboardWords() {
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search words…" className="pl-9 rounded-xl bg-secondary border-border h-9 text-sm" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search words…" className="pl-9 rounded-lg bg-secondary border-border h-9 text-sm" />
           </div>
 
           <div className="space-y-1">

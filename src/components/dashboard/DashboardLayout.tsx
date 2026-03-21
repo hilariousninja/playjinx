@@ -20,8 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background theme-dashboard">
       {/* Top nav */}
-      <nav className="border-b border-border sticky top-0 z-50 bg-background/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between h-12 px-4">
+      <nav className="border-b border-border/60 sticky top-0 z-50 bg-background/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between h-11 px-4 max-w-4xl mx-auto">
           <div className="flex items-center gap-2.5">
             <Link to="/dashboard" className="flex items-center gap-2">
               <JinxLogo size={16} className="text-foreground text-sm" />
@@ -38,8 +38,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </nav>
 
       {/* Section nav */}
-      <div className="border-b border-border/50 overflow-x-auto">
-        <div className="flex items-center gap-0.5 px-3 h-10">
+      <div className="border-b border-border/40 overflow-x-auto bg-background">
+        <div className="flex items-center gap-0.5 px-3 h-9 max-w-4xl mx-auto">
           {NAV_ITEMS.map(item => {
             const isActive = location.pathname === item.path || 
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -47,13 +47,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? 'bg-primary/15 text-primary'
+                    ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
-                <item.icon className="h-3.5 w-3.5" />
+                <item.icon className="h-3 w-3" />
                 {item.label}
               </Link>
             );
@@ -62,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 py-5">
+      <main className="max-w-4xl mx-auto px-4 py-4">
         {children}
       </main>
     </div>

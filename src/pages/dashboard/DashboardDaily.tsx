@@ -120,7 +120,7 @@ export default function DashboardDaily() {
     : { label: '⚠ Risky', cls: 'bg-destructive/15 text-destructive', desc: 'Consider regenerating — this set may underperform.' };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-sm font-semibold">Daily Sets</h1>
@@ -171,7 +171,7 @@ export default function DashboardDaily() {
       {auditData && (
         <>
           {/* Confidence summary */}
-          <div className={`rounded-xl p-4 border ${
+          <div className={`rounded-lg p-4 border ${
             confidence === 'strong' ? 'border-primary/20 bg-primary/5' :
             confidence === 'risky' ? 'border-destructive/20 bg-destructive/5' :
             'border-border/50 bg-card'
@@ -196,7 +196,7 @@ export default function DashboardDaily() {
               const SrcIcon = src.icon;
               return (
                 <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
-                  className="bg-card border border-border/50 rounded-xl p-4"
+                  className="bg-card border border-border/50 rounded-lg p-4"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-display font-bold text-base">{p.pair}</p>
@@ -240,7 +240,7 @@ export default function DashboardDaily() {
 
           {/* Score breakdown */}
           {auditData.score_breakdown && (
-            <div className="bg-card border border-border/50 rounded-xl p-4">
+            <div className="bg-card border border-border/50 rounded-lg p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Trio Score Breakdown</h2>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {Object.entries(auditData.score_breakdown as Record<string, number>).map(([key, val]) => (
@@ -259,7 +259,7 @@ export default function DashboardDaily() {
 
           {/* Runner-ups */}
           {auditData.runner_ups?.length > 0 && (
-            <div className="bg-card border border-border/50 rounded-xl p-4">
+            <div className="bg-card border border-border/50 rounded-lg p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                 Runner-up Trios {auditData.candidates_sampled && <span className="text-foreground/40">({auditData.candidates_sampled} sampled)</span>}
               </h2>
@@ -304,7 +304,7 @@ export default function DashboardDaily() {
         {aiResult && (
           <div className="space-y-3">
             {/* Trio confidence */}
-            <div className={`rounded-xl p-4 border ${
+            <div className={`rounded-lg p-4 border ${
               aiResult.trio_confidence === 'strong' ? 'border-primary/20 bg-primary/5' :
               aiResult.trio_confidence === 'risky' ? 'border-destructive/20 bg-destructive/5' :
               'border-border/50 bg-card'
@@ -340,7 +340,7 @@ export default function DashboardDaily() {
             {/* AI pairs */}
             {aiResult.pairs?.map((p: any, i: number) => (
               <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                className="bg-card border border-border/50 rounded-xl p-4"
+                className="bg-card border border-border/50 rounded-lg p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-display font-bold text-base">{p.word_a} + {p.word_b}</p>
@@ -377,7 +377,7 @@ export default function DashboardDaily() {
 
             {/* Runner-ups */}
             {aiResult.runner_ups?.length > 0 && (
-              <div className="bg-card border border-border/50 rounded-xl p-3">
+              <div className="bg-card border border-border/50 rounded-lg p-3">
                 <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">AI Runner-ups</h3>
                 {aiResult.runner_ups.map((r: any, i: number) => (
                   <div key={i} className="flex items-center justify-between py-1.5 border-t border-border/30 first:border-t-0">

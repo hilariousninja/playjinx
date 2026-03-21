@@ -64,39 +64,39 @@
     --font-body: 'Space Grotesk', sans-serif;
   }
 
-  /* Dashboard dark theme */
+  /* Dashboard creator theme — light, aligned with game */
   .theme-dashboard {
-    --background: 220 14% 8%;
-    --foreground: 210 20% 95%;
+    --background: 220 20% 97%;
+    --foreground: 220 15% 15%;
 
-    --card: 220 13% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 15%;
 
-    --primary: 47 95% 55%;
-    --primary-foreground: 220 14% 8%;
+    --primary: 220 72% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 12% 16%;
-    --secondary-foreground: 210 15% 75%;
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 220 15% 40%;
 
-    --muted: 220 12% 16%;
-    --muted-foreground: 215 12% 50%;
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 220 12% 20%;
-    --accent-foreground: 210 20% 95%;
+    --accent: 220 14% 90%;
+    --accent-foreground: 220 15% 15%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 18%;
-    --input: 220 12% 18%;
-    --ring: 47 95% 55%;
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --ring: 220 72% 45%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    --surface-elevated: 220 13% 14%;
+    --surface-elevated: 220 14% 96%;
   }
 }
 
@@ -154,9 +154,9 @@
     background-clip: text;
   }
 
-  /* Dashboard keeps its own gradient */
+  /* Dashboard uses same gradient as game */
   .theme-dashboard .jinx-gradient-text {
-    background: linear-gradient(135deg, hsl(47 95% 55%), hsl(38 92% 60%));
+    background: linear-gradient(135deg, hsl(220 72% 45%), hsl(220 72% 55%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
