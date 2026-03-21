@@ -25,7 +25,7 @@ export default function Landing() {
 
       const allDone = ps.length > 0 && ps.every(p => statusMap[p.id]);
       if (allDone) {
-        navigate('/results', { replace: true });
+        navigate('/archive', { replace: true });
       }
     })();
   }, [navigate]);
@@ -35,18 +35,12 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b border-border">
         <div className="max-w-xl mx-auto flex items-center justify-between h-14 px-5">
           <Link to="/">
             <JinxLogo size={22} className="text-foreground text-lg" />
           </Link>
           <div className="flex items-center gap-1">
-            {someStarted && (
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
-                <Link to="/results">Results</Link>
-              </Button>
-            )}
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
               <Link to="/archive">Archive</Link>
             </Button>
@@ -59,7 +53,6 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero */}
       <main className="flex-1 flex items-center justify-center px-5">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -69,48 +62,28 @@ export default function Landing() {
         >
           <p className="text-[11px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-6">Daily Crowd Word Game</p>
 
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-foreground mb-6">
-            JINX
-          </h1>
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-foreground mb-6">JINX</h1>
 
-          <p className="text-base text-primary max-w-xs mx-auto font-semibold leading-relaxed">
-            Think the same. Rank higher.
-          </p>
+          <p className="text-base text-primary max-w-xs mx-auto font-semibold leading-relaxed">Think the same. Rank higher.</p>
 
           <p className="text-sm text-muted-foreground max-w-[16rem] mx-auto mt-5 mb-12 leading-relaxed">
             See two words. Predict the bridge word most people will pick.
           </p>
 
-          {/* Completed state */}
           {allDone ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="game-card-elevated inline-block px-8 py-7 mb-6"
-            >
+            <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="game-card-elevated inline-block px-8 py-7 mb-6">
               <CheckCircle2 className="h-7 w-7 text-primary mx-auto mb-3" />
               <p className="font-semibold text-base mb-1 text-foreground">You've completed today's prompts</p>
               <p className="text-xs text-muted-foreground mb-6">Results update live — check back later to see rank changes.</p>
               <div className="flex gap-3 justify-center flex-wrap">
                 <Button size="lg" className="rounded-lg px-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
-                  <Link to="/results">
-                    <Eye className="h-4 w-4 mr-2" /> View today's results
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" className="rounded-lg px-6 h-12" asChild>
-                  <Link to="/archive">Play archive</Link>
+                  <Link to="/archive"><Eye className="h-4 w-4 mr-2" /> View results</Link>
                 </Button>
               </div>
             </motion.div>
           ) : (
             <>
-              {/* Example prompt */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="game-card-elevated inline-block px-12 py-7 mb-10"
-              >
+              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="game-card-elevated inline-block px-12 py-7 mb-10">
                 <p className="text-[9px] text-muted-foreground/60 uppercase tracking-[0.2em] font-display mb-4">Example prompt</p>
                 <PromptPair wordA="COW" wordB="SNOW" size="md" className="mb-3" />
                 <div className="flex items-center justify-center gap-2">
@@ -127,7 +100,7 @@ export default function Landing() {
                 </Button>
                 {someStarted && (
                   <Button size="lg" variant="outline" className="rounded-lg px-6 h-12" asChild>
-                    <Link to="/results">View results</Link>
+                    <Link to="/archive">View results</Link>
                   </Button>
                 )}
               </div>
@@ -136,7 +109,6 @@ export default function Landing() {
         </motion.div>
       </main>
 
-      {/* How it works */}
       <section className="border-t border-border py-16 px-5">
         <div className="max-w-md mx-auto">
           <h2 className="text-lg font-bold text-center mb-10 tracking-tight text-foreground">How it works</h2>
@@ -157,12 +129,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-border py-5 space-y-2 px-5">
         <Countdown />
-        <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">
-          JINX — daily crowd word game
-        </p>
+        <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
     </div>
   );
