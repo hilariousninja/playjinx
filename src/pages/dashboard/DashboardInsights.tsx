@@ -68,23 +68,26 @@ export default function DashboardInsights() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-sm font-semibold">Insights</h1>
+      <div>
+        <h1 className="text-sm font-semibold">Insights</h1>
+        <p className="text-[10px] text-muted-foreground">Strategic learning from historical play data to tune words and scoring.</p>
+      </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card border border-border/50 rounded-lg p-3 text-center">
+        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-center">
           <Users className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-xl font-display font-bold">{insights.totalPlayers}</p>
+          <p className="text-lg font-display font-bold">{insights.totalPlayers}</p>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Total plays</p>
         </div>
-        <div className="bg-card border border-border/50 rounded-lg p-3 text-center">
+        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-center">
           <Zap className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-xl font-display font-bold">{insights.played.length}</p>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Prompts played</p>
+          <p className="text-lg font-display font-bold">{insights.played.length}</p>
+          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Played prompts</p>
         </div>
-        <div className="bg-card border border-border/50 rounded-lg p-3 text-center">
+        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-center">
           <Target className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-xl font-display font-bold">{insights.avgTopPct}%</p>
+          <p className="text-lg font-display font-bold">{insights.avgTopPct}%</p>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Avg top answer</p>
         </div>
       </div>

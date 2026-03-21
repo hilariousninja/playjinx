@@ -122,17 +122,27 @@ export default function DashboardDaily() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold">Daily Sets</h1>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-sm font-semibold">Daily Sets</h1>
+          <p className="text-[10px] text-muted-foreground">Select today’s 3 from future bank or generate clean replacements.</p>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground" onClick={loadAudit}>
             <RefreshCw className="h-3 w-3 mr-1" /> Refresh
           </Button>
           <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={handleRegenerate} disabled={regenerating}>
             {regenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Calendar className="h-3 w-3 mr-1" />}
-            Regenerate
+            Generate today
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 text-[9px] text-muted-foreground">
+        <span className="rounded-full border border-border/50 px-2 py-0.5">1. Maintain words</span>
+        <span className="rounded-full border border-border/50 px-2 py-0.5">2. Review candidates</span>
+        <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-primary">3. Publish today’s 3</span>
+        <span className="rounded-full border border-border/50 px-2 py-0.5">4. Learn + archive</span>
       </div>
 
       {/* Warnings */}
@@ -140,7 +150,7 @@ export default function DashboardDaily() {
         <div className="space-y-1.5">
           {auditData.warnings.map((w: string, i: number) => (
             <div key={i} className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-              <AlertTriangle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
               <p className="text-[11px] text-destructive">{w}</p>
             </div>
           ))}
@@ -151,18 +161,18 @@ export default function DashboardDaily() {
       {auditData?.lifecycle && (
         <div className="flex items-center gap-3">
           {auditData.lifecycle.future_bank > 0 && (
-            <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">
-              <Shield className="h-2.5 w-2.5 mr-1" /> {auditData.lifecycle.future_bank} from future bank
+            <Badge variant="outline" className="border-primary/30 text-[9px] text-primary">
+              <Shield className="mr-1 h-2.5 w-2.5" /> {auditData.lifecycle.future_bank} from future bank
             </Badge>
           )}
           {auditData.lifecycle.generated_new > 0 && (
-            <Badge variant="outline" className="text-[9px] border-accent text-accent-foreground">
-              <Sparkles className="h-2.5 w-2.5 mr-1" /> {auditData.lifecycle.generated_new} generated new
+            <Badge variant="outline" className="border-accent text-[9px] text-accent-foreground">
+              <Sparkles className="mr-1 h-2.5 w-2.5" /> {auditData.lifecycle.generated_new} generated new
             </Badge>
           )}
           {auditData.lifecycle.reused_archive > 0 && (
-            <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">
-              <Archive className="h-2.5 w-2.5 mr-1" /> {auditData.lifecycle.reused_archive} reused archive
+            <Badge variant="outline" className="border-destructive/30 text-[9px] text-destructive">
+              <Archive className="mr-1 h-2.5 w-2.5" /> {auditData.lifecycle.reused_archive} reused archive
             </Badge>
           )}
         </div>
