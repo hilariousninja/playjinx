@@ -313,6 +313,17 @@ export async function getTotalSubmissions(promptId: string): Promise<number> {
   return count ?? 0;
 }
 
+export async function getDailyUniquePlayers(promptIds: string[]): Promise<number> {
+  if (promptIds.length === 0) return 0;
+  const { data, error } = await supabase
+    .from('answers')
+    .select('session_id')
+    .in('prompt_id', promptIds);
+  if (error) throw error;
+  const unique = new Set((data ?? []).map(a => a.session_id));
+  return unique.size;
+}
+
 // --- Words ---
 export async function getWords(): Promise<DbWord[]> {
   const { data, error } = await supabase
