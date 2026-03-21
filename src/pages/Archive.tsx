@@ -38,6 +38,18 @@ export default function Archive() {
       setSubmittedMap(subMap);
       setUserAnswers(ansMap);
       setTotalCounts(totals);
+
+      // Compute unique players per day
+      const byDate: Record<string, string[]> = {};
+      for (const p of ps) {
+        (byDate[p.date] = byDate[p.date] || []).push(p.id);
+      }
+      const dpMap: Record<string, number> = {};
+      await Promise.all(Object.entries(byDate).map(async ([date, ids]) => {
+        dpMap[date] = await getDailyUniquePlayers(ids);
+      }));
+      setDailyPlayers(dpMap);
+
       setLoading(false);
     })();
   }, []);
