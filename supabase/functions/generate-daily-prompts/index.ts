@@ -296,6 +296,17 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Load tuning settings
+      let categoryWeights: Record<string, number> = {};
+      let generationControls: Record<string, number> = {};
+      try {
+        const { data: tuningRows } = await supabase.from("tuning_settings").select("key, value");
+        for (const row of tuningRows ?? []) {
+          if (row.key === "category_weights") categoryWeights = row.value as Record<string, number>;
+          if (row.key === "generation_controls") generationControls = row.value as Record<string, number>;
+        }
+      } catch { /* use defaults */ }
+
       // Fetch word database
       const { data: wordRows } = await supabase
         .from("words")
@@ -305,6 +316,19 @@ Deno.serve(async (req) => {
 
       if (!wordRows || wordRows.length < 6) {
         return new Response(JSON.stringify({ error: "Not enough words in database" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Apply category weights: filter out "Off" categories, annotate weight
+      const filteredWords = wordRows.filter(w => {
+        const cat = (w.category || "Uncategorized").toLowerCase();
+        const weight = categoryWeights[cat] ?? 50;
+        return weight > 10; // exclude "Off" categories
+      });
+
+      if (filteredWords.length < 6) {
+        return new Response(JSON.stringify({ error: "Not enough words after applying category weights" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -330,8 +354,36 @@ Deno.serve(async (req) => {
         [p.word_a.toLowerCase(), p.word_b.toLowerCase()].sort().join("|")
       ));
 
-      const categories = [...new Set(wordRows.map(w => w.category).filter(c => c !== "Uncategorized"))];
-      const wordList = wordRows.map(w => `${w.word} (${w.category}, score: ${w.jinx_score})`).join(", ");
+      const categories = [...new Set(filteredWords.map(w => w.category).filter(c => c !== "Uncategorized"))];
+
+      // Build weighted word list with weight annotations
+      const wordList = filteredWords.map(w => {
+        const cat = (w.category || "Uncategorized").toLowerCase();
+        const weight = categoryWeights[cat] ?? 50;
+        const weightTag = weight >= 80 ? "HIGH PRIORITY" : weight >= 60 ? "preferred" : weight <= 25 ? "low priority" : "";
+        return `${w.word} (${w.category}, score: ${w.jinx_score}${weightTag ? `, ${weightTag}` : ""})`;
+      }).join(", ");
+
+      // Build tuning instructions
+      const tuningInstructions: string[] = [];
+      const conc = generationControls.concreteness_bias ?? 60;
+      if (conc >= 70) tuningInstructions.push("STRONGLY prefer concrete, tangible word pairs. Avoid abstract pairings.");
+      else if (conc >= 50) tuningInstructions.push("Prefer concrete word pairs when possible.");
+      const absPen = generationControls.abstractness_penalty ?? 40;
+      if (absPen >= 70) tuningInstructions.push("HEAVILY penalise abstract or vague word pairings like trust+power or memory+hope.");
+      else if (absPen >= 50) tuningInstructions.push("Penalise abstract pairings — prefer real-world, tangible combinations.");
+      const consTarget = generationControls.consensus_target ?? 70;
+      if (consTarget >= 70) tuningInstructions.push("Target STRONG consensus — pairs should have an obvious likely top answer.");
+      const fragPen = generationControls.fragmentation_penalty ?? 60;
+      if (fragPen >= 70) tuningInstructions.push("STRONGLY avoid pairs likely to produce scattered, fragmented answers.");
+      const catDiv = generationControls.category_diversity ?? 70;
+      if (catDiv >= 70) tuningInstructions.push("Ensure the trio uses DIVERSE categories — no two pairs from the same category pair.");
+
+      // Build category weight guidance
+      const highCats = Object.entries(categoryWeights).filter(([, v]) => v >= 70).map(([k]) => k);
+      const lowCats = Object.entries(categoryWeights).filter(([, v]) => v > 10 && v <= 25).map(([k]) => k);
+      if (highCats.length > 0) tuningInstructions.push(`Favour words from these categories: ${highCats.join(", ")}`);
+      if (lowCats.length > 0) tuningInstructions.push(`Use words from these categories sparingly: ${lowCats.join(", ")}`);
 
       const systemPrompt = `You are a game designer for JINX Daily. Players see two words and type one linking word they think most people will say. The goal is crowd convergence — mind-matching.
 
