@@ -396,12 +396,15 @@ A great JINX trio needs 3 pairs where each pair:
 
 The trio together should feel varied, not repetitive. Different categories, different energies, different likely answers.
 
+${tuningInstructions.length > 0 ? `TUNING INSTRUCTIONS (from creator settings):\n${tuningInstructions.map(t => `- ${t}`).join("\n")}\n` : ""}
 HARD RULES:
 - Do NOT use these already-played pairs: ${[...usedPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
 - Do NOT duplicate: ${[...existingPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
 - Each word can appear at most ONCE across the trio
 - Prefer cross-category pairs
-- The "instant JINX feel" test: Would a player immediately think "I know what most people would say"?`;
+- The "instant JINX feel" test: Would a player immediately think "I know what most people would say"?
+- Words marked HIGH PRIORITY should be favoured
+- Words marked low priority should be used sparingly`;
 
       const userPrompt = `Generate 3 strong JINX pairs for a daily set, using words from this database:
 
