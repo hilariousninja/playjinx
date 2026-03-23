@@ -669,6 +669,13 @@ Return JSON with this structure:
     }
 
     // ─── FALLBACK: Generate from source words (never reuse archive) ───
+    // Load tuning settings for fallback generation
+    let fallbackCatWeights: Record<string, number> = {};
+    try {
+      const { data: tuningRows } = await supabase.from("tuning_settings").select("key, value").eq("key", "category_weights");
+      if (tuningRows?.[0]?.value) fallbackCatWeights = tuningRows[0].value as Record<string, number>;
+    } catch { /* defaults */ }
+
     const shuffle = <T>(arr: T[]): T[] =>
       arr.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
 
@@ -684,6 +691,14 @@ Return JSON with this structure:
         .select("word, jinx_score, category")
         .limit(500);
       words = allWords;
+    }
+
+    // Apply category weight filtering
+    if (words && Object.keys(fallbackCatWeights).length > 0) {
+      words = words.filter(w => {
+        const cat = (w.category || "Uncategorized").toLowerCase();
+        return (fallbackCatWeights[cat] ?? 50) > 10;
+      });
     }
 
     if (!words || words.length < needed * 2) {
