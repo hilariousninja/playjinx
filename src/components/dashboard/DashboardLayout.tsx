@@ -6,6 +6,7 @@ import {
   Zap,
   MessageSquare,
   TrendingUp,
+  SlidersHorizontal,
   Archive,
   Play,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { path: '/dashboard/daily', label: 'Daily Sets', icon: Calendar },
   { path: '/dashboard/prompts', label: 'Prompts', icon: Zap },
   { path: '/dashboard/answers', label: 'Answers', icon: MessageSquare },
+  { path: '/dashboard/tuning', label: 'Tuning', icon: SlidersHorizontal },
   { path: '/dashboard/insights', label: 'Insights', icon: TrendingUp },
   { path: '/archive', label: 'Archive', icon: Archive },
 ];

@@ -178,6 +178,27 @@ export type Database = {
         }
         Relationships: []
       }
+      tuning_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           avg_top_answer_pct: number
