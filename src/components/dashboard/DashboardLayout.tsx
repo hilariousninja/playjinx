@@ -6,6 +6,7 @@ import {
   Zap,
   MessageSquare,
   TrendingUp,
+  SlidersHorizontal,
   Archive,
   Play,
 } from 'lucide-react';
