@@ -17,6 +17,7 @@ import DashboardPrompts from "./pages/dashboard/DashboardPrompts";
 import DashboardDaily from "./pages/dashboard/DashboardDaily";
 import DashboardAnswers from "./pages/dashboard/DashboardAnswers";
 import DashboardInsights from "./pages/dashboard/DashboardInsights";
+import DashboardTuning from "./pages/dashboard/DashboardTuning";
 
 const queryClient = new QueryClient();
 
