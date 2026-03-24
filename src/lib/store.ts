@@ -122,11 +122,24 @@ export async function getArchivePrompts(): Promise<DbPrompt[]> {
   const { data, error } = await supabase
     .from('prompts')
     .select('*')
+    .eq('mode', 'archive')
     .gt('total_players', 0)
     .order('date', { ascending: false })
     .order('created_at');
   if (error) throw error;
-  return data ?? [];
+
+  // Safety clamp: archive should only ever show one 3-prompt daily release per date.
+  const perDateCount = new Map<string, number>();
+  const normalized: DbPrompt[] = [];
+
+  for (const prompt of data ?? []) {
+    const used = perDateCount.get(prompt.date) ?? 0;
+    if (used >= 3) continue;
+    normalized.push(prompt);
+    perDateCount.set(prompt.date, used + 1);
+  }
+
+  return normalized;
 }
 
 export async function getPromptById(id: string): Promise<DbPrompt | null> {
