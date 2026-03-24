@@ -170,10 +170,12 @@ Deno.serve(async (req) => {
 
     let dryRun = false;
     let forceAiGenerate = false;
+    let forceRegenerate = false;
     try {
       const body = await req.clone().json();
       if (body?.dry_run) dryRun = true;
       if (body?.ai_generate) forceAiGenerate = true;
+      if (body?.force_regenerate) forceRegenerate = true;
     } catch { /* no body is fine */ }
 
     const supabase = createClient(
@@ -189,6 +191,7 @@ Deno.serve(async (req) => {
       .from("prompts")
       .select("word_a, word_b")
       .gt("total_players", 0)
+      .lt("date", today)
       .limit(2000);
 
     const historicalPairKeys = new Set((historicalPairs ?? []).map((p) => pairKey(p.word_a, p.word_b)));
@@ -199,10 +202,36 @@ Deno.serve(async (req) => {
       .eq("active", true)
       .eq("date", today);
 
+    if (forceRegenerate && !dryRun) {
+      const playedCount = (existingForToday ?? []).filter((p) => (p.total_players ?? 0) > 0).length;
+      if (playedCount > 0) {
+        return new Response(
+          JSON.stringify({ error: "Cannot regenerate today's set after players have already answered." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if ((existingForToday ?? []).length > 0) {
+        await supabase
+          .from("prompts")
+          .update({ active: false })
+          .eq("active", true)
+          .eq("date", today)
+          .eq("total_players", 0);
+
+        const { data: refreshedAfterForce } = await supabase
+          .from("prompts")
+          .select("*")
+          .eq("active", true)
+          .eq("date", today);
+
+        existingForToday = refreshedAfterForce ?? [];
+      }
+    }
+
     const isInvalidActivePrompt = (p: any) => {
-      const hasAnswerHistory = (p.total_players ?? 0) > 0;
       const pairWasHistorical = historicalPairKeys.has(pairKey(p.word_a, p.word_b));
-      return hasAnswerHistory || p.mode === "archive" || pairWasHistorical;
+      return p.mode === "archive" || pairWasHistorical;
     };
 
     const invalidActivePrompts = (existingForToday ?? []).filter(isInvalidActivePrompt);
@@ -234,10 +263,21 @@ Deno.serve(async (req) => {
       existingForToday = refreshed ?? [];
     }
 
-    const validExisting = (existingForToday ?? []).filter((p) => !isInvalidActivePrompt(p));
+    let validExisting = (existingForToday ?? []).filter((p) => !isInvalidActivePrompt(p));
+
+    if (validExisting.length > 3 && !dryRun) {
+      const overflow = validExisting.slice(3).map((p) => p.id);
+      if (overflow.length > 0) {
+        await supabase
+          .from("prompts")
+          .update({ active: false })
+          .in("id", overflow);
+      }
+      validExisting = validExisting.slice(0, 3);
+    }
 
     // ─── Audit: return info about current valid active set ───
-    if (validExisting.length >= 3 && !forceAiGenerate) {
+    if (validExisting.length >= 3 && !forceAiGenerate && !forceRegenerate) {
       const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
       const wordMap = new Map<string, string>();
       for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
