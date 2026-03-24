@@ -38,19 +38,21 @@ export default function DashboardDaily() {
   useEffect(() => { loadAudit(); }, [loadAudit]);
 
   const handleRegenerate = async () => {
-    const confirmed = confirm('Force regenerate today\'s daily set from the approved future bank? This will deactivate the current set.');
+    const confirmed = confirm('Force regenerate today\'s daily set from the approved future bank? This is blocked once players have already answered.');
     if (!confirmed) return;
     setRegenerating(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      await supabase.from('prompts').update({ active: false, mode: 'archive' }).eq('active', true).eq('date', today);
-      const { data } = await supabase.functions.invoke('generate-daily-prompts');
+      const { data, error } = await supabase.functions.invoke('generate-daily-prompts', {
+        body: { force_regenerate: true },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       if (data) setAuditData(data);
       else await loadAudit();
       toast.success('Daily set regenerated');
-    } catch (e) {
+    } catch (e: any) {
       console.error('Regenerate failed', e);
-      toast.error('Regeneration failed');
+      toast.error(e?.message || 'Regeneration failed');
     }
     setRegenerating(false);
   };
