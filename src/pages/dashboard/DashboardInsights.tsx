@@ -66,6 +66,7 @@ export default function DashboardInsights() {
     return { played, strongest, weakest, mostFragmented, strongestConvergence, totalPlayers, avgTopPct, starWords, troubleWords };
   }, [prompts, words]);
 
+  const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
   const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
