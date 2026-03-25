@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Loader2, BarChart3, Users, Target, Zap } from 'lucide-react';
+import { TrendingUp, TrendingDown, Loader2, BarChart3, Users, Target, Zap, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface PromptRow {
   id: string;
