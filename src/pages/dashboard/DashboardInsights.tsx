@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Loader2, BarChart3, Users, Target, Zap } from 'lucide-react';
+import { TrendingUp, TrendingDown, Loader2, BarChart3, Users, Target, Zap, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface PromptRow {
   id: string;
@@ -64,13 +66,97 @@ export default function DashboardInsights() {
     return { played, strongest, weakest, mostFragmented, strongestConvergence, totalPlayers, avgTopPct, starWords, troubleWords };
   }, [prompts, words]);
 
+  const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      // Fetch all played prompts
+      const { data: allPrompts } = await supabase
+        .from('prompts')
+        .select('id, word_a, word_b, date, total_players, unique_answers, top_answer_pct, performance, prompt_tag')
+        .gt('total_players', 0)
+        .order('date', { ascending: false });
+
+      if (!allPrompts?.length) {
+        toast.error('No play data to export');
+        return;
+      }
+
+      // Fetch all answers for played prompts
+      const promptIds = allPrompts.map(p => p.id);
+      const allAnswers: { prompt_id: string; normalized_answer: string }[] = [];
+      // Batch in chunks of 50 to avoid query limits
+      for (let i = 0; i < promptIds.length; i += 50) {
+        const chunk = promptIds.slice(i, i + 50);
+        const { data } = await supabase
+          .from('answers')
+          .select('prompt_id, normalized_answer')
+          .in('prompt_id', chunk);
+        if (data) allAnswers.push(...data);
+      }
+
+      // Group answers by prompt
+      const answerMap = new Map<string, Map<string, number>>();
+      for (const a of allAnswers) {
+        if (!answerMap.has(a.prompt_id)) answerMap.set(a.prompt_id, new Map());
+        const m = answerMap.get(a.prompt_id)!;
+        m.set(a.normalized_answer, (m.get(a.normalized_answer) || 0) + 1);
+      }
+
+      // Build CSV rows
+      const csvRows: string[] = ['Date,Word A,Word B,Total Players,Unique Answers,Top Answer %,Performance,Tag,Answer,Answer Count,Answer %'];
+      for (const p of allPrompts) {
+        const answers = answerMap.get(p.id);
+        if (answers && answers.size > 0) {
+          const sorted = [...answers.entries()].sort((a, b) => b[1] - a[1]);
+          for (const [answer, count] of sorted) {
+            const pct = p.total_players > 0 ? ((count / p.total_players) * 100).toFixed(1) : '0';
+            csvRows.push([
+              p.date, esc(p.word_a), esc(p.word_b), p.total_players, p.unique_answers,
+              p.top_answer_pct, p.performance || '', p.prompt_tag || '',
+              esc(answer), count, pct
+            ].join(','));
+          }
+        } else {
+          csvRows.push([
+            p.date, esc(p.word_a), esc(p.word_b), p.total_players, p.unique_answers,
+            p.top_answer_pct, p.performance || '', p.prompt_tag || '',
+            '', 0, 0
+          ].join(','));
+        }
+      }
+
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `jinx_archive_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${allPrompts.length} prompts with ${allAnswers.length} answers`);
+    } catch (e) {
+      toast.error('Export failed');
+      console.error(e);
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-sm font-semibold">Insights</h1>
-        <p className="text-[10px] text-muted-foreground">Strategic learning from historical play data to tune words and scoring.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-sm font-semibold">Insights</h1>
+          <p className="text-[10px] text-muted-foreground">Strategic learning from historical play data to tune words and scoring.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="text-xs gap-1.5">
+          {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+          Export CSV
+        </Button>
       </div>
 
       {/* Summary stats */}
