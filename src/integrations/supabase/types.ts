@@ -206,7 +206,9 @@ export type Database = {
           category: string
           created_at: string
           decent_appearances: number
+          deck_override: string | null
           id: string
+          in_core_deck: boolean
           jinx_score: number
           notes: string
           source: string
@@ -223,7 +225,9 @@ export type Database = {
           category?: string
           created_at?: string
           decent_appearances?: number
+          deck_override?: string | null
           id?: string
+          in_core_deck?: boolean
           jinx_score?: number
           notes?: string
           source?: string
@@ -240,7 +244,9 @@ export type Database = {
           category?: string
           created_at?: string
           decent_appearances?: number
+          deck_override?: string | null
           id?: string
+          in_core_deck?: boolean
           jinx_score?: number
           notes?: string
           source?: string
