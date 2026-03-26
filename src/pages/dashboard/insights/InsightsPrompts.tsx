@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { PromptRow } from './word-scoring';
 
@@ -105,7 +106,16 @@ export default function InsightsPrompts({ prompts }: Props) {
                   <span className="text-[9px] text-muted-foreground ml-2">{p.date}</span>
                 </div>
                 <span className="text-right text-xs tabular-nums">{p.total_players}</span>
-                <span className="text-right text-xs tabular-nums">{p.top_answer_pct}%</span>
+                <span className="text-right text-xs tabular-nums">
+                  {p.top_answer_pct === 0 && frag === 100 ? (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span className="text-muted-foreground">—</span></TooltipTrigger>
+                        <TooltipContent side="top"><p className="text-xs">No repeated answer</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : `${p.top_answer_pct}%`}
+                </span>
                 <span className="text-right text-xs tabular-nums">{frag}%</span>
                 <span className={`text-right text-[10px] font-semibold capitalize ${perfColor(p.performance)}`}>
                   {p.performance || '—'}
