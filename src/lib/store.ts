@@ -92,18 +92,21 @@ async function getActivePromptsForUTCDate(dateKey: string): Promise<DbPrompt[]> 
 export async function ensureDailyPrompts(): Promise<DbPrompt[]> {
   const todayUTC = getUTCDateKey();
   let prompts = await getActivePromptsForUTCDate(todayUTC);
-  if (prompts.length >= 3) return prompts;
+  if (prompts.length === 3) return prompts;
 
-  // Try to generate/activate today's set when stale or missing.
+  // Reconcile whenever today's active set is not exactly 3
+  // (covers both missing prompts and accidental overflow).
   try {
     const { error } = await supabase.functions.invoke('generate-daily-prompts');
     if (!error) {
       prompts = await getActivePromptsForUTCDate(todayUTC);
-      if (prompts.length >= 3) return prompts;
     }
   } catch {
     // Silently fail and use fallback below.
   }
+
+  // Never render more than the canonical daily trio in gameplay/archive "today" sections.
+  if (prompts.length >= 3) return prompts.slice(0, 3);
 
   // Fallback: return most recent prompts so users never see empty state.
   const { data, error } = await supabase
