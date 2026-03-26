@@ -1,103 +1,39 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Loader2, BarChart3, Users, Target, Zap, Download } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useCallback } from 'react';
+import { Loader2, Download } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface PromptRow {
-  id: string;
-  word_a: string;
-  word_b: string;
-  total_players: number;
-  unique_answers: number;
-  top_answer_pct: number;
-  performance: string | null;
-  prompt_tag: string | null;
-  date: string;
-}
-
-interface WordRow {
-  word: string;
-  times_used: number;
-  strong_appearances: number;
-  decent_appearances: number;
-  weak_appearances: number;
-  status: string;
-}
+import { useInsightsData } from './insights/useInsightsData';
+import InsightsOverview from './insights/InsightsOverview';
+import InsightsPrompts from './insights/InsightsPrompts';
+import InsightsWords from './insights/InsightsWords';
 
 export default function DashboardInsights() {
-  const [prompts, setPrompts] = useState<PromptRow[]>([]);
-  const [words, setWords] = useState<WordRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const [pRes, wRes] = await Promise.all([
-        supabase.from('prompts').select('id, word_a, word_b, total_players, unique_answers, top_answer_pct, performance, prompt_tag, date')
-          .gt('total_players', 0).order('total_players', { ascending: false }),
-        supabase.from('words').select('word, times_used, strong_appearances, decent_appearances, weak_appearances, status')
-          .gt('times_used', 0).order('times_used', { ascending: false }),
-      ]);
-      setPrompts((pRes.data ?? []) as PromptRow[]);
-      setWords((wRes.data ?? []) as WordRow[]);
-      setLoading(false);
-    })();
-  }, []);
-
-  const insights = useMemo(() => {
-    const played = prompts.filter(p => p.total_players > 0);
-    const strongest = played.filter(p => p.performance === 'strong').sort((a, b) => b.top_answer_pct - a.top_answer_pct).slice(0, 5);
-    const weakest = played.filter(p => p.performance === 'weak').sort((a, b) => a.top_answer_pct - b.top_answer_pct).slice(0, 5);
-    const mostFragmented = [...played].sort((a, b) => {
-      const rA = a.total_players > 0 ? a.unique_answers / a.total_players : 0;
-      const rB = b.total_players > 0 ? b.unique_answers / b.total_players : 0;
-      return rB - rA;
-    }).slice(0, 5);
-    const strongestConvergence = [...played].sort((a, b) => b.top_answer_pct - a.top_answer_pct).slice(0, 5);
-    
-    const totalPlayers = played.reduce((s, p) => s + p.total_players, 0);
-    const avgTopPct = played.length > 0 ? Math.round(played.reduce((s, p) => s + p.top_answer_pct, 0) / played.length) : 0;
-
-    // Words that repeatedly create good/bad prompts
-    const starWords = words.filter(w => w.strong_appearances >= 3 && w.strong_appearances > w.weak_appearances).slice(0, 5);
-    const troubleWords = words.filter(w => w.weak_appearances >= 3 && w.weak_appearances > w.strong_appearances).slice(0, 5);
-
-    return { played, strongest, weakest, mostFragmented, strongestConvergence, totalPlayers, avgTopPct, starWords, troubleWords };
-  }, [prompts, words]);
+  const { prompts, scoredWords, loading, stats, refreshWord } = useInsightsData();
+  const [exporting, setExporting] = useState(false);
 
   const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
-  const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
     try {
-      // Fetch all played prompts
       const { data: allPrompts } = await supabase
         .from('prompts')
         .select('id, word_a, word_b, date, total_players, unique_answers, top_answer_pct, performance, prompt_tag')
         .gt('total_players', 0)
         .order('date', { ascending: false });
 
-      if (!allPrompts?.length) {
-        toast.error('No play data to export');
-        return;
-      }
+      if (!allPrompts?.length) { toast.error('No play data to export'); return; }
 
-      // Fetch all answers for played prompts
       const promptIds = allPrompts.map(p => p.id);
       const allAnswers: { prompt_id: string; normalized_answer: string }[] = [];
-      // Batch in chunks of 50 to avoid query limits
       for (let i = 0; i < promptIds.length; i += 50) {
         const chunk = promptIds.slice(i, i + 50);
-        const { data } = await supabase
-          .from('answers')
-          .select('prompt_id, normalized_answer')
-          .in('prompt_id', chunk);
+        const { data } = await supabase.from('answers').select('prompt_id, normalized_answer').in('prompt_id', chunk);
         if (data) allAnswers.push(...data);
       }
 
-      // Group answers by prompt
       const answerMap = new Map<string, Map<string, number>>();
       for (const a of allAnswers) {
         if (!answerMap.has(a.prompt_id)) answerMap.set(a.prompt_id, new Map());
@@ -105,26 +41,17 @@ export default function DashboardInsights() {
         m.set(a.normalized_answer, (m.get(a.normalized_answer) || 0) + 1);
       }
 
-      // Build CSV rows
-      const csvRows: string[] = ['Date,Word A,Word B,Total Players,Unique Answers,Top Answer %,Performance,Tag,Answer,Answer Count,Answer %'];
+      const csvRows = ['Date,Word A,Word B,Total Players,Unique Answers,Top Answer %,Performance,Tag,Answer,Answer Count,Answer %'];
       for (const p of allPrompts) {
         const answers = answerMap.get(p.id);
         if (answers && answers.size > 0) {
           const sorted = [...answers.entries()].sort((a, b) => b[1] - a[1]);
           for (const [answer, count] of sorted) {
             const pct = p.total_players > 0 ? ((count / p.total_players) * 100).toFixed(1) : '0';
-            csvRows.push([
-              p.date, esc(p.word_a), esc(p.word_b), p.total_players, p.unique_answers,
-              p.top_answer_pct, p.performance || '', p.prompt_tag || '',
-              esc(answer), count, pct
-            ].join(','));
+            csvRows.push([p.date, esc(p.word_a), esc(p.word_b), p.total_players, p.unique_answers, p.top_answer_pct, p.performance || '', p.prompt_tag || '', esc(answer), count, pct].join(','));
           }
         } else {
-          csvRows.push([
-            p.date, esc(p.word_a), esc(p.word_b), p.total_players, p.unique_answers,
-            p.top_answer_pct, p.performance || '', p.prompt_tag || '',
-            '', 0, 0
-          ].join(','));
+          csvRows.push([p.date, esc(p.word_a), esc(p.word_b), p.total_players, p.unique_answers, p.top_answer_pct, p.performance || '', p.prompt_tag || '', '', 0, 0].join(','));
         }
       }
 
@@ -151,150 +78,33 @@ export default function DashboardInsights() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-sm font-semibold">Insights</h1>
-          <p className="text-[10px] text-muted-foreground">Strategic learning from historical play data to tune words and scoring.</p>
+          <p className="text-[10px] text-muted-foreground">Analysis and deck curation from historical play data.</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="text-xs gap-1.5">
           {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-          Export CSV
+          Export Archive
         </Button>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-center">
-          <Users className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-lg font-display font-bold">{insights.totalPlayers}</p>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Total plays</p>
-        </div>
-        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-center">
-          <Zap className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-lg font-display font-bold">{insights.played.length}</p>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Played prompts</p>
-        </div>
-        <div className="bg-card border border-border/50 rounded-lg p-2.5 text-center">
-          <Target className="h-3.5 w-3.5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-lg font-display font-bold">{insights.avgTopPct}%</p>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Avg top answer</p>
-        </div>
-      </div>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="w-full justify-start h-9">
+          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+          <TabsTrigger value="prompts" className="text-xs">Prompts</TabsTrigger>
+          <TabsTrigger value="words" className="text-xs">Words</TabsTrigger>
+        </TabsList>
 
-      {/* Strongest prompts */}
-      {insights.strongest.length > 0 && (
-        <InsightSection title="Strongest prompts" icon={TrendingUp} iconCls="text-[hsl(var(--keep))]"
-          items={insights.strongest} renderItem={p => ({
-            label: `${p.word_a} + ${p.word_b}`,
-            meta: `${p.total_players}p · Top ${p.top_answer_pct}%`,
-            cls: 'text-[hsl(var(--keep))]',
-          })}
-        />
-      )}
+        <TabsContent value="overview">
+          <InsightsOverview prompts={prompts} scoredWords={scoredWords} stats={stats} />
+        </TabsContent>
 
-      {/* Weakest prompts */}
-      {insights.weakest.length > 0 && (
-        <InsightSection title="Weakest prompts" icon={TrendingDown} iconCls="text-destructive"
-          items={insights.weakest} renderItem={p => ({
-            label: `${p.word_a} + ${p.word_b}`,
-            meta: `${p.total_players}p · Top ${p.top_answer_pct}%`,
-            cls: 'text-destructive',
-          })}
-        />
-      )}
+        <TabsContent value="prompts">
+          <InsightsPrompts prompts={prompts} />
+        </TabsContent>
 
-      {/* Highest fragmentation */}
-      {insights.mostFragmented.length > 0 && (
-        <InsightSection title="Most fragmented" icon={BarChart3} iconCls="text-[hsl(var(--review))]"
-          items={insights.mostFragmented} renderItem={p => {
-            const ratio = p.total_players > 0 ? Math.round((p.unique_answers / p.total_players) * 100) : 0;
-            return {
-              label: `${p.word_a} + ${p.word_b}`,
-              meta: `${ratio}% unique · ${p.total_players}p`,
-              cls: 'text-[hsl(var(--review))]',
-            };
-          }}
-        />
-      )}
-
-      {/* Strongest convergence */}
-      {insights.strongestConvergence.length > 0 && (
-        <InsightSection title="Strongest convergence" icon={Target} iconCls="text-primary"
-          items={insights.strongestConvergence} renderItem={p => ({
-            label: `${p.word_a} + ${p.word_b}`,
-            meta: `Top ${p.top_answer_pct}% · ${p.total_players}p`,
-            cls: 'text-primary',
-          })}
-        />
-      )}
-
-      {/* Star words */}
-      {insights.starWords.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-3.5 w-3.5 text-[hsl(var(--keep))]" />
-            <span className="text-xs font-semibold text-muted-foreground">Star words</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {insights.starWords.map(w => (
-              <span key={w.word} className="text-[11px] font-display font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-lg">
-                {w.word} <span className="text-[9px] font-normal opacity-60">{w.strong_appearances}s</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Trouble words */}
-      {insights.troubleWords.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-            <span className="text-xs font-semibold text-muted-foreground">Trouble words</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {insights.troubleWords.map(w => (
-              <span key={w.word} className="text-[11px] font-display font-bold bg-destructive/10 text-destructive px-2.5 py-1 rounded-lg">
-                {w.word} <span className="text-[9px] font-normal opacity-60">{w.weak_appearances}w</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {insights.played.length === 0 && (
-        <div className="text-center py-10 text-muted-foreground">
-          <BarChart3 className="h-6 w-6 mx-auto mb-2" />
-          <p className="text-sm font-semibold">No play data yet</p>
-          <p className="text-xs mt-1">Insights will appear after prompts have been played.</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InsightSection<T>({ title, icon: Icon, iconCls, items, renderItem }: {
-  title: string;
-  icon: typeof TrendingUp;
-  iconCls: string;
-  items: T[];
-  renderItem: (item: T) => { label: string; meta: string; cls: string };
-}) {
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className={`h-3.5 w-3.5 ${iconCls}`} />
-        <span className="text-xs font-semibold text-muted-foreground">{title}</span>
-      </div>
-      <div className="space-y-1">
-        {items.map((item, i) => {
-          const { label, meta, cls } = renderItem(item);
-          return (
-            <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-              className="bg-card border border-border/50 rounded-lg px-4 py-2.5 flex items-center justify-between">
-              <span className="font-display text-sm font-bold">{label}</span>
-              <span className={`text-[10px] font-display ${cls}`}>{meta}</span>
-            </motion.div>
-          );
-        })}
-      </div>
+        <TabsContent value="words">
+          <InsightsWords scoredWords={scoredWords} refreshWord={refreshWord} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
