@@ -200,7 +200,9 @@ Deno.serve(async (req) => {
       .from("prompts")
       .select("*")
       .eq("active", true)
-      .eq("date", today);
+      .eq("date", today)
+      .order("total_players", { ascending: false })
+      .order("created_at", { ascending: true });
 
     if (forceRegenerate && !dryRun) {
       const playedCount = (existingForToday ?? []).filter((p) => (p.total_players ?? 0) > 0).length;
@@ -223,7 +225,9 @@ Deno.serve(async (req) => {
           .from("prompts")
           .select("*")
           .eq("active", true)
-          .eq("date", today);
+          .eq("date", today)
+          .order("total_players", { ascending: false })
+          .order("created_at", { ascending: true });
 
         existingForToday = refreshedAfterForce ?? [];
       }
@@ -258,7 +262,9 @@ Deno.serve(async (req) => {
         .from("prompts")
         .select("*")
         .eq("active", true)
-        .eq("date", today);
+        .eq("date", today)
+        .order("total_players", { ascending: false })
+        .order("created_at", { ascending: true });
 
       existingForToday = refreshed ?? [];
     }
