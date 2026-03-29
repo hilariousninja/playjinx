@@ -196,6 +196,43 @@ Deno.serve(async (req) => {
 
     const historicalPairKeys = new Set((historicalPairs ?? []).map((p) => pairKey(p.word_a, p.word_b)));
 
+    // ─── WORD FRESHNESS: track recently used words to avoid repetition ───
+    const { data: recentPrompts } = await supabase
+      .from("prompts")
+      .select("word_a, word_b, date")
+      .eq("active", false)
+      .order("date", { ascending: false })
+      .limit(100);
+
+    // Also include today's active prompts
+    const { data: todayActive } = await supabase
+      .from("prompts")
+      .select("word_a, word_b, date")
+      .eq("active", true)
+      .limit(10);
+
+    const recentWordUsage = new Map<string, number>(); // word -> days ago (0 = today)
+    for (const p of [...(recentPrompts ?? []), ...(todayActive ?? [])]) {
+      const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(p.date).getTime()) / 86400000));
+      for (const w of [p.word_a.toLowerCase(), p.word_b.toLowerCase()]) {
+        const existing = recentWordUsage.get(w);
+        if (existing === undefined || daysAgo < existing) {
+          recentWordUsage.set(w, daysAgo);
+        }
+      }
+    }
+
+    /** Returns a penalty (negative) for using a recently-seen word. 0 if fresh. */
+    function wordFreshnessPenalty(word: string): number {
+      const daysAgo = recentWordUsage.get(word.toLowerCase());
+      if (daysAgo === undefined) return 0; // never used — great
+      if (daysAgo <= 1) return -80;  // used today/yesterday — heavy penalty
+      if (daysAgo <= 3) return -50;  // used in last 3 days
+      if (daysAgo <= 7) return -25;  // used in last week
+      if (daysAgo <= 14) return -10; // used in last 2 weeks
+      return 0;
+    }
+
     let { data: existingForToday } = await supabase
       .from("prompts")
       .select("*")
