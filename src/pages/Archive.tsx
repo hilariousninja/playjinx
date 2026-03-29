@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,6 +155,17 @@ export default function Archive() {
 
   const allTodayAnswered = todaySummaries.length > 0 && todaySummaries.every(s => s.answer);
   const todayAnsweredCount = todaySummaries.filter(s => s.answer).length;
+
+  // Match tier helpers
+  const getMatchTier = (s: PromptSummary) => {
+    if (!s.answer) return null;
+    const isBest = s.rank === 1;
+    if (isBest) return { label: 'Strongest hit', icon: Trophy, color: 'text-[hsl(var(--match-best))]', bg: 'bg-[hsl(var(--match-best)/0.08)]' };
+    if (s.rank <= 2) return { label: 'Strong', icon: Target, color: 'text-[hsl(var(--match-strong))]', bg: 'bg-[hsl(var(--match-strong)/0.08)]' };
+    if (s.rank <= 4) return { label: 'Good', icon: TrendingUp, color: 'text-[hsl(var(--match-good))]', bg: 'bg-[hsl(var(--match-good)/0.08)]' };
+    if (s.matchCount > 1) return { label: 'Decent', icon: Sparkles, color: 'text-[hsl(var(--match-decent))]', bg: 'bg-[hsl(var(--match-decent)/0.08)]' };
+    return { label: 'Unique', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted/50' };
+  };
 
   // Sharing
   const getAnswerEmoji = (topPercent: number) => {
@@ -313,8 +324,19 @@ export default function Archive() {
                 {allTodayAnswered ? (
                   <>
                     <h1 className="text-xl font-bold tracking-tight text-foreground mb-1">Today's JINX complete</h1>
-                    <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1.5 mt-1.5">
-                      <span className="inline-block w-1 h-1 rounded-full bg-primary/30 animate-pulse" />
+                    {bestHit?.answer && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="inline-flex items-center gap-1.5 bg-[hsl(var(--match-best)/0.08)] text-[hsl(var(--match-best))] px-3 py-1 rounded-full mt-2"
+                      >
+                        <Trophy className="h-3 w-3" />
+                        <span className="text-[11px] font-display font-bold">Best hit: {bestHit.answer.raw_answer.toUpperCase()}</span>
+                      </motion.div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1.5 mt-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--match-best))] animate-pulse" />
                       Results update live
                     </p>
                   </>
@@ -340,24 +362,37 @@ export default function Archive() {
               )}
 
               {/* Today prompt cards */}
-              <div className="space-y-2">
-                {todaySummaries.map((s, i) => (
+              <div className="space-y-2.5">
+                {todaySummaries.map((s, i) => {
+                  const tier = getMatchTier(s);
+                  const isBestHit = bestHit && s.prompt.id === bestHit.prompt.id;
+                  const TIcon = tier?.icon;
+
+                  return (
                   <motion.div key={s.prompt.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + i * 0.05 }}>
                     {s.answer ? (
                       <button
                         onClick={() => setSelected(s.prompt.id)}
-                        className="w-full text-left bg-card border border-border/50 rounded-xl px-5 py-3.5 hover:border-primary/20 transition-all group"
+                        className={`w-full text-left bg-card border rounded-xl px-5 py-4 hover:border-primary/20 transition-all group ${
+                          isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/50'
+                        }`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground mb-1">
-                              {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
+                            <p className="font-display font-bold text-[13px] tracking-tight text-muted-foreground/50 mb-1.5">
+                              {s.prompt.word_a} <span className="text-primary/40">+</span> {s.prompt.word_b}
+                            </p>
+                            <p className="font-display font-bold text-[17px] text-foreground mb-1.5 break-words">
+                              {s.answer.raw_answer}
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground/50">
-                                → <span className="font-display font-bold text-foreground/70">{s.answer.raw_answer}</span>
-                              </span>
-                              <span className="text-[9px] text-muted-foreground/30">
+                              {tier && TIcon && (
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-display font-bold px-2 py-0.5 rounded-full ${tier.bg} ${tier.color}`}>
+                                  <TIcon className="h-2.5 w-2.5" />
+                                  {tier.label}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground/35 font-display">
                                 #{s.rank} · {s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}
                               </span>
                             </div>
@@ -382,7 +417,8 @@ export default function Archive() {
                       </Link>
                     )}
                   </motion.div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Continue playing CTA */}

@@ -1,11 +1,59 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Crown } from 'lucide-react';
+import { Crown, Trophy, Target, Sparkles, TrendingUp, Minus } from 'lucide-react';
 import { getStats, getUserAnswer, getPromptById, getTotalSubmissions, getCanonicalAnswer, type AnswerStat, type DbPrompt, type DbAnswer } from '@/lib/store';
 
 interface Props {
   promptId: string;
 }
+
+type MatchTier = 'best' | 'strong' | 'good' | 'decent' | 'unique';
+
+function getMatchTier(isTopAnswer: boolean, rank: number, matchCount: number): MatchTier {
+  if (isTopAnswer) return 'best';
+  if (rank <= 2) return 'strong';
+  if (rank <= 4) return 'good';
+  if (matchCount > 1) return 'decent';
+  return 'unique';
+}
+
+const tierConfig: Record<MatchTier, { label: string; icon: typeof Trophy; color: string; bg: string; barColor: string }> = {
+  best: {
+    label: 'Strongest hit',
+    icon: Trophy,
+    color: 'text-[hsl(var(--match-best))]',
+    bg: 'bg-[hsl(var(--match-best)/0.08)]',
+    barColor: 'bg-[hsl(var(--match-best)/0.5)]',
+  },
+  strong: {
+    label: 'Strong match',
+    icon: Target,
+    color: 'text-[hsl(var(--match-strong))]',
+    bg: 'bg-[hsl(var(--match-strong)/0.08)]',
+    barColor: 'bg-[hsl(var(--match-strong)/0.4)]',
+  },
+  good: {
+    label: 'Good match',
+    icon: TrendingUp,
+    color: 'text-[hsl(var(--match-good))]',
+    bg: 'bg-[hsl(var(--match-good)/0.08)]',
+    barColor: 'bg-[hsl(var(--match-good)/0.35)]',
+  },
+  decent: {
+    label: 'Decent match',
+    icon: Sparkles,
+    color: 'text-[hsl(var(--match-decent))]',
+    bg: 'bg-[hsl(var(--match-decent)/0.08)]',
+    barColor: 'bg-[hsl(var(--match-decent)/0.35)]',
+  },
+  unique: {
+    label: 'One of a kind',
+    icon: Minus,
+    color: 'text-muted-foreground',
+    bg: 'bg-muted/50',
+    barColor: 'bg-muted-foreground/15',
+  },
+};
 
 export default function ResultsView({ promptId }: Props) {
   const [stats, setStats] = useState<AnswerStat[]>([]);
@@ -67,25 +115,11 @@ export default function ResultsView({ promptId }: Props) {
   const topAnswer = stats.length > 0 ? stats[0] : null;
   const rank = userStat?.rank ?? 0;
   const matchCount = userStat?.count ?? 0;
+  const isTopAnswer = !!(topAnswer && userCanonical && topAnswer.normalized_answer === userCanonical);
+  const tier = getMatchTier(isTopAnswer, rank, matchCount);
+  const config = tierConfig[tier];
+  const TierIcon = config.icon;
 
-  const isTopAnswer = topAnswer && userCanonical && topAnswer.normalized_answer === userCanonical;
-
-  const getResultLabel = () => {
-    if (isTopAnswer) return 'Most popular';
-    if (rank <= 2) return 'Strong match';
-    if (rank <= 4) return 'Good match';
-    if (matchCount > 1) return 'Decent match';
-    return 'One of a kind';
-  };
-
-  const getResultColor = () => {
-    if (isTopAnswer || rank <= 2) return 'text-primary';
-    if (rank <= 4) return 'text-primary/70';
-    if (matchCount > 1) return 'text-muted-foreground';
-    return 'text-muted-foreground/60';
-  };
-
-  // Supporting line — concise, avoids artificial percentiles for small samples
   const getSupportingLine = () => {
     if (isTopAnswer) return `${matchCount} of ${total} players said this`;
     if (matchCount > 1) return `${matchCount} of ${total} players matched`;
@@ -93,46 +127,54 @@ export default function ResultsView({ promptId }: Props) {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Main reveal */}
+    <div className="space-y-5">
+      {/* ── Match Badge + Hero Answer ── */}
       {userStat && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
           className="text-center"
         >
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+          {/* Tier badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className={`text-[11px] font-display font-bold uppercase tracking-[0.2em] mb-2 ${getResultColor()}`}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full ${config.bg} mb-4`}
           >
-            {getResultLabel()}
-          </motion.p>
+            <TierIcon className={`h-3.5 w-3.5 ${config.color}`} />
+            <span className={`text-[11px] font-display font-bold uppercase tracking-[0.12em] ${config.color}`}>
+              {config.label}
+            </span>
+          </motion.div>
 
+          {/* Hero answer */}
           <motion.p
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.12, duration: 0.3 }}
-            className="font-display text-3xl font-bold text-foreground break-words mb-2"
+            transition={{ delay: 0.14, duration: 0.3 }}
+            className="font-display text-[32px] font-bold text-foreground break-words mb-1.5 leading-tight"
           >
             {userAnswer?.raw_answer}
           </motion.p>
 
+          {/* Supporting line */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-[11px] text-muted-foreground/45 font-display"
+            transition={{ delay: 0.22 }}
+            className="text-[12px] text-muted-foreground/60 font-display"
           >
             {getSupportingLine()}
-            {!isTopAnswer && <span className="ml-1.5 text-muted-foreground/25">· #{rank}</span>}
+            {!isTopAnswer && rank > 0 && (
+              <span className="ml-1.5 text-foreground/40 font-bold">#{rank}</span>
+            )}
           </motion.p>
         </motion.div>
       )}
 
-      {/* Top answer — only if different */}
+      {/* ── Most Popular (if different) ── */}
       {topAnswer && !isTopAnswer && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -140,67 +182,95 @@ export default function ResultsView({ promptId }: Props) {
           transition={{ delay: 0.25 }}
           className="text-center"
         >
-          <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/30 uppercase tracking-[0.12em]">
-            <Crown className="h-2.5 w-2.5" />
+          <div className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/40 uppercase tracking-[0.12em]">
+            <Crown className="h-3 w-3 text-[hsl(var(--match-decent))]" />
             Most popular
           </div>
-          <p className="font-display text-base font-bold text-foreground/55 mt-0.5 break-words">
+          <p className="font-display text-base font-bold text-foreground/60 mt-0.5 break-words">
             {topAnswer.normalized_answer}
-            <span className="text-[10px] font-normal text-muted-foreground/25 ml-1.5">{topAnswer.percentage}%</span>
+            <span className="text-[11px] font-normal text-muted-foreground/35 ml-1.5">{topAnswer.percentage}%</span>
           </p>
         </motion.div>
       )}
 
-      {/* Distribution */}
+      {/* ── Answer Distribution ── */}
       <motion.div
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <p className="text-[9px] text-muted-foreground/25 uppercase tracking-[0.15em] mb-2 font-medium">Answers</p>
-        <div className="space-y-px">
+        <p className="text-[10px] text-muted-foreground/35 uppercase tracking-[0.15em] mb-3 font-medium">Top answers</p>
+        <div className="space-y-1">
           {(() => {
             const top6 = stats.slice(0, 6);
             const userInTop6 = userCanonical ? top6.some(s => s.normalized_answer === userCanonical) : true;
             const userStatEntry = !userInTop6 && userCanonical ? stats.find(s => s.normalized_answer === userCanonical) : null;
             const displayStats = userStatEntry ? [...top6, userStatEntry] : top6;
+            const maxPct = displayStats.length > 0 ? Math.max(...displayStats.map(s => s.percentage)) : 100;
 
             return displayStats.map((s, i) => {
               const isUser = userCanonical ? s.normalized_answer === userCanonical : false;
               const isAppended = userStatEntry && s === userStatEntry;
               const displayRank = isAppended ? s.rank : i + 1;
+              const isFirst = displayRank === 1;
+              const barWidth = Math.max((s.percentage / maxPct) * 100, 4);
 
               return (
                 <motion.div
                   key={s.normalized_answer}
-                  initial={{ opacity: 0, x: -4 }}
+                  initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.35 + i * 0.03 }}
-                  className={`py-1.5 px-2 rounded-md ${isUser ? 'bg-primary/5' : ''} ${isAppended ? 'mt-1 border-t border-border/20 pt-2' : ''}`}
+                  transition={{ delay: 0.35 + i * 0.04 }}
+                  className={`relative rounded-lg overflow-hidden ${
+                    isUser
+                      ? 'bg-primary/[0.06] ring-1 ring-primary/15'
+                      : 'hover:bg-muted/30'
+                  } ${isAppended ? 'mt-2 pt-2 border-t border-border/30' : ''}`}
                 >
-                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                    <div className="flex items-baseline gap-1.5 min-w-0">
-                      <span className={`font-display text-[9px] tabular-nums shrink-0 w-3 text-right ${displayRank === 1 ? 'text-primary font-bold' : 'text-muted-foreground/20'}`}>
+                  {/* Background bar */}
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${barWidth}%` }}
+                    transition={{ duration: 0.6, delay: 0.4 + i * 0.04, ease: 'easeOut' }}
+                    className={`absolute inset-y-0 left-0 ${
+                      isUser
+                        ? config.barColor
+                        : isFirst
+                          ? 'bg-foreground/[0.04]'
+                          : 'bg-foreground/[0.02]'
+                    } rounded-lg`}
+                  />
+
+                  <div className="relative flex items-center justify-between gap-2 py-2 px-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`font-display text-[10px] tabular-nums shrink-0 w-4 text-right ${
+                        isFirst ? 'text-foreground/60 font-bold' : 'text-muted-foreground/30'
+                      }`}>
                         {displayRank}
                       </span>
-                      <span className={`font-display text-[13px] break-words min-w-0 ${isUser ? 'text-primary font-bold' : 'text-foreground/65 font-medium'}`}>
+                      <span className={`font-display text-[13px] break-words min-w-0 ${
+                        isUser
+                          ? 'text-foreground font-bold'
+                          : isFirst
+                            ? 'text-foreground/75 font-semibold'
+                            : 'text-foreground/55 font-medium'
+                      }`}>
                         {s.normalized_answer}
+                        {isUser && (
+                          <span className="text-[9px] text-primary font-bold ml-1.5 uppercase tracking-wider">You</span>
+                        )}
                       </span>
                     </div>
-                    <span className={`text-[9px] tabular-nums whitespace-nowrap shrink-0 ${isUser ? 'text-primary font-bold' : 'text-muted-foreground/25'}`}>
-                      {s.percentage}%
-                      <span className="text-muted-foreground/12 ml-0.5">({s.count})</span>
-                    </span>
-                  </div>
-                  <div className="relative h-[2px] rounded-full bg-border/30 ml-4.5 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.max(s.percentage, 3)}%` }}
-                      transition={{ duration: 0.5, delay: 0.4 + i * 0.03, ease: 'easeOut' }}
-                      className={`absolute inset-y-0 left-0 rounded-full ${
-                        isUser ? 'bg-primary/40' : displayRank === 1 ? 'bg-primary/15' : 'bg-muted-foreground/10'
-                      }`}
-                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`text-[12px] tabular-nums font-display ${
+                        isUser ? 'text-foreground font-bold' : isFirst ? 'text-foreground/60 font-semibold' : 'text-muted-foreground/40'
+                      }`}>
+                        {s.percentage}%
+                      </span>
+                      <span className={`text-[9px] tabular-nums ${isUser ? 'text-muted-foreground/50' : 'text-muted-foreground/20'}`}>
+                        ({s.count})
+                      </span>
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -217,14 +287,14 @@ export default function ResultsView({ promptId }: Props) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="flex items-center justify-center gap-3 text-[9px] text-muted-foreground/20"
+        className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/30"
       >
         <span>{total} players</span>
         <span>·</span>
         <span>{unique} unique</span>
         <span>·</span>
         <span className="inline-flex items-center gap-1">
-          <span className="w-1 h-1 rounded-full bg-primary/25 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--match-best))] animate-pulse" />
           Live
         </span>
       </motion.div>

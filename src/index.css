@@ -51,6 +51,13 @@
 
     --surface-elevated: 0 0% 100%;
 
+    /* Result match tiers */
+    --match-best: 142 72% 40%;
+    --match-strong: 173 58% 39%;
+    --match-good: 220 72% 45%;
+    --match-decent: 38 92% 50%;
+    --match-weak: 220 10% 50%;
+
     --sidebar-background: 220 14% 6%;
     --sidebar-foreground: 210 15% 75%;
     --sidebar-primary: 220 72% 45%;
