@@ -417,7 +417,8 @@ export default function Archive() {
                       </Link>
                     )}
                   </motion.div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Continue playing CTA */}
