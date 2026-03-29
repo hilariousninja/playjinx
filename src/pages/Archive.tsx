@@ -362,24 +362,37 @@ export default function Archive() {
               )}
 
               {/* Today prompt cards */}
-              <div className="space-y-2">
-                {todaySummaries.map((s, i) => (
+              <div className="space-y-2.5">
+                {todaySummaries.map((s, i) => {
+                  const tier = getMatchTier(s);
+                  const isBestHit = bestHit && s.prompt.id === bestHit.prompt.id;
+                  const TIcon = tier?.icon;
+
+                  return (
                   <motion.div key={s.prompt.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + i * 0.05 }}>
                     {s.answer ? (
                       <button
                         onClick={() => setSelected(s.prompt.id)}
-                        className="w-full text-left bg-card border border-border/50 rounded-xl px-5 py-3.5 hover:border-primary/20 transition-all group"
+                        className={`w-full text-left bg-card border rounded-xl px-5 py-4 hover:border-primary/20 transition-all group ${
+                          isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/50'
+                        }`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground mb-1">
-                              {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
+                            <p className="font-display font-bold text-[13px] tracking-tight text-muted-foreground/50 mb-1.5">
+                              {s.prompt.word_a} <span className="text-primary/40">+</span> {s.prompt.word_b}
+                            </p>
+                            <p className="font-display font-bold text-[17px] text-foreground mb-1.5 break-words">
+                              {s.answer.raw_answer}
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground/50">
-                                → <span className="font-display font-bold text-foreground/70">{s.answer.raw_answer}</span>
-                              </span>
-                              <span className="text-[9px] text-muted-foreground/30">
+                              {tier && TIcon && (
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-display font-bold px-2 py-0.5 rounded-full ${tier.bg} ${tier.color}`}>
+                                  <TIcon className="h-2.5 w-2.5" />
+                                  {tier.label}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground/35 font-display">
                                 #{s.rank} · {s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}
                               </span>
                             </div>
