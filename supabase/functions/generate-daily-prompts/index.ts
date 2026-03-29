@@ -88,7 +88,8 @@ function scorePromptQuality(p: PromptCandidate): { total: number; details: Recor
 
 function scoreTrio(
   trio: PromptCandidate[],
-  wordMap: Map<string, string>
+  wordMap: Map<string, string>,
+  freshnessFn?: (word: string) => number
 ): { score: number; breakdown: Record<string, number>; confidence: string } {
   const breakdown: Record<string, number> = {};
 
@@ -147,6 +148,13 @@ function scoreTrio(
   else if (solidCount === 3) breakdown.surprise_factor = -3;
   else breakdown.surprise_factor = 0;
 
+  // ─── Word freshness bonus/penalty ───
+  if (freshnessFn) {
+    let freshness = 0;
+    for (const w of allWords) freshness += freshnessFn(w);
+    breakdown.word_freshness = freshness;
+  }
+
   const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
   const confidence = score >= 100 ? "strong" : score >= 50 ? "acceptable" : "risky";
   return { score, breakdown, confidence };
@@ -195,6 +203,43 @@ Deno.serve(async (req) => {
       .limit(2000);
 
     const historicalPairKeys = new Set((historicalPairs ?? []).map((p) => pairKey(p.word_a, p.word_b)));
+
+    // ─── WORD FRESHNESS: track recently used words to avoid repetition ───
+    const { data: recentPrompts } = await supabase
+      .from("prompts")
+      .select("word_a, word_b, date")
+      .eq("active", false)
+      .order("date", { ascending: false })
+      .limit(100);
+
+    // Also include today's active prompts
+    const { data: todayActive } = await supabase
+      .from("prompts")
+      .select("word_a, word_b, date")
+      .eq("active", true)
+      .limit(10);
+
+    const recentWordUsage = new Map<string, number>(); // word -> days ago (0 = today)
+    for (const p of [...(recentPrompts ?? []), ...(todayActive ?? [])]) {
+      const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(p.date).getTime()) / 86400000));
+      for (const w of [p.word_a.toLowerCase(), p.word_b.toLowerCase()]) {
+        const existing = recentWordUsage.get(w);
+        if (existing === undefined || daysAgo < existing) {
+          recentWordUsage.set(w, daysAgo);
+        }
+      }
+    }
+
+    /** Returns a penalty (negative) for using a recently-seen word. 0 if fresh. */
+    function wordFreshnessPenalty(word: string): number {
+      const daysAgo = recentWordUsage.get(word.toLowerCase());
+      if (daysAgo === undefined) return 0; // never used — great
+      if (daysAgo <= 1) return -80;  // used today/yesterday — heavy penalty
+      if (daysAgo <= 3) return -50;  // used in last 3 days
+      if (daysAgo <= 7) return -25;  // used in last week
+      if (daysAgo <= 14) return -10; // used in last 2 weeks
+      return 0;
+    }
 
     let { data: existingForToday } = await supabase
       .from("prompts")
@@ -295,7 +340,7 @@ Deno.serve(async (req) => {
         total_players: p.total_players ?? 0,
       })) as PromptCandidate[];
 
-      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap, wordFreshnessPenalty);
       const individualDetails = currentTrio.map(p => ({
         pair: `${p.word_a} + ${p.word_b}`,
         tag: p.prompt_tag,
@@ -402,12 +447,17 @@ Deno.serve(async (req) => {
 
       const categories = [...new Set(filteredWords.map(w => w.category).filter(c => c !== "Uncategorized"))];
 
-      // Build weighted word list with weight annotations
+      // Build weighted word list with weight and freshness annotations
       const wordList = filteredWords.map(w => {
         const cat = (w.category || "Uncategorized").toLowerCase();
         const weight = categoryWeights[cat] ?? 50;
         const weightTag = weight >= 80 ? "HIGH PRIORITY" : weight >= 60 ? "preferred" : weight <= 25 ? "low priority" : "";
-        return `${w.word} (${w.category}, score: ${w.jinx_score}${weightTag ? `, ${weightTag}` : ""})`;
+        const daysAgo = recentWordUsage.get(w.word.toLowerCase());
+        const freshnessTag = daysAgo === undefined ? "FRESH/UNUSED" : daysAgo <= 3 ? "RECENTLY USED — AVOID" : daysAgo <= 7 ? "used this week" : "";
+        const usedCount = w.times_used ?? 0;
+        const overuseTag = usedCount >= 5 ? "OVERUSED" : usedCount >= 3 ? "frequently used" : "";
+        const tags = [weightTag, freshnessTag, overuseTag].filter(Boolean).join(", ");
+        return `${w.word} (${w.category}, score: ${w.jinx_score}${tags ? `, ${tags}` : ""})`;
       }).join(", ");
 
       // Build tuning instructions
@@ -446,8 +496,10 @@ ${tuningInstructions.length > 0 ? `TUNING INSTRUCTIONS (from creator settings):\
 HARD RULES:
 - Do NOT use these already-played pairs: ${[...usedPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
 - Do NOT duplicate: ${[...existingPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
+- STRONGLY AVOID these recently-used words (prioritise fresh words the player hasn't seen): ${[...recentWordUsage.entries()].filter(([, d]) => d <= 7).sort((a, b) => a[1] - b[1]).map(([w, d]) => `${w.toUpperCase()} (${d === 0 ? "today" : d + "d ago"}`).join(", ") || "none"}
 - Each word can appear at most ONCE across the trio
 - Prefer cross-category pairs
+- PRIORITISE words that have NEVER or RARELY appeared in daily prompts — variety is critical
 - The "instant JINX feel" test: Would a player immediately think "I know what most people would say"?
 - Words marked HIGH PRIORITY should be favoured
 - Words marked low priority should be used sparingly`;
@@ -642,7 +694,7 @@ Return JSON with this structure:
     const topCandidates: TrioReport[] = [];
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
-      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap, wordFreshnessPenalty);
       topCandidates.push({
         trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
         score,
@@ -780,6 +832,10 @@ Return JSON with this structure:
           if (wA.category === wB.category && wA.category !== "Uncategorized") continue;
           const key = [wA.word.toLowerCase(), wB.word.toLowerCase()].sort().join("|");
           if (existingPairKeys.has(key)) continue;
+          // Skip words used in last 3 days for fallback generation
+          const daysA = recentWordUsage.get(wA.word.toLowerCase());
+          const daysB = recentWordUsage.get(wB.word.toLowerCase());
+          if ((daysA !== undefined && daysA <= 2) || (daysB !== undefined && daysB <= 2)) continue;
 
           usedWords.add(wA.word);
           usedWords.add(wB.word);
@@ -799,7 +855,7 @@ Return JSON with this structure:
       }
 
       if (candidateTrio.length >= needed) {
-        const { score } = scoreTrio(candidateTrio, wordMap);
+        const { score } = scoreTrio(candidateTrio, wordMap, wordFreshnessPenalty);
         if (score > bestFallbackScore) {
           bestFallbackScore = score;
           bestFallbackTrio = candidateTrio;
