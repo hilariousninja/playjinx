@@ -491,8 +491,10 @@ ${tuningInstructions.length > 0 ? `TUNING INSTRUCTIONS (from creator settings):\
 HARD RULES:
 - Do NOT use these already-played pairs: ${[...usedPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
 - Do NOT duplicate: ${[...existingPairs].map(p => p.replace("|", " + ")).join(", ") || "none"}
+- STRONGLY AVOID these recently-used words (prioritise fresh words the player hasn't seen): ${[...recentWordUsage.entries()].filter(([, d]) => d <= 7).sort((a, b) => a[1] - b[1]).map(([w, d]) => `${w.toUpperCase()} (${d === 0 ? "today" : d + "d ago"}`).join(", ") || "none"}
 - Each word can appear at most ONCE across the trio
 - Prefer cross-category pairs
+- PRIORITISE words that have NEVER or RARELY appeared in daily prompts — variety is critical
 - The "instant JINX feel" test: Would a player immediately think "I know what most people would say"?
 - Words marked HIGH PRIORITY should be favoured
 - Words marked low priority should be used sparingly`;
