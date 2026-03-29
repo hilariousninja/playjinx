@@ -687,7 +687,7 @@ Return JSON with this structure:
     const topCandidates: TrioReport[] = [];
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
-      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap, wordFreshnessPenalty);
       topCandidates.push({
         trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
         score,
