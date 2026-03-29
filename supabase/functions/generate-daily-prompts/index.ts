@@ -832,6 +832,10 @@ Return JSON with this structure:
           if (wA.category === wB.category && wA.category !== "Uncategorized") continue;
           const key = [wA.word.toLowerCase(), wB.word.toLowerCase()].sort().join("|");
           if (existingPairKeys.has(key)) continue;
+          // Skip words used in last 3 days for fallback generation
+          const daysA = recentWordUsage.get(wA.word.toLowerCase());
+          const daysB = recentWordUsage.get(wB.word.toLowerCase());
+          if ((daysA !== undefined && daysA <= 2) || (daysB !== undefined && daysB <= 2)) continue;
 
           usedWords.add(wA.word);
           usedWords.add(wB.word);
