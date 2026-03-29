@@ -156,6 +156,17 @@ export default function Archive() {
   const allTodayAnswered = todaySummaries.length > 0 && todaySummaries.every(s => s.answer);
   const todayAnsweredCount = todaySummaries.filter(s => s.answer).length;
 
+  // Match tier helpers
+  const getMatchTier = (s: PromptSummary) => {
+    if (!s.answer) return null;
+    const isBest = s.rank === 1;
+    if (isBest) return { label: 'Strongest hit', icon: Trophy, color: 'text-[hsl(var(--match-best))]', bg: 'bg-[hsl(var(--match-best)/0.08)]' };
+    if (s.rank <= 2) return { label: 'Strong', icon: Target, color: 'text-[hsl(var(--match-strong))]', bg: 'bg-[hsl(var(--match-strong)/0.08)]' };
+    if (s.rank <= 4) return { label: 'Good', icon: TrendingUp, color: 'text-[hsl(var(--match-good))]', bg: 'bg-[hsl(var(--match-good)/0.08)]' };
+    if (s.matchCount > 1) return { label: 'Decent', icon: Sparkles, color: 'text-[hsl(var(--match-decent))]', bg: 'bg-[hsl(var(--match-decent)/0.08)]' };
+    return { label: 'Unique', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted/50' };
+  };
+
   // Sharing
   const getAnswerEmoji = (topPercent: number) => {
     if (topPercent <= 15) return '🟩';
