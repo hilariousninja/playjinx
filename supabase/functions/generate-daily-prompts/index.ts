@@ -447,12 +447,17 @@ Deno.serve(async (req) => {
 
       const categories = [...new Set(filteredWords.map(w => w.category).filter(c => c !== "Uncategorized"))];
 
-      // Build weighted word list with weight annotations
+      // Build weighted word list with weight and freshness annotations
       const wordList = filteredWords.map(w => {
         const cat = (w.category || "Uncategorized").toLowerCase();
         const weight = categoryWeights[cat] ?? 50;
         const weightTag = weight >= 80 ? "HIGH PRIORITY" : weight >= 60 ? "preferred" : weight <= 25 ? "low priority" : "";
-        return `${w.word} (${w.category}, score: ${w.jinx_score}${weightTag ? `, ${weightTag}` : ""})`;
+        const daysAgo = recentWordUsage.get(w.word.toLowerCase());
+        const freshnessTag = daysAgo === undefined ? "FRESH/UNUSED" : daysAgo <= 3 ? "RECENTLY USED — AVOID" : daysAgo <= 7 ? "used this week" : "";
+        const usedCount = w.times_used ?? 0;
+        const overuseTag = usedCount >= 5 ? "OVERUSED" : usedCount >= 3 ? "frequently used" : "";
+        const tags = [weightTag, freshnessTag, overuseTag].filter(Boolean).join(", ");
+        return `${w.word} (${w.category}, score: ${w.jinx_score}${tags ? `, ${tags}` : ""})`;
       }).join(", ");
 
       // Build tuning instructions
