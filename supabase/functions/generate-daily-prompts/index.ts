@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
         total_players: p.total_players ?? 0,
       })) as PromptCandidate[];
 
-      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap);
+      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap, wordFreshnessPenalty);
       const individualDetails = currentTrio.map(p => ({
         pair: `${p.word_a} + ${p.word_b}`,
         tag: p.prompt_tag,
