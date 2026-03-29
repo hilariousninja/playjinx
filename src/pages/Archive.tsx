@@ -324,8 +324,19 @@ export default function Archive() {
                 {allTodayAnswered ? (
                   <>
                     <h1 className="text-xl font-bold tracking-tight text-foreground mb-1">Today's JINX complete</h1>
-                    <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1.5 mt-1.5">
-                      <span className="inline-block w-1 h-1 rounded-full bg-primary/30 animate-pulse" />
+                    {bestHit?.answer && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="inline-flex items-center gap-1.5 bg-[hsl(var(--match-best)/0.08)] text-[hsl(var(--match-best))] px-3 py-1 rounded-full mt-2"
+                      >
+                        <Trophy className="h-3 w-3" />
+                        <span className="text-[11px] font-display font-bold">Best hit: {bestHit.answer.raw_answer.toUpperCase()}</span>
+                      </motion.div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1.5 mt-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--match-best))] animate-pulse" />
                       Results update live
                     </p>
                   </>
