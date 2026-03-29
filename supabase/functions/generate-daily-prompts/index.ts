@@ -88,7 +88,8 @@ function scorePromptQuality(p: PromptCandidate): { total: number; details: Recor
 
 function scoreTrio(
   trio: PromptCandidate[],
-  wordMap: Map<string, string>
+  wordMap: Map<string, string>,
+  freshnessFn?: (word: string) => number
 ): { score: number; breakdown: Record<string, number>; confidence: string } {
   const breakdown: Record<string, number> = {};
 
@@ -146,6 +147,13 @@ function scoreTrio(
   if (solidCount >= 2 && wildCards.length === 1) breakdown.surprise_factor = 12;
   else if (solidCount === 3) breakdown.surprise_factor = -3;
   else breakdown.surprise_factor = 0;
+
+  // ─── Word freshness bonus/penalty ───
+  if (freshnessFn) {
+    let freshness = 0;
+    for (const w of allWords) freshness += freshnessFn(w);
+    breakdown.word_freshness = freshness;
+  }
 
   const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
   const confidence = score >= 100 ? "strong" : score >= 50 ? "acceptable" : "risky";
