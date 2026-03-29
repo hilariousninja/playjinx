@@ -844,7 +844,7 @@ Return JSON with this structure:
       }
 
       if (candidateTrio.length >= needed) {
-        const { score } = scoreTrio(candidateTrio, wordMap);
+        const { score } = scoreTrio(candidateTrio, wordMap, wordFreshnessPenalty);
         if (score > bestFallbackScore) {
           bestFallbackScore = score;
           bestFallbackTrio = candidateTrio;
