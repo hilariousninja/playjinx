@@ -99,6 +99,12 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
     toast.success(`Override updated for ${word.word}`);
   }, [refreshWord]);
 
+  const setGenStatus = useCallback(async (word: ScoredWord, genStatus: string) => {
+    await supabase.from('words').update({ generation_status: genStatus } as any).eq('id', word.id);
+    await refreshWord(word.id);
+    toast.success(`${word.word} → ${genStatus}`);
+  }, [refreshWord]);
+
   // Computed summaries
   const deckSummary = useMemo(() => {
     const core = scoredWords.filter(w => w.in_core_deck);
