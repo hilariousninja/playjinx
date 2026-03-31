@@ -207,6 +207,14 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
           <option value="core">Core deck</option>
           <option value="non-core">Non-core</option>
         </select>
+        <select value={filterGenStatus} onChange={e => { setFilterGenStatus(e.target.value); setPage(0); }}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+          <option value="all">All gen status</option>
+          <option value="active">Active</option>
+          <option value="test">Test</option>
+          <option value="downweight">Downweight</option>
+          <option value="disabled">Disabled</option>
+        </select>
         <Button variant="outline" size="sm" onClick={handleExportWords} className="h-8 text-xs gap-1">
           <Download className="h-3 w-3" /> Export
         </Button>
