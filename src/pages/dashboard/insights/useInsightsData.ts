@@ -14,7 +14,7 @@ export function useInsightsData() {
         .gt('total_players', 0)
         .order('total_players', { ascending: false }),
       supabase.from('words')
-        .select('id, word, category, status, times_used, strong_appearances, decent_appearances, weak_appearances, avg_top_answer_pct, avg_unique_answers, in_core_deck, deck_override, jinx_score')
+        .select('id, word, category, status, times_used, strong_appearances, decent_appearances, weak_appearances, avg_top_answer_pct, avg_unique_answers, in_core_deck, deck_override, jinx_score, generation_status, semantic_lane')
         .order('word', { ascending: true }),
     ]);
     setPrompts((pRes.data ?? []) as PromptRow[]);
