@@ -207,10 +207,12 @@ export type Database = {
           created_at: string
           decent_appearances: number
           deck_override: string | null
+          generation_status: string
           id: string
           in_core_deck: boolean
           jinx_score: number
           notes: string
+          semantic_lane: string | null
           source: string
           status: string
           strong_appearances: number
@@ -226,10 +228,12 @@ export type Database = {
           created_at?: string
           decent_appearances?: number
           deck_override?: string | null
+          generation_status?: string
           id?: string
           in_core_deck?: boolean
           jinx_score?: number
           notes?: string
+          semantic_lane?: string | null
           source?: string
           status?: string
           strong_appearances?: number
@@ -245,10 +249,12 @@ export type Database = {
           created_at?: string
           decent_appearances?: number
           deck_override?: string | null
+          generation_status?: string
           id?: string
           in_core_deck?: boolean
           jinx_score?: number
           notes?: string
+          semantic_lane?: string | null
           source?: string
           status?: string
           strong_appearances?: number

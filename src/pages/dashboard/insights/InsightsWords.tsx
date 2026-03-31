@@ -12,16 +12,24 @@ interface Props {
   refreshWord: (id: string) => Promise<void>;
 }
 
-type SortKey = 'word' | 'strengthScore' | 'times_used' | 'avg_top_answer_pct' | 'strong_appearances' | 'weak_appearances' | 'recommendation';
+type SortKey = 'word' | 'strengthScore' | 'times_used' | 'avg_top_answer_pct' | 'strong_appearances' | 'weak_appearances' | 'recommendation' | 'generation_status';
 type SortDir = 'asc' | 'desc';
 
 const REC_ORDER: Record<Recommendation, number> = { keep: 0, add: 1, watch: 2, cut: 3 };
+const GEN_STATUS_ORDER: Record<string, number> = { active: 0, test: 1, downweight: 2, disabled: 3 };
 const OVERRIDES = [
   { value: '', label: 'Auto' },
   { value: 'locked_keep', label: '🔒 Keep' },
   { value: 'locked_cut', label: '🔒 Cut' },
   { value: 'test_more', label: '🧪 Test more' },
   { value: 'designer_favourite', label: '⭐ Favourite' },
+];
+
+const GEN_STATUSES = [
+  { value: 'active', label: 'Active', cls: 'bg-[hsl(var(--keep))]/10 text-[hsl(var(--keep))]' },
+  { value: 'test', label: 'Test', cls: 'bg-primary/10 text-primary' },
+  { value: 'downweight', label: 'Downweight', cls: 'bg-[hsl(var(--review))]/10 text-[hsl(var(--review))]' },
+  { value: 'disabled', label: 'Disabled', cls: 'bg-destructive/10 text-destructive' },
 ];
 
 const recBadge: Record<Recommendation, string> = {
@@ -37,6 +45,7 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [filterRec, setFilterRec] = useState<Recommendation | 'all'>('all');
   const [filterDeck, setFilterDeck] = useState<'all' | 'core' | 'non-core'>('all');
+  const [filterGenStatus, setFilterGenStatus] = useState<string>('all');
   const [selectedWord, setSelectedWord] = useState<ScoredWord | null>(null);
   const [page, setPage] = useState(0);
   const PER_PAGE = 50;
@@ -45,15 +54,20 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
     let list = [...scoredWords];
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(w => w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q));
+      list = list.filter(w => w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q) || (w.semantic_lane ?? '').toLowerCase().includes(q));
     }
     if (filterRec !== 'all') list = list.filter(w => w.recommendation === filterRec);
     if (filterDeck === 'core') list = list.filter(w => w.in_core_deck);
     if (filterDeck === 'non-core') list = list.filter(w => !w.in_core_deck);
+    if (filterGenStatus !== 'all') list = list.filter(w => w.generation_status === filterGenStatus);
 
     list.sort((a, b) => {
       if (sortKey === 'recommendation') {
         const diff = REC_ORDER[a.recommendation] - REC_ORDER[b.recommendation];
+        return sortDir === 'asc' ? diff : -diff;
+      }
+      if (sortKey === 'generation_status') {
+        const diff = (GEN_STATUS_ORDER[a.generation_status] ?? 9) - (GEN_STATUS_ORDER[b.generation_status] ?? 9);
         return sortDir === 'asc' ? diff : -diff;
       }
       const va = a[sortKey] as number | string;
@@ -62,7 +76,7 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
       return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number);
     });
     return list;
-  }, [scoredWords, search, sortKey, sortDir, filterRec, filterDeck]);
+  }, [scoredWords, search, sortKey, sortDir, filterRec, filterDeck, filterGenStatus]);
 
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
@@ -83,6 +97,12 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
     await supabase.from('words').update({ deck_override: override || null } as any).eq('id', word.id);
     await refreshWord(word.id);
     toast.success(`Override updated for ${word.word}`);
+  }, [refreshWord]);
+
+  const setGenStatus = useCallback(async (word: ScoredWord, genStatus: string) => {
+    await supabase.from('words').update({ generation_status: genStatus } as any).eq('id', word.id);
+    await refreshWord(word.id);
+    toast.success(`${word.word} → ${genStatus}`);
   }, [refreshWord]);
 
   // Computed summaries
@@ -187,6 +207,14 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
           <option value="core">Core deck</option>
           <option value="non-core">Non-core</option>
         </select>
+        <select value={filterGenStatus} onChange={e => { setFilterGenStatus(e.target.value); setPage(0); }}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+          <option value="all">All gen status</option>
+          <option value="active">Active</option>
+          <option value="test">Test</option>
+          <option value="downweight">Downweight</option>
+          <option value="disabled">Disabled</option>
+        </select>
         <Button variant="outline" size="sm" onClick={handleExportWords} className="h-8 text-xs gap-1">
           <Download className="h-3 w-3" /> Export
         </Button>
@@ -199,6 +227,7 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
             <tr className="border-b bg-muted/30">
               <Th label="Word" sortKey="word" current={sortKey} dir={sortDir} onSort={toggleSort} />
               <th className="px-2 py-2 text-center text-[9px] uppercase tracking-wider font-semibold text-muted-foreground w-12">Deck</th>
+              <Th label="Gen" sortKey="generation_status" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center w-20" />
               <Th label="Score" sortKey="strengthScore" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-right w-14" />
               <Th label="Apps" sortKey="times_used" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-right w-12" />
               <Th label="Top%" sortKey="avg_top_answer_pct" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-right w-14" />
@@ -208,18 +237,27 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
             </tr>
           </thead>
           <tbody>
-            {paged.map(w => (
+            {paged.map(w => {
+              const genStyle = GEN_STATUSES.find(g => g.value === w.generation_status);
+              return (
               <tr key={w.id} className="border-b border-border/30 hover:bg-accent/20 transition-colors cursor-pointer"
                 onClick={() => setSelectedWord(w)}>
                 <td className="px-3 py-2">
                   <span className="font-display font-bold text-sm">{w.word}</span>
                   <span className="text-[9px] text-muted-foreground ml-1.5">{w.category}</span>
+                  {w.semantic_lane && <span className="text-[8px] text-muted-foreground/50 ml-1">🔗{w.semantic_lane}</span>}
                 </td>
                 <td className="px-2 py-2 text-center">
                   <button onClick={e => { e.stopPropagation(); toggleCoreDeck(w); }}
                     className={`w-4 h-4 rounded border transition-colors ${w.in_core_deck ? 'bg-primary border-primary' : 'border-border'}`}>
                     {w.in_core_deck && <span className="text-primary-foreground text-[8px]">✓</span>}
                   </button>
+                </td>
+                <td className="px-2 py-2 text-center" onClick={e => e.stopPropagation()}>
+                  <select value={w.generation_status} onChange={e => setGenStatus(w, e.target.value)}
+                    className={`h-6 rounded border-0 px-1 text-[9px] font-bold uppercase ${genStyle?.cls ?? 'bg-muted text-muted-foreground'}`}>
+                    {GEN_STATUSES.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                  </select>
                 </td>
                 <td className="px-2 py-2 text-right tabular-nums font-bold">{w.strengthScore}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{w.times_used}</td>
@@ -241,7 +279,8 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
                   </select>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

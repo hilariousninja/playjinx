@@ -24,6 +24,8 @@ export interface WordRow {
   in_core_deck: boolean;
   deck_override: string | null;
   jinx_score: number;
+  generation_status: string;
+  semantic_lane: string | null;
 }
 
 export type Recommendation = 'keep' | 'watch' | 'cut' | 'add';
