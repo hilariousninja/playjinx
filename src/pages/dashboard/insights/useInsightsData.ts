@@ -64,7 +64,7 @@ export function useInsightsData() {
 
   const refreshWord = async (wordId: string) => {
     const { data } = await supabase.from('words')
-      .select('id, word, category, status, times_used, strong_appearances, decent_appearances, weak_appearances, avg_top_answer_pct, avg_unique_answers, in_core_deck, deck_override, jinx_score')
+      .select('id, word, category, status, times_used, strong_appearances, decent_appearances, weak_appearances, avg_top_answer_pct, avg_unique_answers, in_core_deck, deck_override, jinx_score, generation_status, semantic_lane')
       .eq('id', wordId)
       .single();
     if (data) {
