@@ -45,6 +45,7 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [filterRec, setFilterRec] = useState<Recommendation | 'all'>('all');
   const [filterDeck, setFilterDeck] = useState<'all' | 'core' | 'non-core'>('all');
+  const [filterGenStatus, setFilterGenStatus] = useState<string>('all');
   const [selectedWord, setSelectedWord] = useState<ScoredWord | null>(null);
   const [page, setPage] = useState(0);
   const PER_PAGE = 50;
