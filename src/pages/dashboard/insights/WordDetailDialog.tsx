@@ -85,6 +85,8 @@ export default function WordDetailDialog({ word, open, onOpenChange }: Props) {
           <div className="grid grid-cols-2 gap-2 text-[10px]">
             <div>Category: <span className="font-semibold">{word.category}</span></div>
             <div>Core deck: <span className="font-semibold">{word.in_core_deck ? 'Yes' : 'No'}</span></div>
+            <div>Gen status: <span className="font-semibold capitalize">{word.generation_status}</span></div>
+            <div>Semantic lane: <span className="font-semibold">{word.semantic_lane || '—'}</span></div>
             <div>Strong: <span className="font-semibold text-[hsl(var(--keep))]">{word.strong_appearances}</span></div>
             <div>Weak: <span className="font-semibold text-destructive">{word.weak_appearances}</span></div>
             <div>Avg top %: <span className="font-semibold">{Math.round(word.avg_top_answer_pct)}%</span></div>
