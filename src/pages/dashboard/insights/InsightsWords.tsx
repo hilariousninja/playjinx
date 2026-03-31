@@ -12,16 +12,24 @@ interface Props {
   refreshWord: (id: string) => Promise<void>;
 }
 
-type SortKey = 'word' | 'strengthScore' | 'times_used' | 'avg_top_answer_pct' | 'strong_appearances' | 'weak_appearances' | 'recommendation';
+type SortKey = 'word' | 'strengthScore' | 'times_used' | 'avg_top_answer_pct' | 'strong_appearances' | 'weak_appearances' | 'recommendation' | 'generation_status';
 type SortDir = 'asc' | 'desc';
 
 const REC_ORDER: Record<Recommendation, number> = { keep: 0, add: 1, watch: 2, cut: 3 };
+const GEN_STATUS_ORDER: Record<string, number> = { active: 0, test: 1, downweight: 2, disabled: 3 };
 const OVERRIDES = [
   { value: '', label: 'Auto' },
   { value: 'locked_keep', label: '🔒 Keep' },
   { value: 'locked_cut', label: '🔒 Cut' },
   { value: 'test_more', label: '🧪 Test more' },
   { value: 'designer_favourite', label: '⭐ Favourite' },
+];
+
+const GEN_STATUSES = [
+  { value: 'active', label: 'Active', cls: 'bg-[hsl(var(--keep))]/10 text-[hsl(var(--keep))]' },
+  { value: 'test', label: 'Test', cls: 'bg-primary/10 text-primary' },
+  { value: 'downweight', label: 'Downweight', cls: 'bg-[hsl(var(--review))]/10 text-[hsl(var(--review))]' },
+  { value: 'disabled', label: 'Disabled', cls: 'bg-destructive/10 text-destructive' },
 ];
 
 const recBadge: Record<Recommendation, string> = {
