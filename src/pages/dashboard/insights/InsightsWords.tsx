@@ -54,15 +54,20 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
     let list = [...scoredWords];
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(w => w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q));
+      list = list.filter(w => w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q) || (w.semantic_lane ?? '').toLowerCase().includes(q));
     }
     if (filterRec !== 'all') list = list.filter(w => w.recommendation === filterRec);
     if (filterDeck === 'core') list = list.filter(w => w.in_core_deck);
     if (filterDeck === 'non-core') list = list.filter(w => !w.in_core_deck);
+    if (filterGenStatus !== 'all') list = list.filter(w => w.generation_status === filterGenStatus);
 
     list.sort((a, b) => {
       if (sortKey === 'recommendation') {
         const diff = REC_ORDER[a.recommendation] - REC_ORDER[b.recommendation];
+        return sortDir === 'asc' ? diff : -diff;
+      }
+      if (sortKey === 'generation_status') {
+        const diff = (GEN_STATUS_ORDER[a.generation_status] ?? 9) - (GEN_STATUS_ORDER[b.generation_status] ?? 9);
         return sortDir === 'asc' ? diff : -diff;
       }
       const va = a[sortKey] as number | string;
@@ -71,7 +76,7 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
       return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number);
     });
     return list;
-  }, [scoredWords, search, sortKey, sortDir, filterRec, filterDeck]);
+  }, [scoredWords, search, sortKey, sortDir, filterRec, filterDeck, filterGenStatus]);
 
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
