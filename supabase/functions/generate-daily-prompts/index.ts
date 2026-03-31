@@ -26,12 +26,44 @@ interface TrioReport {
   breakdown: Record<string, number>;
 }
 
+// ─── Semantic lane clusters for same-lane avoidance ─────────────────
+
+const SEMANTIC_LANES: Record<string, string[]> = {
+  fire: ["fire", "flame", "burn", "smoke", "ash", "blaze"],
+  storm: ["storm", "thunder", "lightning", "hurricane", "tornado"],
+  travel: ["trip", "route", "travel", "journey", "voyage"],
+  danger: ["risk", "danger", "threat", "hazard", "peril"],
+  conflict: ["war", "battle", "fight", "combat", "clash"],
+  water: ["ocean", "sea", "wave", "river", "lake", "pond", "stream"],
+  money: ["money", "cash", "coin", "gold", "bank", "wallet", "currency"],
+  royalty: ["king", "queen", "crown", "prince", "princess", "throne"],
+  spooky: ["ghost", "vampire", "zombie", "skeleton", "witch", "haunted"],
+  light: ["light", "sun", "moon", "star", "lamp", "glow"],
+  prison_lane: ["prison", "jail", "cell", "cage", "trapped"],
+  food_sweet: ["cake", "candy", "chocolate", "sugar", "cookie"],
+  music: ["drum", "guitar", "piano", "violin", "trumpet"],
+  cold: ["ice", "snow", "frost", "freeze", "winter", "arctic"],
+  emotion_neg: ["shame", "stress", "envy", "fear", "anger", "rage"],
+  abstract_broad: ["balance", "freedom", "control", "order", "chaos", "power"],
+};
+
+function getSemanticLane(word: string, dbLane?: string | null): string | null {
+  if (dbLane) return dbLane;
+  const lower = word.toLowerCase();
+  for (const [lane, words] of Object.entries(SEMANTIC_LANES)) {
+    if (words.includes(lower)) return lane;
+  }
+  return null;
+}
+
+function areSameLane(wordA: string, wordB: string, laneMap: Map<string, string | null>): boolean {
+  const laneA = laneMap.get(wordA.toLowerCase()) ?? getSemanticLane(wordA);
+  const laneB = laneMap.get(wordB.toLowerCase()) ?? getSemanticLane(wordB);
+  return !!(laneA && laneB && laneA === laneB);
+}
+
 // ─── Prompt lifecycle helpers ───────────────────────────────────────
 
-/**
- * A prompt is "played" (historical) if it has ever received answers.
- * total_players > 0 is the primary signal.
- */
 function isHistorical(p: { total_players: number; mode?: string }): boolean {
   return p.total_players > 0 || p.mode === "archive";
 }
@@ -48,7 +80,10 @@ function getWordCategories(
   ];
 }
 
-function scorePromptQuality(p: PromptCandidate): { total: number; details: Record<string, number> } {
+function scorePromptQuality(
+  p: PromptCandidate,
+  laneMap?: Map<string, string | null>
+): { total: number; details: Record<string, number> } {
   const details: Record<string, number> = {};
   const hasHistory = p.total_players > 0;
 
@@ -82,6 +117,15 @@ function scorePromptQuality(p: PromptCandidate): { total: number; details: Recor
   else if (ps < 25 || ps > 85) details.prompt_score_range = -5;
   else details.prompt_score_range = 0;
 
+  // ─── Semantic lane penalty: same-lane pairings are weak ───
+  if (laneMap) {
+    if (areSameLane(p.word_a, p.word_b, laneMap)) {
+      details.same_lane_penalty = -40;
+    } else {
+      details.same_lane_penalty = 0;
+    }
+  }
+
   const total = Object.values(details).reduce((s, v) => s + v, 0);
   return { total, details };
 }
@@ -89,12 +133,13 @@ function scorePromptQuality(p: PromptCandidate): { total: number; details: Recor
 function scoreTrio(
   trio: PromptCandidate[],
   wordMap: Map<string, string>,
-  freshnessFn?: (word: string) => number
+  freshnessFn?: (word: string) => number,
+  laneMap?: Map<string, string | null>
 ): { score: number; breakdown: Record<string, number>; confidence: string } {
   const breakdown: Record<string, number> = {};
 
   let individualSum = 0;
-  for (const p of trio) individualSum += scorePromptQuality(p).total;
+  for (const p of trio) individualSum += scorePromptQuality(p, laneMap).total;
   breakdown.individual_quality = individualSum;
 
   const allCats = new Set<string>();
@@ -131,6 +176,23 @@ function scoreTrio(
     }
   }
   breakdown.cross_overlap = crossOverlap;
+
+  // ─── Cross-prompt semantic lane clash ───
+  if (laneMap) {
+    let lanePenalty = 0;
+    const trioLanes = trio.map(p => {
+      const la = laneMap.get(p.word_a.toLowerCase()) ?? getSemanticLane(p.word_a);
+      const lb = laneMap.get(p.word_b.toLowerCase()) ?? getSemanticLane(p.word_b);
+      return [la, lb].filter(Boolean) as string[];
+    });
+    for (let i = 0; i < trioLanes.length; i++) {
+      for (let j = i + 1; j < trioLanes.length; j++) {
+        const shared = trioLanes[i].filter(l => trioLanes[j].includes(l));
+        lanePenalty -= shared.length * 15;
+      }
+    }
+    breakdown.cross_lane_overlap = lanePenalty;
+  }
 
   const weakCount = trio.filter(p => p.performance === "weak").length;
   breakdown.weak_cluster = weakCount >= 2 ? -20 : 0;
@@ -233,12 +295,27 @@ Deno.serve(async (req) => {
     /** Returns a penalty (negative) for using a recently-seen word. 0 if fresh. */
     function wordFreshnessPenalty(word: string): number {
       const daysAgo = recentWordUsage.get(word.toLowerCase());
-      if (daysAgo === undefined) return 0; // never used — great
-      if (daysAgo <= 1) return -80;  // used today/yesterday — heavy penalty
-      if (daysAgo <= 3) return -50;  // used in last 3 days
-      if (daysAgo <= 7) return -25;  // used in last week
-      if (daysAgo <= 14) return -10; // used in last 2 weeks
+      if (daysAgo === undefined) return 0;
+      if (daysAgo <= 1) return -80;
+      if (daysAgo <= 3) return -50;
+      if (daysAgo <= 7) return -25;
+      if (daysAgo <= 14) return -10;
       return 0;
+    }
+
+    // ─── Load word database with generation_status and semantic_lane ───
+    const { data: allWordRows } = await supabase
+      .from("words")
+      .select("word, category, generation_status, semantic_lane")
+      .limit(1000);
+
+    const wordMap = new Map<string, string>();
+    const laneMap = new Map<string, string | null>();
+    const genStatusMap = new Map<string, string>();
+    for (const w of allWordRows ?? []) {
+      wordMap.set(w.word.toLowerCase(), w.category);
+      laneMap.set(w.word.toLowerCase(), w.semantic_lane ?? getSemanticLane(w.word));
+      genStatusMap.set(w.word.toLowerCase(), w.generation_status ?? "active");
     }
 
     let { data: existingForToday } = await supabase
@@ -285,22 +362,16 @@ Deno.serve(async (req) => {
 
     const invalidActivePrompts = (existingForToday ?? []).filter(isInvalidActivePrompt);
 
-    // Hard safeguard cleanup: historical prompts must not stay in today's active set
     if (invalidActivePrompts.length > 0 && !dryRun) {
       for (const p of invalidActivePrompts) {
         const createdDate = new Date(p.created_at).toISOString().split("T")[0];
         const hasAnswerHistory = (p.total_players ?? 0) > 0;
-
         const patch: Record<string, unknown> = { active: false };
         if (hasAnswerHistory) {
           patch.mode = "archive";
           patch.date = createdDate;
         }
-
-        await supabase
-          .from("prompts")
-          .update(patch)
-          .eq("id", p.id);
+        await supabase.from("prompts").update(patch).eq("id", p.id);
       }
 
       const { data: refreshed } = await supabase
@@ -319,20 +390,13 @@ Deno.serve(async (req) => {
     if (validExisting.length > 3 && !dryRun) {
       const overflow = validExisting.slice(3).map((p) => p.id);
       if (overflow.length > 0) {
-        await supabase
-          .from("prompts")
-          .update({ active: false })
-          .in("id", overflow);
+        await supabase.from("prompts").update({ active: false }).in("id", overflow);
       }
       validExisting = validExisting.slice(0, 3);
     }
 
     // ─── Audit: return info about current valid active set ───
     if (validExisting.length >= 3 && !forceAiGenerate && !forceRegenerate) {
-      const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
-      const wordMap = new Map<string, string>();
-      for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
-
       const currentTrio = validExisting.slice(0, 3).map(p => ({
         ...p,
         top_answer_pct: p.top_answer_pct ?? 0,
@@ -340,7 +404,7 @@ Deno.serve(async (req) => {
         total_players: p.total_players ?? 0,
       })) as PromptCandidate[];
 
-      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap, wordFreshnessPenalty);
+      const { score, breakdown, confidence } = scoreTrio(currentTrio, wordMap, wordFreshnessPenalty, laneMap);
       const individualDetails = currentTrio.map(p => ({
         pair: `${p.word_a} + ${p.word_b}`,
         tag: p.prompt_tag,
@@ -348,7 +412,7 @@ Deno.serve(async (req) => {
         top_answer_pct: p.top_answer_pct,
         unique_answers: p.unique_answers,
         total_players: p.total_players,
-        quality: scorePromptQuality(p),
+        quality: scorePromptQuality(p, laneMap),
         source: isHistorical(p) ? "reused_archive" : "future_bank",
         has_answer_history: p.total_players > 0,
       }));
@@ -398,24 +462,24 @@ Deno.serve(async (req) => {
         }
       } catch { /* use defaults */ }
 
-      // Fetch word database
-      const { data: wordRows } = await supabase
+      // Fetch word database — filter by generation_status
+      const { data: aiWordRows } = await supabase
         .from("words")
-        .select("word, category, jinx_score, times_used, status")
-        .in("status", ["keep", "approved", "unreviewed"])
+        .select("word, category, jinx_score, times_used, status, generation_status, semantic_lane")
+        .in("generation_status", ["active", "test", "downweight"])
         .limit(500);
 
-      if (!wordRows || wordRows.length < 6) {
+      if (!aiWordRows || aiWordRows.length < 6) {
         return new Response(JSON.stringify({ error: "Not enough words in database" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Apply category weights: filter out "Off" categories, annotate weight
-      const filteredWords = wordRows.filter(w => {
+      // Apply category weights: filter out "Off" categories
+      const filteredWords = aiWordRows.filter(w => {
         const cat = (w.category || "Uncategorized").toLowerCase();
         const weight = categoryWeights[cat] ?? 50;
-        return weight > 10; // exclude "Off" categories
+        return weight > 10;
       });
 
       if (filteredWords.length < 6) {
@@ -435,7 +499,6 @@ Deno.serve(async (req) => {
         [p.word_a.toLowerCase(), p.word_b.toLowerCase()].sort().join("|")
       ));
 
-      // Get all existing prompts to avoid exact duplicates
       const { data: allPrompts } = await supabase
         .from("prompts")
         .select("word_a, word_b")
@@ -447,7 +510,7 @@ Deno.serve(async (req) => {
 
       const categories = [...new Set(filteredWords.map(w => w.category).filter(c => c !== "Uncategorized"))];
 
-      // Build weighted word list with weight and freshness annotations
+      // Build weighted word list with status, freshness, and lane annotations
       const wordList = filteredWords.map(w => {
         const cat = (w.category || "Uncategorized").toLowerCase();
         const weight = categoryWeights[cat] ?? 50;
@@ -456,7 +519,9 @@ Deno.serve(async (req) => {
         const freshnessTag = daysAgo === undefined ? "FRESH/UNUSED" : daysAgo <= 3 ? "RECENTLY USED — AVOID" : daysAgo <= 7 ? "used this week" : "";
         const usedCount = w.times_used ?? 0;
         const overuseTag = usedCount >= 5 ? "OVERUSED" : usedCount >= 3 ? "frequently used" : "";
-        const tags = [weightTag, freshnessTag, overuseTag].filter(Boolean).join(", ");
+        const genTag = w.generation_status === "test" ? "TEST WORD" : w.generation_status === "downweight" ? "DOWNWEIGHT — use sparingly" : "";
+        const laneTag = w.semantic_lane ? `lane:${w.semantic_lane}` : "";
+        const tags = [weightTag, freshnessTag, overuseTag, genTag, laneTag].filter(Boolean).join(", ");
         return `${w.word} (${w.category}, score: ${w.jinx_score}${tags ? `, ${tags}` : ""})`;
       }).join(", ");
 
@@ -475,11 +540,22 @@ Deno.serve(async (req) => {
       const catDiv = generationControls.category_diversity ?? 70;
       if (catDiv >= 70) tuningInstructions.push("Ensure the trio uses DIVERSE categories — no two pairs from the same category pair.");
 
-      // Build category weight guidance
       const highCats = Object.entries(categoryWeights).filter(([, v]) => v >= 70).map(([k]) => k);
       const lowCats = Object.entries(categoryWeights).filter(([, v]) => v > 10 && v <= 25).map(([k]) => k);
       if (highCats.length > 0) tuningInstructions.push(`Favour words from these categories: ${highCats.join(", ")}`);
       if (lowCats.length > 0) tuningInstructions.push(`Use words from these categories sparingly: ${lowCats.join(", ")}`);
+
+      // Build semantic lane avoidance rules for AI
+      const laneGroups: string[] = [];
+      const lanesSeen = new Set<string>();
+      for (const w of filteredWords) {
+        const lane = w.semantic_lane ?? getSemanticLane(w.word);
+        if (lane && !lanesSeen.has(lane)) {
+          lanesSeen.add(lane);
+          const members = filteredWords.filter(x => (x.semantic_lane ?? getSemanticLane(x.word)) === lane).map(x => x.word);
+          if (members.length >= 2) laneGroups.push(`${lane}: ${members.join(", ")}`);
+        }
+      }
 
       const systemPrompt = `You are a game designer for JINX Daily. Players see two words and type one linking word they think most people will say. The goal is crowd convergence — mind-matching.
 
@@ -502,7 +578,21 @@ HARD RULES:
 - PRIORITISE words that have NEVER or RARELY appeared in daily prompts — variety is critical
 - The "instant JINX feel" test: Would a player immediately think "I know what most people would say"?
 - Words marked HIGH PRIORITY should be favoured
-- Words marked low priority should be used sparingly`;
+- Words marked low priority should be used sparingly
+- Words marked TEST WORD should appear at most once in a trio, paired with a proven anchor word
+- Words marked DOWNWEIGHT should be used rarely, only if they create an excellent pair
+
+SEMANTIC LANE RULES (CRITICAL — do NOT pair words from the same lane):
+${laneGroups.length > 0 ? laneGroups.map(l => `- ${l}`).join("\n") : "No lanes defined."}
+Never pair two words from the same semantic lane (e.g. FIRE+FLAME, STORM+THUNDER, TRIP+ROUTE).
+These produce trivially obvious or near-synonym pairings that are bad for the game.
+
+PAIR QUALITY RULES:
+- Avoid near-synonym pairings (fire+flame, storm+thunder)
+- Avoid abstract+abstract pairings (trust+power, chaos+order)
+- Prefer at least one strong concrete anchor word per pair
+- Both words should create a plausible bridge, not a trivial one
+- The pair should invite shared convergence, not free-association chaos`;
 
       const userPrompt = `Generate 3 strong JINX pairs for a daily set, using words from this database:
 
@@ -653,20 +743,14 @@ Return JSON with this structure:
       );
     }
 
-    const { data: wordRows } = await supabase.from("words").select("word, category").limit(1000);
-    const wordMap = new Map<string, string>();
-    for (const w of wordRows ?? []) wordMap.set(w.word.toLowerCase(), w.category);
-
     // ─── STRICT LIFECYCLE: Only fetch UNUSED approved prompts ───
-    // "Unused" = approved, not active, has NEVER been played (total_players = 0),
-    // and mode is NOT 'archive' (never been live before)
     const { data: futureBank } = await supabase
       .from("prompts")
       .select("*")
       .eq("prompt_status", "approved")
       .eq("active", false)
-      .eq("total_players", 0)        // HARD SAFEGUARD: never played
-      .neq("mode", "archive")        // never been live
+      .eq("total_players", 0)
+      .neq("mode", "archive")
       .limit(100);
 
     const toCandidate = (p: any, source: "future_bank" | "generated_new"): PromptCandidate => ({
@@ -694,7 +778,7 @@ Return JSON with this structure:
     const topCandidates: TrioReport[] = [];
 
     const sampleTrio = (candidates: PromptCandidate[]) => {
-      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap, wordFreshnessPenalty);
+      const { score, breakdown, confidence } = scoreTrio(candidates, wordMap, wordFreshnessPenalty, laneMap);
       topCandidates.push({
         trio: candidates.map(p => `${p.word_a}+${p.word_b}`).join(", "),
         score,
@@ -753,7 +837,7 @@ Return JSON with this structure:
             top_answer_pct: p.top_answer_pct,
             unique_answers: p.unique_answers,
             total_players: p.total_players,
-            quality: scorePromptQuality(p),
+            quality: scorePromptQuality(p, laneMap),
             source: p.source,
             has_answer_history: false,
           })),
@@ -767,7 +851,6 @@ Return JSON with this structure:
     }
 
     // ─── FALLBACK: Generate from source words (never reuse archive) ───
-    // Load tuning settings for fallback generation
     let fallbackCatWeights: Record<string, number> = {};
     try {
       const { data: tuningRows } = await supabase.from("tuning_settings").select("key, value").eq("key", "category_weights");
@@ -777,16 +860,18 @@ Return JSON with this structure:
     const shuffle = <T>(arr: T[]): T[] =>
       arr.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
 
+    // ─── Only use active/test words for fallback, with downweight having lower chance ───
     let { data: words } = await supabase
       .from("words")
-      .select("word, jinx_score, category")
-      .in("status", ["approved", "keep"])
+      .select("word, jinx_score, category, generation_status, semantic_lane")
+      .in("generation_status", ["active", "test", "downweight"])
       .limit(500);
 
     if (!words || words.length < needed * 2) {
       const { data: allWords } = await supabase
         .from("words")
-        .select("word, jinx_score, category")
+        .select("word, jinx_score, category, generation_status, semantic_lane")
+        .neq("generation_status", "disabled")
         .limit(500);
       words = allWords;
     }
@@ -806,7 +891,7 @@ Return JSON with this structure:
       );
     }
 
-    // Exclude pairs that already exist as prompts (played or not)
+    // Exclude pairs that already exist
     const { data: allExisting } = await supabase
       .from("prompts")
       .select("word_a, word_b")
@@ -819,26 +904,56 @@ Return JSON with this structure:
     let bestFallbackTrio: PromptCandidate[] = [];
     let bestFallbackScore = -Infinity;
 
-    for (let attempt = 0; attempt < 80; attempt++) {
-      const shuffled = shuffle(words);
+    // Track test word count constraint
+    for (let attempt = 0; attempt < 120; attempt++) {
+      // Weight shuffle: downweight words appear less often
+      const weighted = words.flatMap(w => {
+        if (w.generation_status === "downweight") return [w]; // 1x
+        if (w.generation_status === "test") return [w, w]; // 2x
+        return [w, w, w]; // active = 3x
+      });
+      const shuffled = shuffle(weighted);
+      // Deduplicate after shuffle
+      const seen = new Set<string>();
+      const deduped = shuffled.filter(w => {
+        if (seen.has(w.word.toLowerCase())) return false;
+        seen.add(w.word.toLowerCase());
+        return true;
+      });
+
       const candidateTrio: PromptCandidate[] = [];
       const usedWords = new Set<string>();
+      let testWordCount = 0;
 
-      for (let i = 0; i < shuffled.length - 1 && candidateTrio.length < needed; i++) {
-        for (let j = i + 1; j < shuffled.length && candidateTrio.length < needed; j++) {
-          const wA = shuffled[i];
-          const wB = shuffled[j];
+      for (let i = 0; i < deduped.length - 1 && candidateTrio.length < needed; i++) {
+        for (let j = i + 1; j < deduped.length && candidateTrio.length < needed; j++) {
+          const wA = deduped[i];
+          const wB = deduped[j];
           if (usedWords.has(wA.word) || usedWords.has(wB.word)) continue;
           if (wA.category === wB.category && wA.category !== "Uncategorized") continue;
           const key = [wA.word.toLowerCase(), wB.word.toLowerCase()].sort().join("|");
           if (existingPairKeys.has(key)) continue;
-          // Skip words used in last 3 days for fallback generation
+
+          // Freshness check
           const daysA = recentWordUsage.get(wA.word.toLowerCase());
           const daysB = recentWordUsage.get(wB.word.toLowerCase());
           if ((daysA !== undefined && daysA <= 2) || (daysB !== undefined && daysB <= 2)) continue;
 
+          // Semantic lane check: never pair same-lane words
+          const laneA = wA.semantic_lane ?? getSemanticLane(wA.word);
+          const laneB = wB.semantic_lane ?? getSemanticLane(wB.word);
+          if (laneA && laneB && laneA === laneB) continue;
+
+          // Test word constraint: max 1 test word per trio, paired with active anchor
+          const isTestA = wA.generation_status === "test";
+          const isTestB = wB.generation_status === "test";
+          if (isTestA && isTestB) continue; // never test+test
+          if ((isTestA || isTestB) && testWordCount >= 1) continue; // max 1 test word
+
           usedWords.add(wA.word);
           usedWords.add(wB.word);
+          if (isTestA || isTestB) testWordCount++;
+
           candidateTrio.push({
             id: `generated-${candidateTrio.length}`,
             word_a: wA.word.toUpperCase(),
@@ -848,14 +963,14 @@ Return JSON with this structure:
             unique_answers: 0,
             total_players: 0,
             performance: null,
-            prompt_tag: null,
+            prompt_tag: (isTestA || isTestB) ? "test" : null,
             source: "generated_new",
           });
         }
       }
 
       if (candidateTrio.length >= needed) {
-        const { score } = scoreTrio(candidateTrio, wordMap, wordFreshnessPenalty);
+        const { score } = scoreTrio(candidateTrio, wordMap, wordFreshnessPenalty, laneMap);
         if (score > bestFallbackScore) {
           bestFallbackScore = score;
           bestFallbackTrio = candidateTrio;
@@ -897,6 +1012,7 @@ Return JSON with this structure:
       date: today,
       mode: "daily",
       prompt_status: "pending",
+      prompt_tag: p.prompt_tag,
     }));
 
     const { data: inserted, error } = await supabase
