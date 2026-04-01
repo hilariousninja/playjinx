@@ -1,15 +1,17 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Search, ArrowUpDown, Download, ChevronDown } from 'lucide-react';
+import { useState, useRef, useMemo, useCallback } from 'react';
+import { Search, ArrowUpDown, Download, Upload, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { importWordsFromCSV } from '@/lib/store';
 import { ScoredWord, Recommendation } from './word-scoring';
 import WordDetailDialog from './WordDetailDialog';
 
 interface Props {
   scoredWords: ScoredWord[];
   refreshWord: (id: string) => Promise<void>;
+  onRefreshAll?: () => void;
 }
 
 type SortKey = 'word' | 'strengthScore' | 'times_used' | 'avg_top_answer_pct' | 'strong_appearances' | 'weak_appearances' | 'recommendation' | 'generation_status';
