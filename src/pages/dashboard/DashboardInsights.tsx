@@ -102,7 +102,7 @@ export default function DashboardInsights() {
         </TabsContent>
 
         <TabsContent value="words">
-          <InsightsWords scoredWords={scoredWords} refreshWord={refreshWord} />
+          <InsightsWords scoredWords={scoredWords} refreshWord={refreshWord} onRefreshAll={refetchAll} />
         </TabsContent>
       </Tabs>
     </div>
