@@ -154,6 +154,22 @@ export default function InsightsWords({ scoredWords, refreshWord, onRefreshAll }
     toast.success(`Exported ${filtered.length} words`);
   }, [filtered]);
 
+  const handleImportCSV = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const count = await importWordsFromCSV(text, file.name);
+      toast.success(`Imported ${count} new words`);
+      onRefreshAll?.();
+    } catch (err: any) {
+      toast.error(err.message || 'Import failed');
+    }
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [onRefreshAll]);
+
   return (
     <div className="space-y-4">
       {/* Deck Balance Summary */}
