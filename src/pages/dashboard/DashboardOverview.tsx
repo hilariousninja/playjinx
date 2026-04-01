@@ -1,109 +1,78 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertCircle,
-  TrendingDown,
   TrendingUp,
-  Zap,
-  Calendar,
   MessageSquare,
-  ChevronRight,
   Loader2,
-  BookOpen,
+  RefreshCw,
+  SlidersHorizontal,
   Archive,
+  Play,
+  AlertTriangle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import type { DbWord, DbPrompt } from '@/lib/store';
-
-interface OverviewData {
-  words: DbWord[];
-  prompts: DbPrompt[];
-  aliasCount: number;
-}
+import { toast } from 'sonner';
 
 export default function DashboardOverview() {
-  const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [dailyAudit, setDailyAudit] = useState<any>(null);
+  const [wordStats, setWordStats] = useState({ total: 0, active: 0, test: 0, downweight: 0, disabled: 0, coreDeck: 0 });
+  const [promptStats, setPromptStats] = useState({ played: 0, totalPlayers: 0, avgTopPct: 0 });
+  const [aliasCount, setAliasCount] = useState(0);
 
-  useEffect(() => {
-    (async () => {
-      const [wordsRes, promptsRes, aliasRes] = await Promise.all([
-        supabase.from('words').select('*').order('word'),
-        supabase.from('prompts').select('*').order('created_at', { ascending: false }),
-        supabase.from('answer_aliases').select('id', { count: 'exact', head: true }),
-      ]);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const [wordsRes, promptsRes, aliasRes, auditRes] = await Promise.all([
+      supabase.from('words').select('generation_status, in_core_deck'),
+      supabase.from('prompts').select('total_players, top_answer_pct').gt('total_players', 0),
+      supabase.from('answer_aliases').select('id', { count: 'exact', head: true }),
+      supabase.functions.invoke('generate-daily-prompts', { body: { dry_run: true } }).catch(() => ({ data: null })),
+    ]);
 
-      setData({
-        words: (wordsRes.data ?? []) as DbWord[],
-        prompts: (promptsRes.data ?? []) as DbPrompt[],
-        aliasCount: aliasRes.count ?? 0,
-      });
-      setLoading(false);
-    })();
+    const words = wordsRes.data ?? [];
+    setWordStats({
+      total: words.length,
+      active: words.filter((w: any) => w.generation_status === 'active').length,
+      test: words.filter((w: any) => w.generation_status === 'test').length,
+      downweight: words.filter((w: any) => w.generation_status === 'downweight').length,
+      disabled: words.filter((w: any) => w.generation_status === 'disabled').length,
+      coreDeck: words.filter((w: any) => w.in_core_deck).length,
+    });
+
+    const played = promptsRes.data ?? [];
+    setPromptStats({
+      played: played.length,
+      totalPlayers: played.reduce((s: number, p: any) => s + p.total_players, 0),
+      avgTopPct: played.length > 0 ? Math.round(played.reduce((s: number, p: any) => s + p.top_answer_pct, 0) / played.length) : 0,
+    });
+
+    setAliasCount(aliasRes.count ?? 0);
+    setDailyAudit(auditRes.data);
+    setLoading(false);
   }, []);
 
-  const loadDailyAudit = useCallback(async () => {
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleRegenerate = async () => {
+    if (!confirm('Force regenerate today\'s daily set? Blocked if players already answered.')) return;
+    setRegenerating(true);
     try {
-      const { data: auditData } = await supabase.functions.invoke('generate-daily-prompts', {
-        body: { dry_run: true },
+      const { data, error } = await supabase.functions.invoke('generate-daily-prompts', {
+        body: { force_regenerate: true },
       });
-      setDailyAudit(auditData);
-    } catch {
-      setDailyAudit(null);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setDailyAudit(data);
+      toast.success('Daily set regenerated');
+    } catch (e: any) {
+      toast.error(e.message || 'Regeneration failed');
     }
-  }, []);
+    setRegenerating(false);
+  };
 
-  useEffect(() => {
-    loadDailyAudit();
-  }, [loadDailyAudit]);
-
-  const stats = useMemo(() => {
-    if (!data) return null;
-
-    const { words, prompts } = data;
-    const today = new Date().toISOString().split('T')[0];
-
-    const needsReview = words.filter((w) => w.status === 'unreviewed' || w.status === 'review');
-    const likelyCuts = words.filter(
-      (w) =>
-        w.status === 'cut' ||
-        ((w.weak_appearances ?? 0) >= 3 &&
-          (w.strong_appearances ?? 0) < (w.weak_appearances ?? 0) &&
-          w.status !== 'keep')
-    );
-
-    const candidateQueue = prompts.filter(
-      (p) => p.prompt_status === 'pending' && p.total_players === 0 && p.mode !== 'archive'
-    );
-
-    const futureBank = prompts.filter(
-      (p) => p.prompt_status === 'approved' && p.total_players === 0 && !p.active && p.mode !== 'archive'
-    );
-
-    const liveToday = prompts.filter((p) => p.active && p.date === today);
-    const archived = prompts.filter((p) => p.total_players > 0 || p.mode === 'archive');
-    const recentPlayed = prompts
-      .filter((p) => p.total_players > 0)
-      .sort((a, b) => b.total_players - a.total_players)
-      .slice(0, 3);
-
-    return {
-      totalWords: words.length,
-      keepCount: words.filter((w) => w.status === 'keep').length,
-      reviewCount: needsReview.length,
-      cutCount: words.filter((w) => w.status === 'cut').length,
-      needsReview,
-      likelyCuts,
-      candidateQueue,
-      futureBank,
-      liveToday,
-      archived,
-      recentPlayed,
-    };
-  }, [data]);
-
-  if (loading || !stats) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -112,113 +81,15 @@ export default function DashboardOverview() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-border/40 bg-card p-3">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Control room</p>
-        <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
-          <div>
-            <p className="text-[9px] text-muted-foreground">Today live</p>
-            <p className="font-display text-lg font-bold text-foreground">{stats.liveToday.length}</p>
-          </div>
-          <div>
-            <p className="text-[9px] text-muted-foreground">Candidates</p>
-            <p className="font-display text-lg font-bold text-primary">{stats.candidateQueue.length}</p>
-          </div>
-          <div>
-            <p className="text-[9px] text-muted-foreground">Future bank</p>
-            <p className="font-display text-lg font-bold text-foreground">{stats.futureBank.length}</p>
-          </div>
-          <div>
-            <p className="text-[9px] text-muted-foreground">Archived</p>
-            <p className="font-display text-lg font-bold text-muted-foreground">{stats.archived.length}</p>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-5">
+      {/* Today's Trio */}
       <div>
-        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Word bank health</h2>
-        <div className="grid grid-cols-4 gap-1.5">
-          {[
-            { label: 'Total', value: stats.totalWords, cls: 'text-foreground' },
-            { label: 'Keep', value: stats.keepCount, cls: 'text-[hsl(var(--keep))]' },
-            { label: 'Review', value: stats.reviewCount, cls: 'text-[hsl(var(--review))]' },
-            { label: 'Cut', value: stats.cutCount, cls: 'text-[hsl(var(--cut))]' },
-          ].map((item) => (
-            <div key={item.label} className="rounded-lg border border-border/40 bg-card p-2 text-center">
-              <p className={`text-lg font-display font-bold ${item.cls}`}>{item.value}</p>
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-        {stats.needsReview.length > 0 && (
-          <Link to="/dashboard/words?filter=review" className="group">
-            <div className="rounded-lg border border-border/40 bg-card p-3 transition-colors hover:border-primary/30">
-              <div className="mb-1 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <AlertCircle className="h-3.5 w-3.5 text-[hsl(var(--review))]" />
-                  <span className="text-[11px] font-semibold">Words need review</span>
-                </div>
-                <ChevronRight className="h-3 w-3 text-muted-foreground/30 transition-colors group-hover:text-primary" />
-              </div>
-              <p className="text-xl font-display font-bold text-[hsl(var(--review))]">{stats.needsReview.length}</p>
-            </div>
-          </Link>
-        )}
-
-        {stats.candidateQueue.length > 0 && (
-          <Link to="/dashboard/prompts?tab=review" className="group">
-            <div className="rounded-lg border border-border/40 bg-card p-3 transition-colors hover:border-primary/30">
-              <div className="mb-1 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-[11px] font-semibold">Candidate review queue</span>
-                </div>
-                <ChevronRight className="h-3 w-3 text-muted-foreground/30 transition-colors group-hover:text-primary" />
-              </div>
-              <p className="text-xl font-display font-bold text-primary">{stats.candidateQueue.length}</p>
-            </div>
-          </Link>
-        )}
-
-        {stats.likelyCuts.length > 0 && (
-          <Link to="/dashboard/words?filter=cut" className="group">
-            <div className="rounded-lg border border-border/40 bg-card p-3 transition-colors hover:border-destructive/20">
-              <div className="mb-1 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                  <span className="text-[11px] font-semibold">Likely cuts</span>
-                </div>
-                <ChevronRight className="h-3 w-3 text-muted-foreground/30 transition-colors group-hover:text-destructive" />
-              </div>
-              <p className="text-xl font-display font-bold text-destructive">{stats.likelyCuts.length}</p>
-            </div>
-          </Link>
-        )}
-
-        <Link to="/dashboard/answers" className="group">
-          <div className="rounded-lg border border-border/40 bg-card p-3 transition-colors hover:border-primary/30">
-            <div className="mb-1 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-[11px] font-semibold">Answer hygiene</span>
-              </div>
-              <ChevronRight className="h-3 w-3 text-muted-foreground/30 transition-colors group-hover:text-primary" />
-            </div>
-            <p className="text-xl font-display font-bold">{data?.aliasCount ?? 0}</p>
-            <p className="text-[9px] text-muted-foreground">alias rules</p>
-          </div>
-        </Link>
-      </div>
-
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Today’s trio</h2>
-          <Link to="/dashboard/daily" className="text-[10px] text-primary hover:underline">
-            Open Daily Sets →
-          </Link>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Today's trio</h2>
+          <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1.5" onClick={handleRegenerate} disabled={regenerating}>
+            {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            Regenerate
+          </Button>
         </div>
         <div className="rounded-lg border border-border/40 bg-card p-3">
           {dailyAudit ? (
@@ -226,20 +97,13 @@ export default function DashboardOverview() {
               <div className="mb-2 flex items-center justify-between">
                 <p className="font-display text-sm font-bold">{dailyAudit.trio}</p>
                 {dailyAudit.editorial_confidence && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[9px] font-display font-bold ${
-                      dailyAudit.editorial_confidence === 'strong'
-                        ? 'bg-primary/10 text-primary'
-                        : dailyAudit.editorial_confidence === 'acceptable'
-                          ? 'bg-secondary text-muted-foreground'
-                          : 'bg-destructive/10 text-destructive'
-                    }`}
-                  >
-                    {dailyAudit.editorial_confidence}
-                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-display font-bold ${
+                    dailyAudit.editorial_confidence === 'strong' ? 'bg-primary/10 text-primary'
+                    : dailyAudit.editorial_confidence === 'acceptable' ? 'bg-secondary text-muted-foreground'
+                    : 'bg-destructive/10 text-destructive'
+                  }`}>{dailyAudit.editorial_confidence}</span>
                 )}
               </div>
-
               {dailyAudit.prompts?.map((p: any, i: number) => (
                 <div key={i} className="flex items-center justify-between border-t border-border/30 py-1.5 first:border-t-0">
                   <span className="font-display text-xs">{p.pair}</span>
@@ -249,60 +113,72 @@ export default function DashboardOverview() {
             </>
           ) : (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              <span className="text-[10px]">Loading daily state…</span>
+              <AlertTriangle className="h-3 w-3" />
+              <span className="text-[10px]">Could not load daily state</span>
             </div>
           )}
         </div>
       </div>
 
-      {stats.recentPlayed.length > 0 && (
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Recent learning</h2>
-            <Link to="/dashboard/insights" className="text-[10px] text-primary hover:underline">
-              Insights →
-            </Link>
-          </div>
-          <div className="space-y-1">
-            {stats.recentPlayed.map((p) => (
-              <div key={p.id} className="flex items-center justify-between rounded-lg border border-border/40 bg-card px-3 py-2">
-                <div>
-                  <span className="font-display text-xs font-bold">{p.word_a}</span>
-                  <span className="mx-1 text-primary">+</span>
-                  <span className="font-display text-xs font-bold">{p.word_b}</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-[9px] text-muted-foreground">
-                  <span>{p.total_players}p</span>
-                  <span>Top {p.top_answer_pct}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Key Metrics */}
       <div>
-        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Workflow shortcuts</h2>
-        <div className="grid grid-cols-3 gap-1.5 md:grid-cols-6">
+        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">System health</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <MetricCard label="Word pool" value={wordStats.total} sub={`${wordStats.active} active · ${wordStats.test} test`} />
+          <MetricCard label="Core deck" value={wordStats.coreDeck} sub={`${wordStats.disabled} disabled`} />
+          <MetricCard label="Prompts played" value={promptStats.played} sub={`${promptStats.totalPlayers} total players`} />
+          <MetricCard label="Avg consensus" value={`${promptStats.avgTopPct}%`} sub={`${aliasCount} alias rules`} />
+        </div>
+      </div>
+
+      {/* Word Pool Breakdown */}
+      <div>
+        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Generation pool</h2>
+        <div className="grid grid-cols-4 gap-1.5">
           {[
-            { label: 'Words', icon: BookOpen, path: '/dashboard/words', desc: 'maintain bank' },
-            { label: 'Daily Sets', icon: Calendar, path: '/dashboard/daily', desc: 'pick today 3' },
-            { label: 'Prompts', icon: Zap, path: '/dashboard/prompts', desc: 'review candidates' },
-            { label: 'Answers', icon: MessageSquare, path: '/dashboard/answers', desc: 'merge cleanup' },
-            { label: 'Insights', icon: TrendingUp, path: '/dashboard/insights', desc: 'learn + tune' },
-            { label: 'Archive', icon: Archive, path: '/archive', desc: 'read-only history' },
-          ].map((action) => (
+            { label: 'Active', value: wordStats.active, cls: 'text-[hsl(var(--keep))]' },
+            { label: 'Test', value: wordStats.test, cls: 'text-primary' },
+            { label: 'Downweight', value: wordStats.downweight, cls: 'text-[hsl(var(--review))]' },
+            { label: 'Disabled', value: wordStats.disabled, cls: 'text-destructive' },
+          ].map(item => (
+            <div key={item.label} className="rounded-lg border border-border/40 bg-card p-2 text-center">
+              <p className={`text-lg font-display font-bold ${item.cls}`}>{item.value}</p>
+              <p className="text-[8px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Links */}
+      <div>
+        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Quick links</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+          {[
+            { label: 'Insights', icon: TrendingUp, path: '/dashboard/insights', desc: 'Analysis & deck curation' },
+            { label: 'Answers', icon: MessageSquare, path: '/dashboard/answers', desc: 'Data hygiene' },
+            { label: 'Tuning', icon: SlidersHorizontal, path: '/dashboard/tuning', desc: 'Generation controls' },
+            { label: 'Archive', icon: Archive, path: '/archive', desc: 'Historical record' },
+          ].map(action => (
             <Link key={action.path} to={action.path} className="group">
-              <div className="rounded-lg border border-border/40 bg-card p-2.5 text-center transition-colors hover:border-primary/30">
-                <action.icon className="mx-auto mb-1 h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
-                <p className="text-[10px] font-semibold">{action.label}</p>
-                <p className="text-[8px] text-muted-foreground">{action.desc}</p>
+              <div className="rounded-lg border border-border/40 bg-card p-3 text-center transition-colors hover:border-primary/30">
+                <action.icon className="mx-auto mb-1 h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+                <p className="text-[11px] font-semibold">{action.label}</p>
+                <p className="text-[9px] text-muted-foreground">{action.desc}</p>
               </div>
             </Link>
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
+  return (
+    <div className="rounded-lg border border-border/40 bg-card p-2.5">
+      <p className="text-lg font-display font-bold">{value}</p>
+      <p className="text-[10px] font-semibold text-foreground">{label}</p>
+      <p className="text-[9px] text-muted-foreground">{sub}</p>
     </div>
   );
 }

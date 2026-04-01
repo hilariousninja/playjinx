@@ -12,9 +12,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
-import DashboardWords from "./pages/dashboard/DashboardWords";
-import DashboardPrompts from "./pages/dashboard/DashboardPrompts";
-import DashboardDaily from "./pages/dashboard/DashboardDaily";
 import DashboardAnswers from "./pages/dashboard/DashboardAnswers";
 import DashboardInsights from "./pages/dashboard/DashboardInsights";
 import DashboardTuning from "./pages/dashboard/DashboardTuning";
@@ -43,12 +40,13 @@ const App = () => (
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<DashboardPage><DashboardOverview /></DashboardPage>} />
-          <Route path="/dashboard/words" element={<DashboardPage><DashboardWords /></DashboardPage>} />
-          <Route path="/dashboard/prompts" element={<DashboardPage><DashboardPrompts /></DashboardPage>} />
-          <Route path="/dashboard/daily" element={<DashboardPage><DashboardDaily /></DashboardPage>} />
           <Route path="/dashboard/answers" element={<DashboardPage><DashboardAnswers /></DashboardPage>} />
           <Route path="/dashboard/insights" element={<DashboardPage><DashboardInsights /></DashboardPage>} />
           <Route path="/dashboard/tuning" element={<DashboardPage><DashboardTuning /></DashboardPage>} />
+          {/* Redirects for removed pages */}
+          <Route path="/dashboard/words" element={<Navigate to="/dashboard/insights" replace />} />
+          <Route path="/dashboard/prompts" element={<Navigate to="/dashboard/insights" replace />} />
+          <Route path="/dashboard/daily" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
