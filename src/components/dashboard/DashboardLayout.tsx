@@ -1,11 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  BookOpen,
-  Calendar,
-  Zap,
-  MessageSquare,
   TrendingUp,
+  MessageSquare,
   SlidersHorizontal,
   Archive,
   Play,
@@ -14,12 +11,9 @@ import JinxLogo from '@/components/JinxLogo';
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { path: '/dashboard/words', label: 'Words', icon: BookOpen },
-  { path: '/dashboard/daily', label: 'Daily Sets', icon: Calendar },
-  { path: '/dashboard/prompts', label: 'Prompts', icon: Zap },
+  { path: '/dashboard/insights', label: 'Insights', icon: TrendingUp },
   { path: '/dashboard/answers', label: 'Answers', icon: MessageSquare },
   { path: '/dashboard/tuning', label: 'Tuning', icon: SlidersHorizontal },
-  { path: '/dashboard/insights', label: 'Insights', icon: TrendingUp },
   { path: '/archive', label: 'Archive', icon: Archive },
 ];
 
