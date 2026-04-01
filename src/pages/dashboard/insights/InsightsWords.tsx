@@ -238,6 +238,10 @@ export default function InsightsWords({ scoredWords, refreshWord, onRefreshAll }
         <Button variant="outline" size="sm" onClick={handleExportWords} className="h-8 text-xs gap-1">
           <Download className="h-3 w-3" /> Export
         </Button>
+        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importing} className="h-8 text-xs gap-1">
+          {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Import CSV
+        </Button>
+        <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
       </div>
 
       {/* Table */}
