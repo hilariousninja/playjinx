@@ -41,7 +41,9 @@ const recBadge: Record<Recommendation, string> = {
   add: 'bg-primary/10 text-primary',
 };
 
-export default function InsightsWords({ scoredWords, refreshWord }: Props) {
+export default function InsightsWords({ scoredWords, refreshWord, onRefreshAll }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('strengthScore');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
