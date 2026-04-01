@@ -72,5 +72,5 @@ export function useInsightsData() {
     }
   };
 
-  return { prompts: playedPrompts, allWords, scoredWords, loading, stats, refreshWord };
+  return { prompts: playedPrompts, allWords, scoredWords, loading, stats, refreshWord, refetchAll: fetchData };
 }

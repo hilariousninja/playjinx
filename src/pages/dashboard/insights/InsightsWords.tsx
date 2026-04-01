@@ -1,15 +1,17 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Search, ArrowUpDown, Download, ChevronDown } from 'lucide-react';
+import { useState, useRef, useMemo, useCallback } from 'react';
+import { Search, ArrowUpDown, Download, Upload, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { importWordsFromCSV } from '@/lib/store';
 import { ScoredWord, Recommendation } from './word-scoring';
 import WordDetailDialog from './WordDetailDialog';
 
 interface Props {
   scoredWords: ScoredWord[];
   refreshWord: (id: string) => Promise<void>;
+  onRefreshAll?: () => void;
 }
 
 type SortKey = 'word' | 'strengthScore' | 'times_used' | 'avg_top_answer_pct' | 'strong_appearances' | 'weak_appearances' | 'recommendation' | 'generation_status';
@@ -39,7 +41,9 @@ const recBadge: Record<Recommendation, string> = {
   add: 'bg-primary/10 text-primary',
 };
 
-export default function InsightsWords({ scoredWords, refreshWord }: Props) {
+export default function InsightsWords({ scoredWords, refreshWord, onRefreshAll }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('strengthScore');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -150,6 +154,22 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
     toast.success(`Exported ${filtered.length} words`);
   }, [filtered]);
 
+  const handleImportCSV = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const count = await importWordsFromCSV(text, file.name);
+      toast.success(`Imported ${count} new words`);
+      onRefreshAll?.();
+    } catch (err: any) {
+      toast.error(err.message || 'Import failed');
+    }
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [onRefreshAll]);
+
   return (
     <div className="space-y-4">
       {/* Deck Balance Summary */}
@@ -218,6 +238,10 @@ export default function InsightsWords({ scoredWords, refreshWord }: Props) {
         <Button variant="outline" size="sm" onClick={handleExportWords} className="h-8 text-xs gap-1">
           <Download className="h-3 w-3" /> Export
         </Button>
+        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importing} className="h-8 text-xs gap-1">
+          {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Import CSV
+        </Button>
+        <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
       </div>
 
       {/* Table */}
