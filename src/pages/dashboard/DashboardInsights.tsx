@@ -10,7 +10,7 @@ import InsightsPrompts from './insights/InsightsPrompts';
 import InsightsWords from './insights/InsightsWords';
 
 export default function DashboardInsights() {
-  const { prompts, scoredWords, loading, stats, refreshWord } = useInsightsData();
+  const { prompts, scoredWords, loading, stats, refreshWord, refetchAll } = useInsightsData();
   const [exporting, setExporting] = useState(false);
 
   const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
