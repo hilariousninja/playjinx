@@ -259,7 +259,7 @@ export default function Play() {
                     </motion.div>
                   )}
 
-                  {allDone && currentIdx === prompts.length - 1 && !challengeToken && (
+                  {allDone && !challengeToken && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
                       <Button
                         className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
@@ -282,7 +282,7 @@ export default function Play() {
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>
-                      <Countdown />
+                      {currentIdx === prompts.length - 1 && <Countdown />}
                     </motion.div>
                   )}
                 </motion.div>
