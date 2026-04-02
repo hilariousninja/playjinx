@@ -196,7 +196,10 @@ export default function ChallengeCompare() {
           <Link to="/">
             <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <span className="text-[10px] text-muted-foreground/50 font-display">{dateLabel}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground/50 font-display">{dateLabel}</span>
+            <PlayerIdentity />
+          </div>
         </div>
       </header>
 

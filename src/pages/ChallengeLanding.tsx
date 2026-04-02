@@ -135,10 +135,11 @@ export default function ChallengeLanding() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/80 shrink-0">
-        <div className="flex items-center justify-center h-14 max-w-lg mx-auto px-5">
+        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/">
             <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
+          <PlayerIdentity />
         </div>
       </header>
 

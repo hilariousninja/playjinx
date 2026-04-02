@@ -315,9 +315,12 @@ export default function Archive() {
           <Link to="/">
             <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
-            <Link to="/play">Play</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <PlayerIdentity />
+            <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
+              <Link to="/play">Play</Link>
+            </Button>
+          </div>
         </div>
       </header>
 

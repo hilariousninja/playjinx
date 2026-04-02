@@ -43,7 +43,8 @@ export default function Landing() {
           <Link to="/">
             <JinxLogo size={22} className="text-foreground text-lg" />
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <PlayerIdentity />
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
               <Link to="/archive">Archive</Link>
             </Button>
