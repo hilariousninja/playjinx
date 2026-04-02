@@ -77,8 +77,25 @@ export default function Landing() {
               <CheckCircle2 className="h-7 w-7 text-primary mx-auto mb-3" />
               <p className="font-semibold text-base mb-1 text-foreground">You've completed today's prompts</p>
               <p className="text-xs text-muted-foreground mb-6">Results update live — check back later to see rank changes.</p>
-              <div className="flex gap-3 justify-center flex-wrap">
-                <Button size="lg" className="rounded-lg px-6 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" asChild>
+              <div className="flex flex-col gap-2.5 w-full max-w-[16rem] mx-auto">
+                <Button size="lg" className="rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm w-full active:scale-[0.97] transition-transform"
+                  onClick={async () => {
+                    try {
+                      const ch = await createChallenge(prompts);
+                      const text = buildChallengeShareText(prompts, ch.token);
+                      if (navigator.share) {
+                        try { await navigator.share({ text }); return; } catch {}
+                      }
+                      await navigator.clipboard.writeText(text);
+                      toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
+                    } catch {
+                      toast({ title: 'Could not create challenge', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  <Zap className="h-4 w-4 mr-2" /> Challenge a friend
+                </Button>
+                <Button size="lg" variant="outline" className="rounded-xl h-11 font-semibold text-sm w-full" asChild>
                   <Link to="/archive"><Eye className="h-4 w-4 mr-2" /> View results</Link>
                 </Button>
               </div>

@@ -195,11 +195,21 @@ export default function Archive() {
       ].join('\n')
     : '';
 
-  const handleCopyChallenge = () => {
-    navigator.clipboard.writeText(challengeText);
-    setChallengeCopied(true);
-    setTimeout(() => setChallengeCopied(false), 2500);
-  };
+  const handleCopyChallenge = useCallback(async () => {
+    if (challengeCopied) return;
+    try {
+      const ch = await createChallenge(todayPrompts);
+      const text = buildChallengeShareText(todayPrompts, ch.token);
+      if (navigator.share) {
+        try { await navigator.share({ text }); return; } catch {}
+      }
+      await navigator.clipboard.writeText(text);
+      setChallengeCopied(true);
+      setTimeout(() => setChallengeCopied(false), 2500);
+    } catch {
+      toast({ title: 'Could not create challenge', variant: 'destructive' });
+    }
+  }, [todayPrompts, challengeCopied]);
 
   const handleCopyResults = () => {
     navigator.clipboard.writeText(resultsText);
