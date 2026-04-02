@@ -33,7 +33,7 @@ export default function Play() {
   const [phase, setPhase] = useState<Record<string, Phase>>({});
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  
 
   useEffect(() => {
     if (!hasSeenOnboarding()) setShowOnboarding(true);
