@@ -14,6 +14,8 @@ import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
+import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
   prompt: DbPrompt;
