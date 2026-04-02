@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getPlayerId, getUserAnswer, type DbPrompt } from './store';
 import { normalizeAnswer } from './normalize';
+import { getDisplayName, joinChallengeRoom } from './challenge-room';
 
 export interface ChallengeAnswer {
   prompt_id: string;
@@ -78,10 +79,19 @@ export async function createChallenge(prompts: DbPrompt[]): Promise<Challenge> {
     .single();
 
   if (error) throw error;
-  return {
+
+  const challenge = {
     ...data,
     answers: data.answers as unknown as ChallengeAnswer[],
   };
+
+  // Auto-register challenger as room participant
+  const displayName = getDisplayName();
+  if (displayName) {
+    try { await joinChallengeRoom(challenge.id, displayName); } catch { /* ok */ }
+  }
+
+  return challenge;
 }
 
 /**

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2 } from 'lucide-react';
+import DisplayNameInput from '@/components/DisplayNameInput';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,8 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
-import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
+import { getDisplayName, setDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
@@ -31,6 +33,7 @@ export default function Play() {
   const [phase, setPhase] = useState<Record<string, Phase>>({});
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
 
   useEffect(() => {
     if (!hasSeenOnboarding()) setShowOnboarding(true);
@@ -261,24 +264,49 @@ export default function Play() {
 
                   {allDone && !challengeToken && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
-                      <Button
-                        className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
-                        onClick={async () => {
-                          try {
-                            const ch = await createChallenge(prompts);
-                            const text = buildChallengeShareText(prompts, ch.token);
-                            if (navigator.share) {
-                              try { await navigator.share({ text }); return; } catch {}
+                      {showNamePrompt ? (
+                        <DisplayNameInput
+                          defaultValue={getDisplayName() ?? ''}
+                          onSubmit={async (name) => {
+                            setDisplayName(name);
+                            setShowNamePrompt(false);
+                            try {
+                              const ch = await createChallenge(prompts);
+                              const text = buildChallengeShareText(prompts, ch.token);
+                              if (navigator.share) {
+                                try { await navigator.share({ text }); return; } catch {}
+                              }
+                              await navigator.clipboard.writeText(text);
+                              toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
+                            } catch {
+                              toast({ title: 'Could not create challenge', variant: 'destructive' });
                             }
-                            await navigator.clipboard.writeText(text);
-                            toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
-                          } catch {
-                            toast({ title: 'Could not create challenge', variant: 'destructive' });
-                          }
-                        }}
-                      >
-                        <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
-                      </Button>
+                          }}
+                        />
+                      ) : (
+                        <Button
+                          className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
+                          onClick={async () => {
+                            if (!getDisplayName()) {
+                              setShowNamePrompt(true);
+                              return;
+                            }
+                            try {
+                              const ch = await createChallenge(prompts);
+                              const text = buildChallengeShareText(prompts, ch.token);
+                              if (navigator.share) {
+                                try { await navigator.share({ text }); return; } catch {}
+                              }
+                              await navigator.clipboard.writeText(text);
+                              toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
+                            } catch {
+                              toast({ title: 'Could not create challenge', variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
+                        </Button>
+                      )}
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>

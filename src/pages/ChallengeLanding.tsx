@@ -5,8 +5,10 @@ import { Zap, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
+import DisplayNameInput from '@/components/DisplayNameInput';
 import { getChallengeByToken, getPromptsForDate, isChallenger, type Challenge } from '@/lib/challenge';
 import { getCompletedPrompts } from '@/lib/store';
+import { getDisplayName, setDisplayName, joinChallengeRoom, hasJoinedRoom } from '@/lib/challenge-room';
 import type { DbPrompt } from '@/lib/store';
 
 export default function ChallengeLanding() {
@@ -15,7 +17,9 @@ export default function ChallengeLanding() {
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsName, setNeedsName] = useState(false);
 
   useEffect(() => {
     if (!token) { setError('Invalid challenge link'); setLoading(false); return; }
@@ -30,14 +34,29 @@ export default function ChallengeLanding() {
         if (ps.length === 0) { setError('Prompts no longer available'); setLoading(false); return; }
         setPrompts(ps);
 
-        // Check if already played all prompts for this date
+        // If already joined room, check if all played
         const completed = getCompletedPrompts();
         const allPlayed = ps.every(p => completed.has(p.id));
+        const alreadyJoined = await hasJoinedRoom(ch.id);
 
-        if (allPlayed) {
-          // Skip to comparison
+        if (allPlayed && alreadyJoined) {
           navigate(`/c/${token}/compare`, { replace: true });
           return;
+        }
+
+        // For own challenge: auto-join as challenger
+        if (isChallenger(ch)) {
+          const savedName = getDisplayName();
+          if (savedName && !alreadyJoined) {
+            await joinChallengeRoom(ch.id, savedName);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // For recipients: check if they need a display name
+        if (!alreadyJoined && !getDisplayName()) {
+          setNeedsName(true);
         }
 
         setLoading(false);
@@ -47,6 +66,39 @@ export default function ChallengeLanding() {
       }
     })();
   }, [token, navigate]);
+
+  const handleNameSubmit = async (name: string) => {
+    if (!challenge) return;
+    setJoining(true);
+    try {
+      setDisplayName(name);
+      await joinChallengeRoom(challenge.id, name);
+      setNeedsName(false);
+
+      // Check if already played
+      const completed = getCompletedPrompts();
+      const allPlayed = prompts.every(p => completed.has(p.id));
+      if (allPlayed) {
+        navigate(`/c/${token}/compare`, { replace: true });
+      }
+    } catch {
+      // Continue anyway
+      setNeedsName(false);
+    }
+    setJoining(false);
+  };
+
+  const handleStartChallenge = async () => {
+    if (!challenge) return;
+    // Ensure joined room
+    const savedName = getDisplayName();
+    if (savedName) {
+      try {
+        await joinChallengeRoom(challenge.id, savedName);
+      } catch { /* continue */ }
+    }
+    navigate(`/play?challenge=${token}`);
+  };
 
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -72,7 +124,7 @@ export default function ChallengeLanding() {
 
   if (!challenge) return null;
 
-  const isOwnChallenge = isChallenger(challenge);
+  const isOwn = isChallenger(challenge);
   const today = new Date().toISOString().split('T')[0];
   const isToday = challenge.date === today;
   const dateLabel = isToday
@@ -96,7 +148,6 @@ export default function ChallengeLanding() {
           transition={{ duration: 0.45 }}
           className="text-center w-full max-w-sm py-12"
         >
-          {/* Challenge badge */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -110,11 +161,11 @@ export default function ChallengeLanding() {
           </motion.div>
 
           <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight mb-3">
-            {isOwnChallenge ? 'Your challenge is ready' : 'Can you match your friend?'}
+            {isOwn ? 'Your challenge is ready' : 'Can you match your friend?'}
           </h1>
 
           <p className="text-sm text-muted-foreground mb-2">
-            {isOwnChallenge
+            {isOwn
               ? 'Share this link with friends to see if they think like you.'
               : 'Play the same 3 prompts and compare answers instantly.'
             }
@@ -143,14 +194,20 @@ export default function ChallengeLanding() {
             </div>
           </motion.div>
 
-          {/* CTA */}
-          {isOwnChallenge ? (
+          {/* Display name input or CTA */}
+          {isOwn ? (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground/50">You've already played — share the link above!</p>
               <Button variant="outline" className="rounded-xl" asChild>
                 <Link to="/archive">View your results</Link>
               </Button>
             </div>
+          ) : needsName ? (
+            <DisplayNameInput
+              onSubmit={handleNameSubmit}
+              defaultValue={getDisplayName() ?? ''}
+              loading={joining}
+            />
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
@@ -159,7 +216,7 @@ export default function ChallengeLanding() {
             >
               <Button
                 size="lg"
-                onClick={() => navigate(`/play?challenge=${token}`)}
+                onClick={handleStartChallenge}
                 className="rounded-xl px-8 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base active:scale-[0.97] transition-transform"
               >
                 Start challenge <ArrowRight className="ml-2 h-4 w-4" />

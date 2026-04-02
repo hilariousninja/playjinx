@@ -97,6 +97,38 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          display_name: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenges: {
         Row: {
           answers: Json
