@@ -97,6 +97,33 @@ export type Database = {
         }
         Relationships: []
       }
+      challenges: {
+        Row: {
+          answers: Json
+          challenger_session_id: string
+          created_at: string
+          date: string
+          id: string
+          token: string
+        }
+        Insert: {
+          answers?: Json
+          challenger_session_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          token: string
+        }
+        Update: {
+          answers?: Json
+          challenger_session_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       import_sources: {
         Row: {
           created_at: string

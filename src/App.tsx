@@ -10,6 +10,8 @@ import AdminLogin from "./pages/AdminLogin";
 import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
+import ChallengeLanding from "./pages/ChallengeLanding";
+import ChallengeCompare from "./pages/ChallengeCompare";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import DashboardAnswers from "./pages/dashboard/DashboardAnswers";
@@ -39,6 +41,8 @@ const App = () => (
           <Route path="/results" element={<Navigate to="/archive" replace />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/c/:token" element={<ChallengeLanding />} />
+          <Route path="/c/:token/compare" element={<ChallengeCompare />} />
           <Route path="/dashboard" element={<DashboardPage><DashboardOverview /></DashboardPage>} />
           <Route path="/dashboard/answers" element={<DashboardPage><DashboardAnswers /></DashboardPage>} />
           <Route path="/dashboard/insights" element={<DashboardPage><DashboardInsights /></DashboardPage>} />
