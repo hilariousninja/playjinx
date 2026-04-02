@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2 } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
+import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
 
