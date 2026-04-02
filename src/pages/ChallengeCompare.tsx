@@ -161,7 +161,11 @@ export default function ChallengeCompare() {
       const icon = r.matched ? '🟩' : '⬜';
       return `${icon} ${r.prompt.word_a.toUpperCase()} + ${r.prompt.word_b.toUpperCase()}`;
     });
-    const text = `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}\n\n${lines.join('\n')}\n\nplayjinx.com`;
+    const header = hasRoom
+      ? `⚡ JINX Challenge (${participants.length} players)\nOur group matched on ${matchCount}/${total}`
+      : `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}`;
+    const url = `${window.location.origin}/c/${challenge.token}`;
+    const text = `${header}\n\n${lines.join('\n')}\n\n${url}`;
     if (navigator.share) {
       try { await navigator.share({ text }); return; } catch { /* fallback */ }
     }
