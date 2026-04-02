@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home } from 'lucide-react';
+import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
@@ -106,13 +106,23 @@ export default function ChallengeCompare() {
     ? "Today's JINX"
     : new Date(challenge.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
+  const handleShareResult = async () => {
+    const lines = results.map(r => {
+      const icon = r.matched ? '🟩' : '⬜';
+      return `${icon} ${r.prompt.word_a.toUpperCase()} + ${r.prompt.word_b.toUpperCase()}`;
+    });
+    const text = `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}\n\n${lines.join('\n')}\n\nplayjinx.com`;
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; } catch { /* fallback */ }
+    }
+    await navigator.clipboard.writeText(text);
+    toast({ title: 'Result copied!', description: 'Paste it in your group chat' });
+  };
+
   const handleShareChallenge = async () => {
     const text = buildChallengeShareText(prompts, challenge.token);
     if (navigator.share) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch { /* fallback */ }
+      try { await navigator.share({ text }); return; } catch { /* fallback */ }
     }
     await navigator.clipboard.writeText(text);
     toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
@@ -260,8 +270,16 @@ export default function ChallengeCompare() {
             className="space-y-2.5"
           >
             <Button
-              onClick={handleShareChallenge}
+              onClick={handleShareResult}
               className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
+            >
+              <Copy className="h-3.5 w-3.5 mr-2" /> Share this result
+            </Button>
+
+            <Button
+              onClick={handleShareChallenge}
+              variant="outline"
+              className="w-full rounded-xl h-10 text-sm active:scale-[0.97] transition-transform"
             >
               <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge another friend
             </Button>
