@@ -14,7 +14,7 @@ import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
-import { getDisplayName, setDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
+import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
