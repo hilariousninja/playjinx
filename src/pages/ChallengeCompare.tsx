@@ -203,22 +203,24 @@ export default function ChallengeCompare() {
 
                 {/* Answers side by side */}
                 <div className="px-4 pb-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Recipient's answer */}
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                    {/* Your answer */}
                     <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.15em] font-display mb-1">You</p>
-                      <p className={`font-display font-bold text-base break-words ${
+                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">You</p>
+                      <p className={`font-display font-bold text-lg break-words ${
                         r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground'
                       }`}>
                         {r.recipientAnswer?.raw_answer ?? '—'}
                       </p>
                     </div>
-                    {/* Challenger's answer */}
+                    {/* Divider */}
+                    <div className="w-px h-8 bg-border/40" />
+                    {/* Friend's answer */}
                     <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.15em] font-display mb-1">
-                        {isOwn ? 'You' : 'Friend'}
+                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">
+                        {isOwn ? 'Your answer' : 'Friend'}
                       </p>
-                      <p className={`font-display font-bold text-base break-words ${
+                      <p className={`font-display font-bold text-lg break-words ${
                         r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground/60'
                       }`}>
                         {r.challengerAnswer.raw_answer}
