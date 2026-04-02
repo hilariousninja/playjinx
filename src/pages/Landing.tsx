@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2, Eye } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, Zap, Check } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
+import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { toast } from '@/hooks/use-toast';
 
 export default function Landing() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
