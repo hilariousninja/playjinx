@@ -19,10 +19,10 @@ import type { DbPrompt } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
 
 function getSummary(matches: number, total: number) {
-  if (matches === total) return { headline: 'Perfect JINX!', sub: `You matched on all ${total}`, emoji: '⚡', tone: 'best' as const };
-  if (matches >= total - 1 && total >= 3) return { headline: `You JINXed on ${matches}/${total}`, sub: 'Strong overlap', emoji: '🧠', tone: 'strong' as const };
-  if (matches >= 1) return { headline: `${matches} out of ${total}`, sub: matches === 1 ? 'One clean hit' : 'Some overlap', emoji: '🎯', tone: 'decent' as const };
-  return { headline: 'No JINX this time', sub: 'Miles apart today', emoji: '💭', tone: 'miss' as const };
+  if (matches === total) return { headline: 'Perfect JINX!', sub: `You matched on all ${total} — same wavelength`, emoji: '⚡', tone: 'best' as const };
+  if (matches >= total - 1 && total >= 3) return { headline: `${matches} out of ${total}!`, sub: 'So close to a perfect JINX', emoji: '🧠', tone: 'strong' as const };
+  if (matches >= 1) return { headline: `${matches} out of ${total}`, sub: matches === 1 ? 'One clean JINX' : 'Partial mind-meld', emoji: '🎯', tone: 'decent' as const };
+  return { headline: 'No JINX today', sub: 'Completely different wavelengths', emoji: '💭', tone: 'miss' as const };
 }
 
 const toneStyles = {
