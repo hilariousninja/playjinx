@@ -11,6 +11,7 @@ import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
+import PlayerIdentity from '@/components/PlayerIdentity';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, setDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
