@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy, Users } from 'lucide-react';
@@ -17,6 +17,7 @@ import {
 } from '@/lib/challenge';
 import { getRoomParticipants, getRoomResults, joinChallengeRoom, getDisplayName, type RoomParticipant, type RoomPromptResult } from '@/lib/challenge-room';
 import { getCompletedPrompts } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 import type { DbPrompt } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
 
@@ -92,6 +93,36 @@ export default function ChallengeCompare() {
     })();
   }, [token, navigate]);
 
+  // Realtime: listen for new participants joining the room
+  const refreshRoom = useCallback(async () => {
+    if (!challenge || prompts.length === 0) return;
+    const [parts, room] = await Promise.all([
+      getRoomParticipants(challenge.id),
+      getRoomResults(challenge.id, prompts.map(p => p.id)),
+    ]);
+    setParticipants(parts);
+    setRoomResults(room);
+  }, [challenge, prompts]);
+
+  useEffect(() => {
+    if (!challenge) return;
+    const channel = supabase
+      .channel(`room-${challenge.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'challenge_participants',
+          filter: `challenge_id=eq.${challenge.id}`,
+        },
+        () => { refreshRoom(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [challenge, refreshRoom]);
+
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center space-y-3">
@@ -130,7 +161,11 @@ export default function ChallengeCompare() {
       const icon = r.matched ? '🟩' : '⬜';
       return `${icon} ${r.prompt.word_a.toUpperCase()} + ${r.prompt.word_b.toUpperCase()}`;
     });
-    const text = `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}\n\n${lines.join('\n')}\n\nplayjinx.com`;
+    const header = hasRoom
+      ? `⚡ JINX Challenge (${participants.length} players)\nOur group matched on ${matchCount}/${total}`
+      : `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}`;
+    const url = `${window.location.origin}/c/${challenge.token}`;
+    const text = `${header}\n\n${lines.join('\n')}\n\n${url}`;
     if (navigator.share) {
       try { await navigator.share({ text }); return; } catch { /* fallback */ }
     }
