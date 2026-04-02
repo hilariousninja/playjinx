@@ -16,6 +16,8 @@ type Phase = 'input' | 'calculating' | 'results';
 
 export default function Play() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const challengeToken = searchParams.get('challenge');
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [inputVal, setInputVal] = useState('');
