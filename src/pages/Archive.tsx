@@ -14,6 +14,8 @@ import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
+import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
   prompt: DbPrompt;
@@ -193,10 +195,20 @@ export default function Archive() {
       ].join('\n')
     : '';
 
-  const handleCopyChallenge = () => {
-    navigator.clipboard.writeText(challengeText);
-    setChallengeCopied(true);
-    setTimeout(() => setChallengeCopied(false), 2500);
+  const handleCopyChallenge = async () => {
+    if (challengeCopied) return;
+    try {
+      const ch = await createChallenge(todayPrompts);
+      const text = buildChallengeShareText(todayPrompts, ch.token);
+      if (navigator.share) {
+        try { await navigator.share({ text }); return; } catch {}
+      }
+      await navigator.clipboard.writeText(text);
+      setChallengeCopied(true);
+      setTimeout(() => setChallengeCopied(false), 2500);
+    } catch {
+      toast({ title: 'Could not create challenge', variant: 'destructive' });
+    }
   };
 
   const handleCopyResults = () => {
