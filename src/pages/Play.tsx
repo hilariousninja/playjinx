@@ -165,7 +165,8 @@ export default function Play() {
           <Link to="/">
             <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
+            <PlayerIdentity />
             <div className="flex items-center gap-1.5">
               {prompts.map((p, i) => (
                 <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); setInputError(null); }}
