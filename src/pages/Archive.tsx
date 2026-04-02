@@ -195,7 +195,7 @@ export default function Archive() {
       ].join('\n')
     : '';
 
-  const handleCopyChallenge = useCallback(async () => {
+  const handleCopyChallenge = async () => {
     if (challengeCopied) return;
     try {
       const ch = await createChallenge(todayPrompts);
@@ -209,7 +209,7 @@ export default function Archive() {
     } catch {
       toast({ title: 'Could not create challenge', variant: 'destructive' });
     }
-  }, [todayPrompts, challengeCopied]);
+  };
 
   const handleCopyResults = () => {
     navigator.clipboard.writeText(resultsText);
