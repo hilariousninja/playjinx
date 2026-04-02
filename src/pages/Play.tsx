@@ -102,6 +102,15 @@ export default function Play() {
       setTimeout(() => {
         setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
         setSubmitting(false);
+
+        // If playing via challenge and all prompts now done, redirect to comparison
+        if (challengeToken) {
+          const newSubmitted = { ...submitted, [prompt.id]: true };
+          const nowAllDone = prompts.every(p => newSubmitted[p.id]);
+          if (nowAllDone) {
+            setTimeout(() => navigate(`/c/${challengeToken}/compare`), 800);
+          }
+        }
       }, 1300);
     } catch (err: any) {
       setInputError(err?.message || 'Something went wrong');
