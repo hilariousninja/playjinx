@@ -5,6 +5,7 @@ import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy, Us
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
+import PlayerIdentity from '@/components/PlayerIdentity';
 import RoomResults from '@/components/RoomResults';
 import {
   getChallengeByToken,
@@ -195,7 +196,10 @@ export default function ChallengeCompare() {
           <Link to="/">
             <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <span className="text-[10px] text-muted-foreground/50 font-display">{dateLabel}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground/50 font-display">{dateLabel}</span>
+            <PlayerIdentity />
+          </div>
         </div>
       </header>
 

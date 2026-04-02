@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
+import PlayerIdentity from '@/components/PlayerIdentity';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -314,9 +315,12 @@ export default function Archive() {
           <Link to="/">
             <JinxLogo size={18} className="text-foreground text-base" />
           </Link>
-          <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
-            <Link to="/play">Play</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <PlayerIdentity />
+            <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
+              <Link to="/play">Play</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
