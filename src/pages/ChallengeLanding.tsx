@@ -5,6 +5,7 @@ import { Zap, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
+import PlayerIdentity from '@/components/PlayerIdentity';
 import DisplayNameInput from '@/components/DisplayNameInput';
 import { getChallengeByToken, getPromptsForDate, isChallenger, type Challenge } from '@/lib/challenge';
 import { getCompletedPrompts } from '@/lib/store';
