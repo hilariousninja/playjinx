@@ -19,10 +19,10 @@ import type { DbPrompt } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
 
 function getSummary(matches: number, total: number) {
-  if (matches === total) return { headline: 'Perfect JINX!', sub: `You matched on all ${total}`, emoji: '⚡', tone: 'best' as const };
-  if (matches >= total - 1 && total >= 3) return { headline: `You JINXed on ${matches}/${total}`, sub: 'Strong overlap', emoji: '🧠', tone: 'strong' as const };
-  if (matches >= 1) return { headline: `${matches} out of ${total}`, sub: matches === 1 ? 'One clean hit' : 'Some overlap', emoji: '🎯', tone: 'decent' as const };
-  return { headline: 'No JINX this time', sub: 'Miles apart today', emoji: '💭', tone: 'miss' as const };
+  if (matches === total) return { headline: 'Perfect JINX!', sub: `You matched on all ${total} — same wavelength`, emoji: '⚡', tone: 'best' as const };
+  if (matches >= total - 1 && total >= 3) return { headline: `${matches} out of ${total}!`, sub: 'So close to a perfect JINX', emoji: '🧠', tone: 'strong' as const };
+  if (matches >= 1) return { headline: `${matches} out of ${total}`, sub: matches === 1 ? 'One clean JINX' : 'Partial mind-meld', emoji: '🎯', tone: 'decent' as const };
+  return { headline: 'No JINX today', sub: 'Completely different wavelengths', emoji: '💭', tone: 'miss' as const };
 }
 
 const toneStyles = {
@@ -142,20 +142,24 @@ export default function ChallengeCompare() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
-              className="text-5xl mb-4"
+              className="text-5xl mb-3"
             >
               {summary.emoji}
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full mb-3 ${toneStyles[summary.tone]}`}
+              className={`font-display font-black text-2xl tracking-tight mb-1 ${
+                summary.tone === 'best' ? 'text-[hsl(var(--match-best))]' :
+                summary.tone === 'strong' ? 'text-[hsl(var(--match-strong))]' :
+                summary.tone === 'decent' ? 'text-[hsl(var(--match-good))]' :
+                'text-foreground'
+              }`}
             >
-              {summary.tone === 'best' && <Zap className="h-4 w-4" />}
-              <span className="font-display font-bold text-sm tracking-tight">{summary.headline}</span>
-            </motion.div>
+              {summary.headline}
+            </motion.h1>
 
             <motion.p
               initial={{ opacity: 0 }}
@@ -165,6 +169,17 @@ export default function ChallengeCompare() {
             >
               {summary.sub}
             </motion.p>
+
+            {isOwn && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-[11px] text-muted-foreground/50 mt-2 italic"
+              >
+                Previewing your challenge link
+              </motion.p>
+            )}
           </motion.div>
 
           {/* Prompt cards */}
@@ -188,22 +203,24 @@ export default function ChallengeCompare() {
 
                 {/* Answers side by side */}
                 <div className="px-4 pb-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Recipient's answer */}
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                    {/* Your answer */}
                     <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.15em] font-display mb-1">You</p>
-                      <p className={`font-display font-bold text-base break-words ${
+                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">You</p>
+                      <p className={`font-display font-bold text-lg break-words ${
                         r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground'
                       }`}>
                         {r.recipientAnswer?.raw_answer ?? '—'}
                       </p>
                     </div>
-                    {/* Challenger's answer */}
+                    {/* Divider */}
+                    <div className="w-px h-8 bg-border/40" />
+                    {/* Friend's answer */}
                     <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.15em] font-display mb-1">
-                        {isOwn ? 'You' : 'Friend'}
+                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">
+                        {isOwn ? 'Your answer' : 'Friend'}
                       </p>
-                      <p className={`font-display font-bold text-base break-words ${
+                      <p className={`font-display font-bold text-lg break-words ${
                         r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground/60'
                       }`}>
                         {r.challengerAnswer.raw_answer}
