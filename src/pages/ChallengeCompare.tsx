@@ -106,13 +106,23 @@ export default function ChallengeCompare() {
     ? "Today's JINX"
     : new Date(challenge.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
+  const handleShareResult = async () => {
+    const lines = results.map(r => {
+      const icon = r.matched ? '🟩' : '⬜';
+      return `${icon} ${r.prompt.word_a.toUpperCase()} + ${r.prompt.word_b.toUpperCase()}`;
+    });
+    const text = `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}\n\n${lines.join('\n')}\n\nplayjinx.com`;
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; } catch { /* fallback */ }
+    }
+    await navigator.clipboard.writeText(text);
+    toast({ title: 'Result copied!', description: 'Paste it in your group chat' });
+  };
+
   const handleShareChallenge = async () => {
     const text = buildChallengeShareText(prompts, challenge.token);
     if (navigator.share) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch { /* fallback */ }
+      try { await navigator.share({ text }); return; } catch { /* fallback */ }
     }
     await navigator.clipboard.writeText(text);
     toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
