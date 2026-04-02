@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy } from 'lucide-react';
+import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
+import RoomResults from '@/components/RoomResults';
 import {
   getChallengeByToken,
   getPromptsForDate,
@@ -14,9 +15,12 @@ import {
   type Challenge,
   type ComparisonResult,
 } from '@/lib/challenge';
+import { getRoomParticipants, getRoomResults, joinChallengeRoom, getDisplayName, type RoomParticipant, type RoomPromptResult } from '@/lib/challenge-room';
 import { getCompletedPrompts } from '@/lib/store';
 import type { DbPrompt } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
+
+type ViewTab = 'personal' | 'room' | 'crowd';
 
 function getSummary(matches: number, total: number) {
   if (matches === total) return { headline: 'Perfect JINX!', sub: `You matched on all ${total} — same wavelength`, emoji: '⚡', tone: 'best' as const };
@@ -25,21 +29,17 @@ function getSummary(matches: number, total: number) {
   return { headline: 'No JINX today', sub: 'Completely different wavelengths', emoji: '💭', tone: 'miss' as const };
 }
 
-const toneStyles = {
-  best: 'text-[hsl(var(--match-best))] bg-[hsl(var(--match-best)/0.08)]',
-  strong: 'text-[hsl(var(--match-strong))] bg-[hsl(var(--match-strong)/0.08)]',
-  decent: 'text-[hsl(var(--match-good))] bg-[hsl(var(--match-good)/0.08)]',
-  miss: 'text-muted-foreground bg-muted/50',
-};
-
 export default function ChallengeCompare() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [results, setResults] = useState<ComparisonResult[]>([]);
+  const [participants, setParticipants] = useState<RoomParticipant[]>([]);
+  const [roomResults, setRoomResults] = useState<RoomPromptResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ViewTab>('personal');
 
   useEffect(() => {
     if (!token) { setError('Invalid link'); setLoading(false); return; }
@@ -54,18 +54,36 @@ export default function ChallengeCompare() {
         if (ps.length === 0) { setError('Prompts not available'); setLoading(false); return; }
         setPrompts(ps);
 
-        // Check if the user has completed all prompts
         const completed = getCompletedPrompts();
         const allPlayed = ps.every(p => completed.has(p.id));
 
         if (!allPlayed && !isChallenger(ch)) {
-          // Redirect to play first
           navigate(`/c/${token}`, { replace: true });
           return;
         }
 
-        const comparison = await compareAnswers(ch, ps);
+        // Ensure participant record exists
+        const savedName = getDisplayName();
+        if (savedName) {
+          try { await joinChallengeRoom(ch.id, savedName); } catch { /* ok */ }
+        }
+
+        // Load personal comparison + room data in parallel
+        const [comparison, parts, room] = await Promise.all([
+          compareAnswers(ch, ps),
+          getRoomParticipants(ch.id),
+          getRoomResults(ch.id, ps.map(p => p.id)),
+        ]);
+
         setResults(comparison);
+        setParticipants(parts);
+        setRoomResults(room);
+
+        // Auto-select room tab if multiple participants
+        if (parts.length >= 2) {
+          setActiveTab('room');
+        }
+
         setLoading(false);
       } catch {
         setError('Something went wrong');
@@ -99,6 +117,7 @@ export default function ChallengeCompare() {
   const total = results.length;
   const summary = getSummary(matchCount, total);
   const isOwn = isChallenger(challenge);
+  const hasRoom = participants.length >= 2;
 
   const today = new Date().toISOString().split('T')[0];
   const isToday = challenge.date === today;
@@ -128,6 +147,12 @@ export default function ChallengeCompare() {
     toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
   };
 
+  const tabs: { key: ViewTab; label: string; icon: React.ReactNode; show: boolean }[] = [
+    { key: 'personal', label: 'vs Friend', icon: <Zap className="h-3 w-3" />, show: true },
+    { key: 'room', label: 'Room', icon: <Users className="h-3 w-3" />, show: hasRoom },
+    { key: 'crowd', label: 'Crowd', icon: <ArrowRight className="h-3 w-3" />, show: true },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/80 shrink-0">
@@ -139,14 +164,14 @@ export default function ChallengeCompare() {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col items-center pt-[6vh] md:pt-[8vh] pb-8 px-5">
+      <div className="flex-1 flex flex-col items-center pt-[4vh] md:pt-[6vh] pb-8 px-5">
         <div className="w-full max-w-sm mx-auto">
           {/* Summary */}
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.45 }}
-            className="text-center mb-8"
+            className="text-center mb-5"
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
@@ -180,7 +205,7 @@ export default function ChallengeCompare() {
               {summary.sub}
             </motion.p>
 
-            {isOwn && (
+            {isOwn && !hasRoom && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -192,81 +217,127 @@ export default function ChallengeCompare() {
             )}
           </motion.div>
 
-          {/* Prompt cards */}
-          <div className="space-y-3 mb-8">
-            {results.map((r, i) => (
-              <motion.div
-                key={r.prompt.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.1, duration: 0.35 }}
-                className={`rounded-xl border-2 overflow-hidden transition-colors ${
-                  r.matched
-                    ? 'border-[hsl(var(--match-best)/0.3)] bg-[hsl(var(--match-best)/0.04)]'
-                    : 'border-border/60 bg-card'
+          {/* Tab switcher */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex justify-center gap-1 mb-5"
+          >
+            {tabs.filter(t => t.show).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-display font-semibold uppercase tracking-[0.08em] transition-all ${
+                  activeTab === tab.key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                 }`}
               >
-                {/* Prompt header */}
-                <div className="px-4 pt-3 pb-2">
-                  <PromptPair wordA={r.prompt.word_a} wordB={r.prompt.word_b} size="sm" />
-                </div>
-
-                {/* Answers side by side */}
-                <div className="px-4 pb-3">
-                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
-                    {/* Your answer */}
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">You</p>
-                      <p className={`font-display font-bold text-lg break-words ${
-                        r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground'
-                      }`}>
-                        {r.recipientAnswer?.raw_answer ?? '—'}
-                      </p>
-                    </div>
-                    {/* Divider */}
-                    <div className="w-px h-8 bg-border/40" />
-                    {/* Friend's answer */}
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">
-                        {isOwn ? 'Your answer' : 'Friend'}
-                      </p>
-                      <p className={`font-display font-bold text-lg break-words ${
-                        r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground/60'
-                      }`}>
-                        {r.challengerAnswer.raw_answer}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Match indicator */}
-                  <div className="mt-2 flex justify-center">
-                    {r.matched ? (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.6 + i * 0.1, type: 'spring', stiffness: 300 }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--match-best)/0.1)]"
-                      >
-                        <Zap className="h-3 w-3 text-[hsl(var(--match-best))]" />
-                        <span className="text-[11px] font-display font-bold text-[hsl(var(--match-best))] uppercase tracking-[0.1em]">JINX</span>
-                      </motion.div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/50">
-                        <X className="h-3 w-3 text-muted-foreground/40" />
-                        <span className="text-[11px] font-display font-medium text-muted-foreground/50 tracking-tight">No match</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+                {tab.icon}
+                {tab.label}
+              </button>
             ))}
-          </div>
+          </motion.div>
+
+          {/* Personal comparison view */}
+          {activeTab === 'personal' && (
+            <div className="space-y-3 mb-6">
+              {results.map((r, i) => (
+                <motion.div
+                  key={r.prompt.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.08, duration: 0.35 }}
+                  className={`rounded-xl border-2 overflow-hidden transition-colors ${
+                    r.matched
+                      ? 'border-[hsl(var(--match-best)/0.3)] bg-[hsl(var(--match-best)/0.04)]'
+                      : 'border-border/60 bg-card'
+                  }`}
+                >
+                  <div className="px-4 pt-3 pb-2">
+                    <PromptPair wordA={r.prompt.word_a} wordB={r.prompt.word_b} size="sm" />
+                  </div>
+                  <div className="px-4 pb-3">
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">You</p>
+                        <p className={`font-display font-bold text-lg break-words ${
+                          r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground'
+                        }`}>
+                          {r.recipientAnswer?.raw_answer ?? '—'}
+                        </p>
+                      </div>
+                      <div className="w-px h-8 bg-border/40" />
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">
+                          {isOwn ? 'Your answer' : 'Friend'}
+                        </p>
+                        <p className={`font-display font-bold text-lg break-words ${
+                          r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground/60'
+                        }`}>
+                          {r.challengerAnswer.raw_answer}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-center">
+                      {r.matched ? (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 300 }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--match-best)/0.1)]"
+                        >
+                          <Zap className="h-3 w-3 text-[hsl(var(--match-best))]" />
+                          <span className="text-[11px] font-display font-bold text-[hsl(var(--match-best))] uppercase tracking-[0.1em]">JINX</span>
+                        </motion.div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/50">
+                          <X className="h-3 w-3 text-muted-foreground/40" />
+                          <span className="text-[11px] font-display font-medium text-muted-foreground/50 tracking-tight">No match</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Room view */}
+          {activeTab === 'room' && (
+            <div className="mb-6">
+              <RoomResults results={roomResults} participants={participants} />
+            </div>
+          )}
+
+          {/* Crowd view - link to archive */}
+          {activeTab === 'crowd' && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-8 space-y-4 mb-6"
+            >
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/50 mb-2">
+                <Users className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[11px] font-display font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+                  Global results
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                See how the wider crowd answered today's prompts.
+              </p>
+              <Button variant="outline" className="rounded-xl" asChild>
+                <Link to="/archive">View crowd results <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
+              </Button>
+            </motion.div>
+          )}
 
           {/* Actions */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.5 }}
             className="space-y-2.5"
           >
             <Button
@@ -281,17 +352,7 @@ export default function ChallengeCompare() {
               variant="outline"
               className="w-full rounded-xl h-10 text-sm active:scale-[0.97] transition-transform"
             >
-              <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge another friend
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full rounded-xl h-10 text-sm"
-              asChild
-            >
-              <Link to="/archive">
-                View crowd results <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-              </Link>
+              <Share2 className="h-3.5 w-3.5 mr-2" /> Invite more friends
             </Button>
 
             <Button
