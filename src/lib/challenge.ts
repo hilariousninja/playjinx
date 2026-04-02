@@ -175,9 +175,11 @@ export async function compareAnswers(
  * Build the share text for a challenge link.
  */
 export function buildChallengeShareText(prompts: DbPrompt[], token: string): string {
+  const name = getDisplayName();
   const pairs = prompts.map(p => `${p.word_a.toUpperCase()} + ${p.word_b.toUpperCase()}`).join('\n');
   const url = `${window.location.origin}/c/${token}`;
-  return `⚡ JINX Daily\n\nCan you match me?\n\n${pairs}\n\n${url}`;
+  const intro = name ? `Can you match ${name}?` : 'Can you match me?';
+  return `⚡ JINX Daily\n\n${intro}\n\n${pairs}\n\n${url}`;
 }
 
 /**

@@ -266,49 +266,24 @@ export default function Play() {
 
                   {allDone && !challengeToken && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
-                      {showNamePrompt ? (
-                        <DisplayNameInput
-                          defaultValue={getDisplayName() ?? ''}
-                          onSubmit={async (name) => {
-                            setDisplayName(name);
-                            setShowNamePrompt(false);
-                            try {
-                              const ch = await createChallenge(prompts);
-                              const text = buildChallengeShareText(prompts, ch.token);
-                              if (navigator.share) {
-                                try { await navigator.share({ text }); return; } catch {}
-                              }
-                              await navigator.clipboard.writeText(text);
-                              toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
-                            } catch {
-                              toast({ title: 'Could not create challenge', variant: 'destructive' });
+                      <Button
+                        className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
+                        onClick={async () => {
+                          try {
+                            const ch = await createChallenge(prompts);
+                            const text = buildChallengeShareText(prompts, ch.token);
+                            if (navigator.share) {
+                              try { await navigator.share({ text }); return; } catch {}
                             }
-                          }}
-                        />
-                      ) : (
-                        <Button
-                          className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
-                          onClick={async () => {
-                            if (!getDisplayName()) {
-                              setShowNamePrompt(true);
-                              return;
-                            }
-                            try {
-                              const ch = await createChallenge(prompts);
-                              const text = buildChallengeShareText(prompts, ch.token);
-                              if (navigator.share) {
-                                try { await navigator.share({ text }); return; } catch {}
-                              }
-                              await navigator.clipboard.writeText(text);
-                              toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
-                            } catch {
-                              toast({ title: 'Could not create challenge', variant: 'destructive' });
-                            }
-                          }}
-                        >
-                          <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
-                        </Button>
-                      )}
+                            await navigator.clipboard.writeText(text);
+                            toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
+                          } catch {
+                            toast({ title: 'Could not create challenge', variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
+                      </Button>
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>
