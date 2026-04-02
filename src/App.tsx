@@ -41,6 +41,8 @@ const App = () => (
           <Route path="/results" element={<Navigate to="/archive" replace />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/c/:token" element={<ChallengeLanding />} />
+          <Route path="/c/:token/compare" element={<ChallengeCompare />} />
           <Route path="/dashboard" element={<DashboardPage><DashboardOverview /></DashboardPage>} />
           <Route path="/dashboard/answers" element={<DashboardPage><DashboardAnswers /></DashboardPage>} />
           <Route path="/dashboard/insights" element={<DashboardPage><DashboardInsights /></DashboardPage>} />
