@@ -10,6 +10,8 @@ import AdminLogin from "./pages/AdminLogin";
 import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
+import ChallengeLanding from "./pages/ChallengeLanding";
+import ChallengeCompare from "./pages/ChallengeCompare";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import DashboardAnswers from "./pages/dashboard/DashboardAnswers";
