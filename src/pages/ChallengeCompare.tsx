@@ -17,6 +17,7 @@ import {
 } from '@/lib/challenge';
 import { getRoomParticipants, getRoomResults, joinChallengeRoom, getDisplayName, type RoomParticipant, type RoomPromptResult } from '@/lib/challenge-room';
 import { getCompletedPrompts } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 import type { DbPrompt } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
 
