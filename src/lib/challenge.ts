@@ -79,10 +79,19 @@ export async function createChallenge(prompts: DbPrompt[]): Promise<Challenge> {
     .single();
 
   if (error) throw error;
-  return {
+
+  const challenge = {
     ...data,
     answers: data.answers as unknown as ChallengeAnswer[],
   };
+
+  // Auto-register challenger as room participant
+  const displayName = getDisplayName();
+  if (displayName) {
+    try { await joinChallengeRoom(challenge.id, displayName); } catch { /* ok */ }
+  }
+
+  return challenge;
 }
 
 /**
