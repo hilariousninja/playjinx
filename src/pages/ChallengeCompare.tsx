@@ -270,8 +270,16 @@ export default function ChallengeCompare() {
             className="space-y-2.5"
           >
             <Button
-              onClick={handleShareChallenge}
+              onClick={handleShareResult}
               className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
+            >
+              <Copy className="h-3.5 w-3.5 mr-2" /> Share this result
+            </Button>
+
+            <Button
+              onClick={handleShareChallenge}
+              variant="outline"
+              className="w-full rounded-xl h-10 text-sm active:scale-[0.97] transition-transform"
             >
               <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge another friend
             </Button>
