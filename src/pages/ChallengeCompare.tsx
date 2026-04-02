@@ -93,6 +93,36 @@ export default function ChallengeCompare() {
     })();
   }, [token, navigate]);
 
+  // Realtime: listen for new participants joining the room
+  const refreshRoom = useCallback(async () => {
+    if (!challenge || prompts.length === 0) return;
+    const [parts, room] = await Promise.all([
+      getRoomParticipants(challenge.id),
+      getRoomResults(challenge.id, prompts.map(p => p.id)),
+    ]);
+    setParticipants(parts);
+    setRoomResults(room);
+  }, [challenge, prompts]);
+
+  useEffect(() => {
+    if (!challenge) return;
+    const channel = supabase
+      .channel(`room-${challenge.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'challenge_participants',
+          filter: `challenge_id=eq.${challenge.id}`,
+        },
+        () => { refreshRoom(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [challenge, refreshRoom]);
+
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center space-y-3">
