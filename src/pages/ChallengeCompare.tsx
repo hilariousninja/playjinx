@@ -142,20 +142,24 @@ export default function ChallengeCompare() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
-              className="text-5xl mb-4"
+              className="text-5xl mb-3"
             >
               {summary.emoji}
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full mb-3 ${toneStyles[summary.tone]}`}
+              className={`font-display font-black text-2xl tracking-tight mb-1 ${
+                summary.tone === 'best' ? 'text-[hsl(var(--match-best))]' :
+                summary.tone === 'strong' ? 'text-[hsl(var(--match-strong))]' :
+                summary.tone === 'decent' ? 'text-[hsl(var(--match-good))]' :
+                'text-foreground'
+              }`}
             >
-              {summary.tone === 'best' && <Zap className="h-4 w-4" />}
-              <span className="font-display font-bold text-sm tracking-tight">{summary.headline}</span>
-            </motion.div>
+              {summary.headline}
+            </motion.h1>
 
             <motion.p
               initial={{ opacity: 0 }}
@@ -165,6 +169,17 @@ export default function ChallengeCompare() {
             >
               {summary.sub}
             </motion.p>
+
+            {isOwn && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-[11px] text-muted-foreground/50 mt-2 italic"
+              >
+                Previewing your challenge link
+              </motion.p>
+            )}
           </motion.div>
 
           {/* Prompt cards */}
