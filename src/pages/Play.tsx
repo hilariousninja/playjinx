@@ -11,7 +11,8 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
-import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
+import { getDisplayName, setDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
