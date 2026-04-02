@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
+import PlayerIdentity from '@/components/PlayerIdentity';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import { toast } from '@/hooks/use-toast';
 
