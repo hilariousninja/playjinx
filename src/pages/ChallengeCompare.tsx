@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home } from 'lucide-react';
+import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
