@@ -88,6 +88,8 @@ export async function createChallenge(prompts: DbPrompt[]): Promise<Challenge> {
     answers: data.answers as unknown as ChallengeAnswer[],
   };
 
+  saveMyRoom(challenge.token, challenge.id, challenge.date);
+
   // Auto-register challenger as room participant
   const displayName = getDisplayName();
   if (displayName) {
