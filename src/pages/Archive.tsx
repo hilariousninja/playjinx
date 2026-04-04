@@ -378,6 +378,13 @@ export default function Archive() {
                 </motion.div>
               )}
 
+              {/* My Room Card */}
+              {allTodayAnswered && (
+                <div className="mb-4">
+                  <MyRoomCard />
+                </div>
+              )}
+
               {/* Today prompt cards */}
               <div className="space-y-2.5">
                 {todaySummaries.map((s, i) => {
