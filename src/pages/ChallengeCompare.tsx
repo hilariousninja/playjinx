@@ -404,6 +404,11 @@ export default function ChallengeCompare() {
             </motion.div>
           )}
 
+          {/* Social Memory */}
+          <div className="mb-4">
+            <SocialMemoryCard refreshKey={socialRefreshKey} compact />
+          </div>
+
           {/* Actions */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
