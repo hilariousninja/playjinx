@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getPlayerId, getUserAnswer, type DbPrompt } from './store';
 import { normalizeAnswer } from './normalize';
 import { getDisplayName, joinChallengeRoom } from './challenge-room';
+import { saveMyRoom } from './my-room';
 
 export interface ChallengeAnswer {
   prompt_id: string;
