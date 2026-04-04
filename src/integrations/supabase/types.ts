@@ -183,6 +183,45 @@ export type Database = {
         }
         Relationships: []
       }
+      match_history: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          date: string
+          id: string
+          matched_display_name: string
+          matched_session_id: string
+          player_display_name: string
+          player_session_id: string
+          prompts_matched: number
+          total_prompts: number
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          matched_display_name?: string
+          matched_session_id: string
+          player_display_name?: string
+          player_session_id: string
+          prompts_matched?: number
+          total_prompts?: number
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          matched_display_name?: string
+          matched_session_id?: string
+          player_display_name?: string
+          player_session_id?: string
+          prompts_matched?: number
+          total_prompts?: number
+        }
+        Relationships: []
+      }
       prompts: {
         Row: {
           active: boolean
