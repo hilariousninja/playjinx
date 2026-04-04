@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import PromptPair from '@/components/PromptPair';
+import MyRoomCard from '@/components/MyRoomCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -375,6 +376,13 @@ export default function Archive() {
                     {resultsCopied ? <><Check className="h-3 w-3 mr-1.5" /> Results copied!</> : <><Share2 className="h-3 w-3 mr-1.5" /> Share my results</>}
                   </Button>
                 </motion.div>
+              )}
+
+              {/* My Room Card */}
+              {allTodayAnswered && (
+                <div className="mb-4">
+                  <MyRoomCard />
+                </div>
               )}
 
               {/* Today prompt cards */}
