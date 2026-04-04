@@ -9,6 +9,7 @@ import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotal
 import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
+import SocialMemoryCard from '@/components/SocialMemoryCard';
 import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
@@ -287,6 +288,11 @@ export default function Play() {
                         <Link to="/archive">View all results</Link>
                       </Button>
                       {currentIdx === prompts.length - 1 && <Countdown />}
+                      {currentIdx === prompts.length - 1 && (
+                        <div className="mt-3">
+                          <SocialMemoryCard compact />
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </motion.div>
