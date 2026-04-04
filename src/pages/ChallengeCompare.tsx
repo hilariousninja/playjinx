@@ -86,9 +86,9 @@ export default function ChallengeCompare() {
         // Auto-select room tab if multiple participants
         if (parts.length >= 2) {
           setActiveTab('room');
+          // Ensure match history is recorded (idempotent fallback)
+          recordMatchesForChallenge(ch.id).catch(() => {});
         }
-
-
 
 
         setLoading(false);
