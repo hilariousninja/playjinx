@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getPlayerId, getUserAnswer, type DbPrompt } from './store';
 import { normalizeAnswer } from './normalize';
 import { getDisplayName, joinChallengeRoom } from './challenge-room';
+import { saveMyRoom } from './my-room';
 
 export interface ChallengeAnswer {
   prompt_id: string;
@@ -45,10 +46,12 @@ export async function createChallenge(prompts: DbPrompt[]): Promise<Challenge> {
     .maybeSingle();
 
   if (existing) {
-    return {
+    const ch = {
       ...existing,
       answers: existing.answers as unknown as ChallengeAnswer[],
     };
+    saveMyRoom(ch.token, ch.id, ch.date);
+    return ch;
   }
 
   // Gather answers
@@ -84,6 +87,8 @@ export async function createChallenge(prompts: DbPrompt[]): Promise<Challenge> {
     ...data,
     answers: data.answers as unknown as ChallengeAnswer[],
   };
+
+  saveMyRoom(challenge.token, challenge.id, challenge.date);
 
   // Auto-register challenger as room participant
   const displayName = getDisplayName();
