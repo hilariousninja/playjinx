@@ -43,8 +43,6 @@ export default function ChallengeCompare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>('personal');
-  const [socialRefreshKey, setSocialRefreshKey] = useState(0);
-  const matchesRecorded = useRef(false);
 
   useEffect(() => {
     if (!token) { setError('Invalid link'); setLoading(false); return; }
