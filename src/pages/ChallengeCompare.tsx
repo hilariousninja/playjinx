@@ -8,6 +8,7 @@ import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import RoomResults from '@/components/RoomResults';
 import SocialMemoryCard from '@/components/SocialMemoryCard';
+import { recordMatchesForChallenge } from '@/lib/social-memory';
 import {
   getChallengeByToken,
   getPromptsForDate,
