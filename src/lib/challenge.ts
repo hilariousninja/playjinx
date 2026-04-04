@@ -46,10 +46,12 @@ export async function createChallenge(prompts: DbPrompt[]): Promise<Challenge> {
     .maybeSingle();
 
   if (existing) {
-    return {
+    const ch = {
       ...existing,
       answers: existing.answers as unknown as ChallengeAnswer[],
     };
+    saveMyRoom(ch.token, ch.id, ch.date);
+    return ch;
   }
 
   // Gather answers
