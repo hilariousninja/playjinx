@@ -87,33 +87,8 @@ export default function ChallengeCompare() {
           setActiveTab('room');
         }
 
-        // Record match history for social memory
-        if (!matchesRecorded.current && parts.length >= 2 && room.length > 0) {
-          matchesRecorded.current = true;
-          const mySessionId = (await import('@/lib/store')).getPlayerId();
-          const myAnswers = new Map<string, string>();
-          for (const r of room) {
-            const myA = r.answers.find(a => a.session_id === mySessionId);
-            if (myA) myAnswers.set(r.prompt_id, myA.normalized_answer);
-          }
 
-          // Calculate matches per other participant
-          const otherParticipants = parts.filter(p => p.session_id !== mySessionId);
-          const participantMatches = otherParticipants.map(op => {
-            let matched = 0;
-            let total = room.length;
-            for (const r of room) {
-              const myNorm = myAnswers.get(r.prompt_id);
-              const theirA = r.answers.find(a => a.session_id === op.session_id);
-              if (myNorm && theirA && theirA.normalized_answer === myNorm) matched++;
-            }
-            return { sessionId: op.session_id, displayName: op.display_name, matched, total };
-          });
 
-          recordRoomMatches(ch.id, ch.date, participantMatches)
-            .then(() => setSocialRefreshKey(k => k + 1))
-            .catch(() => {});
-        }
 
         setLoading(false);
       } catch {
