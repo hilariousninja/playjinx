@@ -290,6 +290,7 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
+                      <MyRoomCard />
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>
