@@ -16,6 +16,7 @@ import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { recordMatchesForChallenge } from '@/lib/social-memory';
+import MyRoomCard from '@/components/MyRoomCard';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
