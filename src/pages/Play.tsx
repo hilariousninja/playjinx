@@ -15,6 +15,7 @@ import PlayerIdentity from '@/components/PlayerIdentity';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
+import { recordMatchesForChallenge } from '@/lib/social-memory';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
@@ -109,11 +110,15 @@ export default function Play() {
         setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
         setSubmitting(false);
 
-        // If playing via challenge and all prompts now done, redirect to comparison
+        // If playing via challenge and all prompts now done, record matches and redirect
         if (challengeToken) {
           const newSubmitted = { ...submitted, [prompt.id]: true };
           const nowAllDone = prompts.every(p => newSubmitted[p.id]);
           if (nowAllDone) {
+            // Record match history from completed participation data
+            getChallengeByToken(challengeToken).then(ch => {
+              if (ch) recordMatchesForChallenge(ch.id).catch(() => {});
+            });
             setTimeout(() => navigate(`/c/${challengeToken}/compare`), 800);
           }
         }

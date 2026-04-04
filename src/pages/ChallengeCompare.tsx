@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy, Users } from 'lucide-react';
@@ -8,7 +8,7 @@ import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import RoomResults from '@/components/RoomResults';
 import SocialMemoryCard from '@/components/SocialMemoryCard';
-import { recordRoomMatches } from '@/lib/social-memory';
+import { recordMatchesForChallenge } from '@/lib/social-memory';
 import {
   getChallengeByToken,
   getPromptsForDate,
@@ -44,8 +44,6 @@ export default function ChallengeCompare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>('personal');
-  const [socialRefreshKey, setSocialRefreshKey] = useState(0);
-  const matchesRecorded = useRef(false);
 
   useEffect(() => {
     if (!token) { setError('Invalid link'); setLoading(false); return; }
@@ -88,35 +86,10 @@ export default function ChallengeCompare() {
         // Auto-select room tab if multiple participants
         if (parts.length >= 2) {
           setActiveTab('room');
+          // Ensure match history is recorded (idempotent fallback)
+          recordMatchesForChallenge(ch.id).catch(() => {});
         }
 
-        // Record match history for social memory
-        if (!matchesRecorded.current && parts.length >= 2 && room.length > 0) {
-          matchesRecorded.current = true;
-          const mySessionId = (await import('@/lib/store')).getPlayerId();
-          const myAnswers = new Map<string, string>();
-          for (const r of room) {
-            const myA = r.answers.find(a => a.session_id === mySessionId);
-            if (myA) myAnswers.set(r.prompt_id, myA.normalized_answer);
-          }
-
-          // Calculate matches per other participant
-          const otherParticipants = parts.filter(p => p.session_id !== mySessionId);
-          const participantMatches = otherParticipants.map(op => {
-            let matched = 0;
-            let total = room.length;
-            for (const r of room) {
-              const myNorm = myAnswers.get(r.prompt_id);
-              const theirA = r.answers.find(a => a.session_id === op.session_id);
-              if (myNorm && theirA && theirA.normalized_answer === myNorm) matched++;
-            }
-            return { sessionId: op.session_id, displayName: op.display_name, matched, total };
-          });
-
-          recordRoomMatches(ch.id, ch.date, participantMatches)
-            .then(() => setSocialRefreshKey(k => k + 1))
-            .catch(() => {});
-        }
 
         setLoading(false);
       } catch {
@@ -406,7 +379,7 @@ export default function ChallengeCompare() {
 
           {/* Social Memory */}
           <div className="mb-4">
-            <SocialMemoryCard refreshKey={socialRefreshKey} compact />
+            <SocialMemoryCard compact />
           </div>
 
           {/* Actions */}

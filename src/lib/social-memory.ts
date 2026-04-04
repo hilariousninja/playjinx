@@ -65,6 +65,88 @@ export async function recordRoomMatches(
   }
 }
 
+/**
+ * Self-contained match recording: fetches participants and answers from the DB,
+ * computes pairwise matches, and upserts match_history.
+ * Idempotent via unique constraint on (player_session_id, matched_session_id, challenge_id).
+ * Called when a player finishes all prompts in a challenge context.
+ */
+export async function recordMatchesForChallenge(challengeId: string): Promise<void> {
+  const mySessionId = getPlayerId();
+  const myName = getDisplayName() || 'You';
+
+  // Fetch challenge to get date
+  const { data: challenge } = await supabase
+    .from('challenges')
+    .select('date')
+    .eq('id', challengeId)
+    .single();
+  if (!challenge) return;
+
+  // Fetch all room participants
+  const { data: participants } = await supabase
+    .from('challenge_participants')
+    .select('session_id, display_name')
+    .eq('challenge_id', challengeId);
+  if (!participants || participants.length < 2) return;
+
+  const others = participants.filter(p => p.session_id !== mySessionId);
+  if (others.length === 0) return;
+
+  // Get prompt IDs for this date
+  const { data: prompts } = await supabase
+    .from('prompts')
+    .select('id')
+    .eq('date', challenge.date)
+    .eq('active', true);
+  if (!prompts || prompts.length === 0) return;
+
+  const promptIds = prompts.map(p => p.id);
+  const sessionIds = participants.map(p => p.session_id);
+
+  // Fetch all answers for these prompts from room participants
+  const { data: answers } = await supabase
+    .from('answers')
+    .select('prompt_id, session_id, normalized_answer')
+    .in('prompt_id', promptIds)
+    .in('session_id', sessionIds);
+  if (!answers) return;
+
+  // Build lookup: prompt_id -> session_id -> normalized_answer
+  const answerMap = new Map<string, Map<string, string>>();
+  for (const a of answers) {
+    if (!answerMap.has(a.prompt_id)) answerMap.set(a.prompt_id, new Map());
+    answerMap.get(a.prompt_id)!.set(a.session_id, a.normalized_answer);
+  }
+
+  // Compute pairwise matches with each other participant
+  const matchData = others.map(other => {
+    let matched = 0;
+    for (const pid of promptIds) {
+      const promptAnswers = answerMap.get(pid);
+      if (!promptAnswers) continue;
+      const myAnswer = promptAnswers.get(mySessionId);
+      const theirAnswer = promptAnswers.get(other.session_id);
+      if (myAnswer && theirAnswer && myAnswer === theirAnswer) matched++;
+    }
+    return {
+      player_session_id: mySessionId,
+      matched_session_id: other.session_id,
+      player_display_name: myName,
+      matched_display_name: other.display_name,
+      challenge_id: challengeId,
+      date: challenge.date,
+      prompts_matched: matched,
+      total_prompts: promptIds.length,
+    };
+  });
+
+  // Upsert all at once
+  await supabase
+    .from('match_history')
+    .upsert(matchData, { onConflict: 'player_session_id,matched_session_id,challenge_id' });
+}
+
 // --- Querying ---
 
 /**
