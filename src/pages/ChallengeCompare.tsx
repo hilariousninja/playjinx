@@ -378,7 +378,7 @@ export default function ChallengeCompare() {
 
           {/* Social Memory */}
           <div className="mb-4">
-            <SocialMemoryCard refreshKey={socialRefreshKey} compact />
+            <SocialMemoryCard compact />
           </div>
 
           {/* Actions */}
