@@ -8,7 +8,10 @@ import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/s
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
+import MyRoomCard from '@/components/MyRoomCard';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { isRoomToday } from '@/lib/my-room';
+import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { toast } from '@/hooks/use-toast';
 
 export default function Landing() {
@@ -16,6 +19,7 @@ export default function Landing() {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
+  const hasNewRoomActivity = useRoomHasNewActivity();
 
   useEffect(() => {
     (async () => {
@@ -35,6 +39,7 @@ export default function Landing() {
 
   const allDone = loaded && prompts.length > 0 && prompts.every(p => completedIds.has(p.id));
   const someStarted = loaded && prompts.some(p => completedIds.has(p.id));
+  const showRoomCard = allDone && isRoomToday();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -45,8 +50,13 @@ export default function Landing() {
           </Link>
           <div className="flex items-center gap-2">
             <PlayerIdentity />
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
-              <Link to="/archive">Archive</Link>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm relative" asChild>
+              <Link to="/archive">
+                Archive
+                {hasNewRoomActivity && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+              </Link>
             </Button>
             {!allDone && (
               <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold px-4" asChild>
@@ -101,6 +111,11 @@ export default function Landing() {
                   <Link to="/archive"><Eye className="h-4 w-4 mr-2" /> View results</Link>
                 </Button>
               </div>
+              {showRoomCard && (
+                <div className="mt-5 w-full max-w-[16rem] mx-auto text-left">
+                  <MyRoomCard />
+                </div>
+              )}
             </motion.div>
           ) : (
             <>
