@@ -20,7 +20,7 @@ import {
   type ChallengeAnswer,
 } from '@/lib/challenge';
 import { getRoomParticipants, getRoomResults, joinChallengeRoom, getDisplayName, type RoomParticipant, type RoomPromptResult } from '@/lib/challenge-room';
-import { getCompletedPrompts, getPlayerId, getUserAnswer } from '@/lib/store';
+import { getCompletedPrompts, getPlayerId } from '@/lib/store';
 import { normalizeAnswer } from '@/lib/normalize';
 import { supabase } from '@/integrations/supabase/client';
 import type { DbPrompt } from '@/lib/store';
