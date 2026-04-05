@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Check, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy, Users } from 'lucide-react';
+import { Zap, X, ArrowRight, Share2, Loader2, AlertCircle, Home, Copy, Users, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PromptPair from '@/components/PromptPair';
 import JinxLogo from '@/components/JinxLogo';
@@ -17,9 +17,11 @@ import {
   isChallenger,
   type Challenge,
   type ComparisonResult,
+  type ChallengeAnswer,
 } from '@/lib/challenge';
 import { getRoomParticipants, getRoomResults, joinChallengeRoom, getDisplayName, type RoomParticipant, type RoomPromptResult } from '@/lib/challenge-room';
-import { getCompletedPrompts } from '@/lib/store';
+import { getCompletedPrompts, getPlayerId } from '@/lib/store';
+import { normalizeAnswer } from '@/lib/normalize';
 import { supabase } from '@/integrations/supabase/client';
 import type { DbPrompt } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
@@ -33,6 +35,38 @@ function getSummary(matches: number, total: number) {
   return { headline: 'No JINX today', sub: 'Completely different wavelengths', emoji: '💭', tone: 'miss' as const };
 }
 
+/** Build comparison results against a specific participant's answers */
+async function compareAgainstParticipant(
+  participantSessionId: string,
+  prompts: DbPrompt[],
+  challengeAnswers: ChallengeAnswer[],
+): Promise<ComparisonResult[]> {
+  const results: ComparisonResult[] = [];
+
+  for (const prompt of prompts) {
+    const challengerAnswer = challengeAnswers.find(a => a.prompt_id === prompt.id);
+    if (!challengerAnswer) continue;
+
+    // Get the participant's answer from the DB
+    const { data } = await supabase
+      .from('answers')
+      .select('raw_answer, normalized_answer')
+      .eq('prompt_id', prompt.id)
+      .eq('session_id', participantSessionId)
+      .maybeSingle();
+
+    const matched = data ? normalizeAnswer(data.raw_answer) === challengerAnswer.normalized_answer : false;
+
+    results.push({
+      prompt,
+      challengerAnswer,
+      recipientAnswer: data ? { raw_answer: data.raw_answer, normalized_answer: data.normalized_answer } : null,
+      matched,
+    });
+  }
+  return results;
+}
+
 export default function ChallengeCompare() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -44,6 +78,8 @@ export default function ChallengeCompare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>('personal');
+  const [selectedParticipant, setSelectedParticipant] = useState<RoomParticipant | null>(null);
+  const [isOwn, setIsOwn] = useState(false);
 
   useEffect(() => {
     if (!token) { setError('Invalid link'); setLoading(false); return; }
@@ -54,6 +90,9 @@ export default function ChallengeCompare() {
         if (!ch) { setError('Challenge not found'); setLoading(false); return; }
         setChallenge(ch);
 
+        const own = isChallenger(ch);
+        setIsOwn(own);
+
         const ps = await getPromptsForDate(ch.date);
         if (ps.length === 0) { setError('Prompts not available'); setLoading(false); return; }
         setPrompts(ps);
@@ -61,7 +100,7 @@ export default function ChallengeCompare() {
         const completed = getCompletedPrompts();
         const allPlayed = ps.every(p => completed.has(p.id));
 
-        if (!allPlayed && !isChallenger(ch)) {
+        if (!allPlayed && !own) {
           navigate(`/c/${token}`, { replace: true });
           return;
         }
@@ -72,24 +111,40 @@ export default function ChallengeCompare() {
           try { await joinChallengeRoom(ch.id, savedName); } catch { /* ok */ }
         }
 
-        // Load personal comparison + room data in parallel
-        const [comparison, parts, room] = await Promise.all([
-          compareAnswers(ch, ps),
+        // Load room data
+        const [parts, room] = await Promise.all([
           getRoomParticipants(ch.id),
           getRoomResults(ch.id, ps.map(p => p.id)),
         ]);
 
-        setResults(comparison);
         setParticipants(parts);
         setRoomResults(room);
 
-        // Auto-select room tab if multiple participants
-        if (parts.length >= 2) {
+        const myId = getPlayerId();
+        const others = parts.filter(p => p.session_id !== myId);
+
+        if (own) {
+          // Creator: default to room tab always
           setActiveTab('room');
-          // Ensure match history is recorded (idempotent fallback)
-          recordMatchesForChallenge(ch.id).catch(() => {});
+
+          // If exactly one other participant, auto-select for VS FRIEND
+          if (others.length === 1) {
+            const comparison = await compareAgainstParticipant(others[0].session_id, ps, ch.answers);
+            setResults(comparison);
+            setSelectedParticipant(others[0]);
+          }
+          // If multiple others, don't auto-compare — user picks from room
+        } else {
+          // Invited participant: compare against challenger
+          const comparison = await compareAnswers(ch, ps);
+          setResults(comparison);
+          setActiveTab('personal');
         }
 
+        // Record match history if room has multiple participants
+        if (parts.length >= 2) {
+          recordMatchesForChallenge(ch.id).catch(() => {});
+        }
 
         setLoading(false);
       } catch {
@@ -98,6 +153,15 @@ export default function ChallengeCompare() {
       }
     })();
   }, [token, navigate]);
+
+  // Handle selecting a participant to compare against (for creator)
+  const handleSelectParticipant = useCallback(async (participant: RoomParticipant) => {
+    if (!challenge || prompts.length === 0) return;
+    setSelectedParticipant(participant);
+    const comparison = await compareAgainstParticipant(participant.session_id, prompts, challenge.answers);
+    setResults(comparison);
+    setActiveTab('personal');
+  }, [challenge, prompts]);
 
   // Realtime: listen for new participants joining the room
   const refreshRoom = useCallback(async () => {
@@ -108,7 +172,16 @@ export default function ChallengeCompare() {
     ]);
     setParticipants(parts);
     setRoomResults(room);
-  }, [challenge, prompts]);
+
+    // Auto-select if creator now has exactly one other and none selected
+    const myId = getPlayerId();
+    const others = parts.filter(p => p.session_id !== myId);
+    if (isOwn && others.length === 1 && !selectedParticipant) {
+      const comparison = await compareAgainstParticipant(others[0].session_id, prompts, challenge.answers);
+      setResults(comparison);
+      setSelectedParticipant(others[0]);
+    }
+  }, [challenge, prompts, isOwn, selectedParticipant]);
 
   useEffect(() => {
     if (!challenge) return;
@@ -150,11 +223,19 @@ export default function ChallengeCompare() {
 
   if (!challenge) return null;
 
+  const myId = getPlayerId();
+  const otherParticipants = participants.filter(p => p.session_id !== myId);
+  const hasOthers = otherParticipants.length > 0;
+  const hasRoom = participants.length >= 2;
+
+  // Creator state detection
+  const creatorWaiting = isOwn && !hasOthers;
+  const creatorWithRoom = isOwn && hasOthers;
+  const hasValidComparison = !isOwn || (isOwn && selectedParticipant !== null);
+
   const matchCount = results.filter(r => r.matched).length;
   const total = results.length;
   const summary = getSummary(matchCount, total);
-  const isOwn = isChallenger(challenge);
-  const hasRoom = participants.length >= 2;
 
   const today = new Date().toISOString().split('T')[0];
   const isToday = challenge.date === today;
@@ -162,13 +243,53 @@ export default function ChallengeCompare() {
     ? "Today's JINX"
     : new Date(challenge.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
+  // Contextual summary
+  const getSummaryContent = () => {
+    if (creatorWaiting) {
+      return { emoji: '📡', headline: 'Your room is live', sub: 'Waiting for friends to join…', tone: 'waiting' as const };
+    }
+    if (creatorWithRoom && activeTab === 'room') {
+      return {
+        emoji: '👥',
+        headline: `${otherParticipants.length} ${otherParticipants.length === 1 ? 'friend' : 'friends'} joined`,
+        sub: 'See what everyone said',
+        tone: 'room' as const,
+      };
+    }
+    if (hasValidComparison && activeTab === 'personal') {
+      return { ...summary };
+    }
+    if (creatorWithRoom) {
+      return {
+        emoji: '👥',
+        headline: `${otherParticipants.length} ${otherParticipants.length === 1 ? 'friend' : 'friends'} joined`,
+        sub: 'Tap a name to compare',
+        tone: 'room' as const,
+      };
+    }
+    return { ...summary };
+  };
+
+  const summaryContent = getSummaryContent();
+
   const handleShareResult = async () => {
+    if (!hasValidComparison) {
+      // Share room info instead
+      const text = buildChallengeShareText(prompts, challenge.token);
+      if (navigator.share) {
+        try { await navigator.share({ text }); return; } catch { /* fallback */ }
+      }
+      await navigator.clipboard.writeText(text);
+      toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
+      return;
+    }
+    const compareName = selectedParticipant?.display_name ?? 'Friend';
     const lines = results.map(r => {
       const icon = r.matched ? '🟩' : '⬜';
       return `${icon} ${r.prompt.word_a.toUpperCase()} + ${r.prompt.word_b.toUpperCase()}`;
     });
     const header = hasRoom
-      ? `⚡ JINX Challenge (${participants.length} players)\nOur group matched on ${matchCount}/${total}`
+      ? `⚡ JINX Challenge (${participants.length} players)\nMatched ${matchCount}/${total} with ${compareName}`
       : `⚡ JINX Challenge\nWe matched on ${matchCount}/${total}`;
     const url = `${window.location.origin}/c/${challenge.token}`;
     const text = `${header}\n\n${lines.join('\n')}\n\n${url}`;
@@ -188,9 +309,11 @@ export default function ChallengeCompare() {
     toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
   };
 
+  // Tab visibility rules
+  const showVsFriend = !creatorWaiting && (hasValidComparison || (!isOwn));
   const tabs: { key: ViewTab; label: string; icon: React.ReactNode; show: boolean }[] = [
-    { key: 'personal', label: 'vs Friend', icon: <Zap className="h-3 w-3" />, show: true },
-    { key: 'room', label: 'Room', icon: <Users className="h-3 w-3" />, show: hasRoom },
+    { key: 'personal', label: selectedParticipant ? `vs ${selectedParticipant.display_name}` : 'vs Friend', icon: <Zap className="h-3 w-3" />, show: showVsFriend },
+    { key: 'room', label: 'Room', icon: <Users className="h-3 w-3" />, show: true },
     { key: 'crowd', label: 'Crowd', icon: <ArrowRight className="h-3 w-3" />, show: true },
   ];
 
@@ -223,7 +346,7 @@ export default function ChallengeCompare() {
               transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
               className="text-5xl mb-3"
             >
-              {summary.emoji}
+              {summaryContent.emoji}
             </motion.div>
 
             <motion.h1
@@ -231,13 +354,14 @@ export default function ChallengeCompare() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
               className={`font-display font-black text-2xl tracking-tight mb-1 ${
-                summary.tone === 'best' ? 'text-[hsl(var(--match-best))]' :
-                summary.tone === 'strong' ? 'text-[hsl(var(--match-strong))]' :
-                summary.tone === 'decent' ? 'text-[hsl(var(--match-good))]' :
+                summaryContent.tone === 'best' ? 'text-[hsl(var(--match-best))]' :
+                summaryContent.tone === 'strong' ? 'text-[hsl(var(--match-strong))]' :
+                summaryContent.tone === 'decent' ? 'text-[hsl(var(--match-good))]' :
+                summaryContent.tone === 'waiting' || summaryContent.tone === 'room' ? 'text-primary' :
                 'text-foreground'
               }`}
             >
-              {summary.headline}
+              {summaryContent.headline}
             </motion.h1>
 
             <motion.p
@@ -246,18 +370,19 @@ export default function ChallengeCompare() {
               transition={{ delay: 0.35 }}
               className="text-sm text-muted-foreground"
             >
-              {summary.sub}
+              {summaryContent.sub}
             </motion.p>
 
-            {isOwn && !hasRoom && (
-              <motion.p
+            {creatorWaiting && (
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-[11px] text-muted-foreground/50 mt-2 italic"
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10"
               >
-                Previewing your challenge link
-              </motion.p>
+                <Radio className="h-3 w-3 text-primary animate-pulse" />
+                <span className="text-[11px] font-display font-semibold text-primary uppercase tracking-[0.08em]">Live</span>
+              </motion.div>
             )}
           </motion.div>
 
@@ -284,8 +409,8 @@ export default function ChallengeCompare() {
             ))}
           </motion.div>
 
-          {/* Personal comparison view */}
-          {activeTab === 'personal' && (
+          {/* Personal comparison view — only when there's a real comparison */}
+          {activeTab === 'personal' && hasValidComparison && (
             <div className="space-y-3 mb-6">
               {results.map((r, i) => (
                 <motion.div
@@ -309,18 +434,18 @@ export default function ChallengeCompare() {
                         <p className={`font-display font-bold text-lg break-words ${
                           r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground'
                         }`}>
-                          {r.recipientAnswer?.raw_answer ?? '—'}
+                          {isOwn ? r.challengerAnswer.raw_answer : (r.recipientAnswer?.raw_answer ?? '—')}
                         </p>
                       </div>
                       <div className="w-px h-8 bg-border/40" />
                       <div className="text-center">
                         <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] font-display mb-1">
-                          {isOwn ? 'Your answer' : 'Friend'}
+                          {selectedParticipant?.display_name ?? 'Friend'}
                         </p>
                         <p className={`font-display font-bold text-lg break-words ${
                           r.matched ? 'text-[hsl(var(--match-best))]' : 'text-foreground/60'
                         }`}>
-                          {r.challengerAnswer.raw_answer}
+                          {isOwn ? (r.recipientAnswer?.raw_answer ?? '—') : r.challengerAnswer.raw_answer}
                         </p>
                       </div>
                     </div>
@@ -351,7 +476,53 @@ export default function ChallengeCompare() {
           {/* Room view */}
           {activeTab === 'room' && (
             <div className="mb-6">
-              <RoomResults results={roomResults} participants={participants} />
+              {creatorWaiting ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-10 space-y-4"
+                >
+                  <div className="text-4xl mb-2">📨</div>
+                  <p className="text-sm text-muted-foreground">
+                    Share your link and answers will appear here in real time.
+                  </p>
+                  <Button
+                    onClick={handleShareChallenge}
+                    className="rounded-xl h-10 text-sm"
+                  >
+                    <Share2 className="h-3.5 w-3.5 mr-2" /> Send to your group
+                  </Button>
+                </motion.div>
+              ) : (
+                <>
+                  <RoomResults results={roomResults} participants={participants} />
+                  {/* Participant picker for creator to compare against */}
+                  {isOwn && otherParticipants.length > 1 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-4 p-3 rounded-xl bg-muted/30 border border-border/50"
+                    >
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.12em] font-display mb-2">Compare against</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {otherParticipants.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => handleSelectParticipant(p)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-display font-semibold transition-all ${
+                              selectedParticipant?.id === p.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            }`}
+                          >
+                            {p.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -389,16 +560,18 @@ export default function ChallengeCompare() {
             transition={{ delay: 0.5 }}
             className="space-y-2.5"
           >
-            <Button
-              onClick={handleShareResult}
-              className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
-            >
-              <Copy className="h-3.5 w-3.5 mr-2" /> Share this result
-            </Button>
+            {hasValidComparison && (
+              <Button
+                onClick={handleShareResult}
+                className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
+              >
+                <Copy className="h-3.5 w-3.5 mr-2" /> Share this result
+              </Button>
+            )}
 
             <Button
               onClick={handleShareChallenge}
-              variant="outline"
+              variant={hasValidComparison ? 'outline' : 'default'}
               className="w-full rounded-xl h-10 text-sm active:scale-[0.97] transition-transform"
             >
               <Share2 className="h-3.5 w-3.5 mr-2" /> Invite more friends
