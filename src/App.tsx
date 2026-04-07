@@ -12,6 +12,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import ChallengeLanding from "./pages/ChallengeLanding";
 import ChallengeCompare from "./pages/ChallengeCompare";
+import GroupJoin from "./pages/GroupJoin";
+import GroupToday from "./pages/GroupToday";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import DashboardAnswers from "./pages/dashboard/DashboardAnswers";
@@ -43,6 +45,8 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/c/:token" element={<ChallengeLanding />} />
           <Route path="/c/:token/compare" element={<ChallengeCompare />} />
+          <Route path="/g/:inviteCode" element={<GroupJoin />} />
+          <Route path="/g/:inviteCode/today" element={<GroupToday />} />
           <Route path="/dashboard" element={<DashboardPage><DashboardOverview /></DashboardPage>} />
           <Route path="/dashboard/answers" element={<DashboardPage><DashboardAnswers /></DashboardPage>} />
           <Route path="/dashboard/insights" element={<DashboardPage><DashboardInsights /></DashboardPage>} />

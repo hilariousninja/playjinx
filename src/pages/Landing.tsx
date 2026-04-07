@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2, Eye, Zap, Check } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, Zap, Users } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
@@ -9,15 +9,18 @@ import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import MyRoomCard from '@/components/MyRoomCard';
+import GroupsList from '@/components/GroupsList';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import { isRoomToday } from '@/lib/my-room';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { getMyGroups, buildGroupInviteText, createGroup, type GroupWithActivity } from '@/lib/groups';
 import { toast } from '@/hooks/use-toast';
 
 export default function Landing() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
+  const [myGroups, setMyGroups] = useState<GroupWithActivity[]>([]);
   const navigate = useNavigate();
   const hasNewRoomActivity = useRoomHasNewActivity();
 
@@ -34,12 +37,17 @@ export default function Landing() {
       if (allDone) {
         navigate('/archive', { replace: true });
       }
+
+      // Load groups
+      const gs = await getMyGroups();
+      setMyGroups(gs);
     })();
   }, [navigate]);
 
   const allDone = loaded && prompts.length > 0 && prompts.every(p => completedIds.has(p.id));
   const someStarted = loaded && prompts.some(p => completedIds.has(p.id));
   const showRoomCard = allDone && isRoomToday();
+  const hasGroups = myGroups.length > 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -99,7 +107,7 @@ export default function Landing() {
                         try { await navigator.share({ text }); return; } catch {}
                       }
                       await navigator.clipboard.writeText(text);
-                      toast({ title: 'Challenge copied!', description: 'Share it with your friends' });
+                      toast({ title: 'Challenge copied!', description: 'Send it to a friend' });
                     } catch {
                       toast({ title: 'Could not create challenge', variant: 'destructive' });
                     }
@@ -141,6 +149,19 @@ export default function Landing() {
                 )}
               </div>
             </>
+          )}
+
+          {/* Your groups — for returning users */}
+          {loaded && hasGroups && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-10 w-full max-w-[18rem] mx-auto text-left"
+            >
+              <p className="text-[10px] uppercase tracking-[0.15em] font-display text-muted-foreground/40 mb-2.5 text-center">Your groups</p>
+              <GroupsList />
+            </motion.div>
           )}
         </motion.div>
       </main>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
+import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus, UserPlus } from 'lucide-react';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import PromptPair from '@/components/PromptPair';
 import MyRoomCard from '@/components/MyRoomCard';
@@ -17,6 +17,7 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { getMyGroups, createGroup, buildGroupInviteText } from '@/lib/groups';
 import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
@@ -372,7 +373,37 @@ export default function Archive() {
                   <Button className="w-full rounded-xl h-10 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
                     {challengeCopied ? <><Check className="h-3.5 w-3.5 mr-1.5" /> Challenge copied!</> : <><Zap className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend</>}
                   </Button>
-                  <Button variant="outline" className="w-full rounded-xl h-9 font-medium text-xs border-border/60 active:scale-[0.97] transition-transform" onClick={handleCopyResults}>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl h-9 font-medium text-xs border-border/60 active:scale-[0.97] transition-transform"
+                    onClick={async () => {
+                      try {
+                        const groups = await getMyGroups();
+                        if (groups.length > 0) {
+                          const g = groups[0];
+                          const text = buildGroupInviteText(g);
+                          if (navigator.share) {
+                            try { await navigator.share({ text }); return; } catch {}
+                          }
+                          await navigator.clipboard.writeText(text);
+                          toast({ title: 'Group invite copied!' });
+                        } else {
+                          const g = await createGroup('My JINX group');
+                          const text = buildGroupInviteText(g);
+                          if (navigator.share) {
+                            try { await navigator.share({ text }); return; } catch {}
+                          }
+                          await navigator.clipboard.writeText(text);
+                          toast({ title: 'Group created & invite copied!' });
+                        }
+                      } catch {
+                        toast({ title: 'Could not create group invite', variant: 'destructive' });
+                      }
+                    }}
+                  >
+                    <UserPlus className="h-3 w-3 mr-1.5" /> Invite to group
+                  </Button>
+                  <Button variant="ghost" className="w-full rounded-xl h-8 font-medium text-[10px] text-muted-foreground/40 active:scale-[0.97] transition-transform" onClick={handleCopyResults}>
                     {resultsCopied ? <><Check className="h-3 w-3 mr-1.5" /> Results copied!</> : <><Share2 className="h-3 w-3 mr-1.5" /> Share my results</>}
                   </Button>
                 </motion.div>

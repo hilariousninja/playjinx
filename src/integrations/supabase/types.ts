@@ -156,6 +156,65 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          active: boolean
+          display_name: string
+          group_id: string
+          id: string
+          joined_at: string
+          session_id: string
+        }
+        Insert: {
+          active?: boolean
+          display_name: string
+          group_id: string
+          id?: string
+          joined_at?: string
+          session_id: string
+        }
+        Update: {
+          active?: boolean
+          display_name?: string
+          group_id?: string
+          id?: string
+          joined_at?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          creator_session_id: string
+          id: string
+          invite_code: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          creator_session_id: string
+          id?: string
+          invite_code: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          creator_session_id?: string
+          id?: string
+          invite_code?: string
+          name?: string
+        }
+        Relationships: []
+      }
       import_sources: {
         Row: {
           created_at: string
