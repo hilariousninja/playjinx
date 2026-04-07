@@ -17,7 +17,7 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import JinxLogo from '@/components/JinxLogo';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import { getMyGroups, createGroup, buildGroupInviteText } from '@/lib/groups';
+import InviteToGroupButton from '@/components/InviteToGroupButton';
 import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
