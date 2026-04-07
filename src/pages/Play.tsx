@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2, UserPlus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2 } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,8 @@ import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { recordMatchesForChallenge } from '@/lib/social-memory';
-import { getMyGroups, createGroup, buildGroupInviteText } from '@/lib/groups';
 import MyRoomCard from '@/components/MyRoomCard';
+import InviteToGroupButton from '@/components/InviteToGroupButton';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
