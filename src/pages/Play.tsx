@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2, UserPlus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2 } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,8 @@ import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { recordMatchesForChallenge } from '@/lib/social-memory';
-import { getMyGroups, createGroup, buildGroupInviteText } from '@/lib/groups';
 import MyRoomCard from '@/components/MyRoomCard';
+import InviteToGroupButton from '@/components/InviteToGroupButton';
 import { toast } from '@/hooks/use-toast';
 
 type Phase = 'input' | 'calculating' | 'results';
@@ -291,36 +291,7 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-xl h-9 text-xs active:scale-[0.97] transition-transform"
-                        onClick={async () => {
-                          try {
-                            const groups = await getMyGroups();
-                            if (groups.length > 0) {
-                              const g = groups[0];
-                              const text = buildGroupInviteText(g);
-                              if (navigator.share) {
-                                try { await navigator.share({ text }); return; } catch {}
-                              }
-                              await navigator.clipboard.writeText(text);
-                              toast({ title: 'Group invite copied!' });
-                            } else {
-                              const g = await createGroup('My JINX group');
-                              const text = buildGroupInviteText(g);
-                              if (navigator.share) {
-                                try { await navigator.share({ text }); return; } catch {}
-                              }
-                              await navigator.clipboard.writeText(text);
-                              toast({ title: 'Group created & invite copied!' });
-                            }
-                          } catch {
-                            toast({ title: 'Could not create group invite', variant: 'destructive' });
-                          }
-                        }}
-                      >
-                        <UserPlus className="h-3 w-3 mr-1.5" /> Invite to group
-                      </Button>
+                      <InviteToGroupButton className="w-full h-9 text-xs" />
                       <MyRoomCard />
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
