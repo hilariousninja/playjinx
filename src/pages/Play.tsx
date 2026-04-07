@@ -291,36 +291,7 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-xl h-9 text-xs active:scale-[0.97] transition-transform"
-                        onClick={async () => {
-                          try {
-                            const groups = await getMyGroups();
-                            if (groups.length > 0) {
-                              const g = groups[0];
-                              const text = buildGroupInviteText(g);
-                              if (navigator.share) {
-                                try { await navigator.share({ text }); return; } catch {}
-                              }
-                              await navigator.clipboard.writeText(text);
-                              toast({ title: 'Group invite copied!' });
-                            } else {
-                              const g = await createGroup('My JINX group');
-                              const text = buildGroupInviteText(g);
-                              if (navigator.share) {
-                                try { await navigator.share({ text }); return; } catch {}
-                              }
-                              await navigator.clipboard.writeText(text);
-                              toast({ title: 'Group created & invite copied!' });
-                            }
-                          } catch {
-                            toast({ title: 'Could not create group invite', variant: 'destructive' });
-                          }
-                        }}
-                      >
-                        <UserPlus className="h-3 w-3 mr-1.5" /> Invite to group
-                      </Button>
+                      <InviteToGroupButton className="w-full h-9 text-xs" />
                       <MyRoomCard />
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
