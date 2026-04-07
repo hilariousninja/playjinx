@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, X, Loader2, Radio, ArrowRight } from 'lucide-react';
+import { Users, Plus, X, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getMyGroups, createGroup, type GroupWithActivity } from '@/lib/groups';
