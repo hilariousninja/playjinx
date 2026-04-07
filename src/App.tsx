@@ -45,6 +45,8 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/c/:token" element={<ChallengeLanding />} />
           <Route path="/c/:token/compare" element={<ChallengeCompare />} />
+          <Route path="/g/:inviteCode" element={<GroupJoin />} />
+          <Route path="/g/:inviteCode/today" element={<GroupToday />} />
           <Route path="/dashboard" element={<DashboardPage><DashboardOverview /></DashboardPage>} />
           <Route path="/dashboard/answers" element={<DashboardPage><DashboardAnswers /></DashboardPage>} />
           <Route path="/dashboard/insights" element={<DashboardPage><DashboardInsights /></DashboardPage>} />
