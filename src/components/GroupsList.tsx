@@ -68,10 +68,14 @@ export default function GroupsList() {
     );
   }
 
+  // Limit display to 4 most relevant groups
+  const displayGroups = groups.slice(0, 4);
+  const hasMore = groups.length > 4;
+
   return (
     <div className="space-y-2">
       {/* Group chips */}
-      {groups.map((g) => (
+      {displayGroups.map((g) => (
         <motion.div
           key={g.id}
           initial={{ opacity: 0, y: 4 }}
@@ -87,26 +91,26 @@ export default function GroupsList() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="text-xs font-display font-bold text-foreground truncate">{g.name}</p>
+                {/* Only show "New" if genuinely new activity from others */}
                 {g.hasActivityToday && (
                   <span className="text-[7px] bg-primary text-primary-foreground px-1.5 py-px rounded-full font-display font-bold leading-none">
                     New
                   </span>
                 )}
-                {!g.hasActivityToday && g.todayAnsweredCount > 0 && (
-                  <span className="text-[7px] bg-primary/10 text-primary/70 px-1.5 py-px rounded-full font-display font-bold flex items-center gap-0.5 leading-none">
-                    <Radio className="h-2 w-2" /> Live
-                  </span>
-                )}
               </div>
               <p className="text-[10px] text-muted-foreground/60 leading-tight mt-0.5">
                 {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
-                {g.todayAnsweredCount > 0 && ` · ${g.todayAnsweredCount} played`}
+                {g.todayAnsweredCount > 1 && ` · ${g.todayAnsweredCount} played today`}
               </p>
             </div>
             <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
           </Link>
         </motion.div>
       ))}
+
+      {hasMore && (
+        <p className="text-[10px] text-muted-foreground/30 text-center">+{groups.length - 4} more groups</p>
+      )}
 
       {/* Create button */}
       {!showCreate ? (
