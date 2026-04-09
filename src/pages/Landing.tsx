@@ -78,7 +78,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 flex justify-center px-5 pt-8 pb-0">
+      <main className="flex justify-center px-5 pt-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -185,7 +185,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-2.5 space-y-1 px-5">
+      <footer className="border-t border-border py-5 space-y-2 px-5">
         <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
