@@ -52,13 +52,26 @@ function removeLocalGroupId(groupId: string) {
 
 // --- Invite code generation ---
 
-function generateInviteCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['']/g, '')           // remove apostrophes
+    .replace(/[^a-z0-9]+/g, '-')    // non-alnum → dash
+    .replace(/^-+|-+$/g, '')        // trim leading/trailing dashes
+    .slice(0, 30);                   // cap length
+}
+
+function shortSuffix(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let s = '';
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+function generateInviteCode(groupName: string): string {
+  const slug = slugify(groupName);
+  if (!slug) return shortSuffix();
+  return `${slug}-${shortSuffix()}`;
 }
 
 // --- Group CRUD ---
