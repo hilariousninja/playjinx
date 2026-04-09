@@ -330,21 +330,21 @@ export default function Archive() {
       </header>
 
       <div className="flex-1">
-        <div className="max-w-[22rem] mx-auto px-5 pt-8 w-full">
+        <div className="max-w-[22rem] mx-auto px-5 pt-6 pb-8 w-full">
 
           {/* ─── TODAY SECTION ─── */}
           {todayPrompts.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-              <div className="text-center mb-5">
-                <div className="flex items-center justify-center gap-2 mb-3">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <div className="text-center mb-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
                   <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-display">{todayLabel}</p>
-                  <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-display font-bold flex items-center gap-1">
+                  <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
                     <Zap className="h-2 w-2" /> Live
                   </span>
                 </div>
                 {allTodayAnswered ? (
                   <>
-                    <h1 className="text-xl font-bold tracking-tight text-foreground mb-1">Today's JINX complete</h1>
+                    <h1 className="text-lg font-bold tracking-tight text-foreground mb-0.5">Today's JINX complete</h1>
                     {bestHit?.answer && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -372,8 +372,8 @@ export default function Archive() {
 
               {/* Share buttons */}
               {allTodayAnswered && (
-                <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-4 space-y-2">
-                  <Button className="w-full rounded-xl h-10 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
+                <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-3 space-y-1.5">
+                  <Button className="w-full rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
                     {challengeCopied ? <><Check className="h-3.5 w-3.5 mr-1.5" /> Challenge copied!</> : <><Zap className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend</>}
                   </Button>
                   <InviteToGroupButton className="w-full h-9 font-medium text-xs border-border/60" />
@@ -385,13 +385,13 @@ export default function Archive() {
 
               {/* My Room Card */}
               {allTodayAnswered && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <MyRoomCard />
                 </div>
               )}
 
               {/* Today prompt cards */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {todaySummaries.map((s, i) => {
                   const tier = getMatchTier(s);
                   const isBestHit = bestHit && s.prompt.id === bestHit.prompt.id;
@@ -402,7 +402,7 @@ export default function Archive() {
                     {s.answer ? (
                       <button
                         onClick={() => setSelected(s.prompt.id)}
-                        className={`w-full text-left bg-card border rounded-xl px-5 py-4 hover:border-primary/20 transition-all group ${
+                        className={`w-full text-left bg-card border rounded-xl px-4 py-3 hover:border-primary/20 transition-all group ${
                           isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/50'
                         }`}
                       >
@@ -452,8 +452,8 @@ export default function Archive() {
 
               {/* Continue playing CTA */}
               {!allTodayAnswered && (
-                <div className="mt-4">
-                  <Button className="w-full rounded-xl h-10 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm" asChild>
+                <div className="mt-3">
+                  <Button className="w-full rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm" asChild>
                     <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
                   </Button>
                 </div>
@@ -461,7 +461,7 @@ export default function Archive() {
 
               {/* Countdown */}
               {allTodayAnswered && (
-                <div className="text-center mt-5">
+                <div className="text-center mt-4">
                   <Countdown />
                 </div>
               )}
@@ -471,10 +471,10 @@ export default function Archive() {
           {/* ─── ARCHIVE HISTORY ─── */}
           {Object.keys(grouped).length > 0 && (
             <div>
-              <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/30 mb-5">Past days</p>
+              <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/30 mb-3 flex items-center gap-1.5"><ArrowLeft className="h-2.5 w-2.5" /> Past days</p>
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => (
-                <div key={date} className="mb-8">
+                <div key={date} className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
                       {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -494,7 +494,7 @@ export default function Archive() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.04, duration: 0.3 }}
                           onClick={() => setSelected(p.id)}
-                          className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-5 py-3.5 transition-all hover:border-primary/20 hover:shadow-sm group"
+                          className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 transition-all hover:border-primary/20 hover:shadow-sm group"
                         >
                           <div className="min-w-0 flex-1">
                             <p className="font-display font-bold text-foreground text-[14px] tracking-tight">
