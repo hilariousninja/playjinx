@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserPlus, Loader2, X, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ interface Props {
  * - 2+ groups: shows a compact picker first.
  */
 export default function InviteToGroupButton({ variant = 'outline', className = '' }: Props) {
+  const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerGroups, setPickerGroups] = useState<GroupWithActivity[]>([]);
@@ -69,7 +71,8 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
       const g = await createGroup(name);
       setShowCreate(false);
       setGroupName('');
-      await shareGroupInvite(g);
+      // Route creator into the group's today state
+      navigate(`/g/${g.invite_code}/today`);
     } catch {
       toast({ title: 'Could not create group', variant: 'destructive' });
     }

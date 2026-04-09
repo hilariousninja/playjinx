@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, X, Loader2, ArrowRight, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import DisplayNameInput from '@/components/DisplayNameInput';
 import { toast } from '@/hooks/use-toast';
 
 export default function GroupsList() {
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<GroupWithActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -36,10 +37,9 @@ export default function GroupsList() {
     try {
       const g = await createGroup(groupName || 'My JINX group');
       toast({ title: 'Group created!', description: `Share the invite to get started` });
-      const gs = await getMyGroups();
-      setGroups(gs);
-      setShowCreate(false);
-      setGroupName('');
+      // Route creator directly into the group's today state
+      navigate(`/g/${g.invite_code}/today`);
+      return;
     } catch {
       toast({ title: 'Could not create group', variant: 'destructive' });
     }
