@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import {
   getArchivePrompts, ensureDailyPrompts, hasSubmitted, getTotalSubmissions,
   submitAnswer, getUserAnswer, getDailyUniquePlayers, getStats, getCanonicalAnswer,
+  getBatchUserAnswers, getBatchDailyUniquePlayers,
   type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { validateInput } from '@/lib/normalize';
