@@ -211,7 +211,7 @@ export default function Play() {
                   <div className="mb-4">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
                   </div>
-                  <p className="text-[13px] font-bold text-primary mb-5">What will most people say?</p>
+                  <p className="text-sm font-bold text-primary mb-5">What will most people say?</p>
                   <div className="relative">
                     <Input
                       value={inputVal}
