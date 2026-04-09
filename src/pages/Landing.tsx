@@ -132,11 +132,11 @@ export default function Landing() {
               transition={{ delay: 0.2 }}
               className="game-card-elevated inline-block w-full max-w-sm px-7 pt-3.5 pb-4 rounded-xl"
             >
-              <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.2em] font-display mb-2">Example prompt</p>
-              <div className="flex items-center justify-center gap-3 mb-3.5">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-display mb-2.5 text-left">Example prompt</p>
+              <div className="flex items-center justify-center gap-3 mb-4">
                 <PromptPair wordA="COW" wordB="SNOW" size="sm" />
-                <span className="text-muted-foreground/30 text-xs">→</span>
-                <span className="text-primary text-base font-display font-bold tracking-tight">Milk</span>
+                <span className="text-foreground/30 text-sm font-bold">→</span>
+                <span className="text-primary text-lg font-display font-black tracking-tight">Milk</span>
               </div>
               <Button size="lg" className="rounded-lg w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px]" asChild>
                 <Link to="/play">
@@ -167,7 +167,7 @@ export default function Landing() {
 
       <section className="border-t border-border py-5 px-5">
         <div className="max-w-md mx-auto">
-          <h2 className="font-bold text-center mb-4 tracking-tight text-foreground text-base uppercase tracking-[0.15em] font-display text-muted-foreground/60">How to play</h2>
+          <h2 className="font-bold text-center mb-4 text-base uppercase tracking-[0.15em] font-display text-foreground/80">How to play</h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {[
               { num: '1', title: 'See two words', desc: 'Find the bridge word most people will think of.' },
@@ -176,9 +176,9 @@ export default function Landing() {
               { num: '4', title: 'Rank higher', desc: 'The closer you are to the crowd, the better you score.' },
             ].map((s) => (
               <div key={s.num} className="text-center">
-                <span className="font-display text-lg font-bold text-primary/25">{s.num}</span>
-                <h3 className="font-semibold mt-0.5 mb-0.5 text-sm text-foreground">{s.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+                <span className="font-display text-lg font-bold text-primary/40">{s.num}</span>
+                <h3 className="font-bold mt-0.5 mb-0.5 text-sm text-foreground">{s.title}</h3>
+                <p className="text-xs text-muted-foreground/80 leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
