@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { UserPlus, Loader2, X } from 'lucide-react';
+import { UserPlus, Loader2, X, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getMyGroups, createGroup, buildGroupInviteText, type GroupWithActivity } from '@/lib/groups';
-import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
+import { getDisplayName } from '@/lib/challenge-room';
 import { toast } from '@/hooks/use-toast';
 
 interface Props {
@@ -13,13 +13,17 @@ interface Props {
 
 /**
  * "Invite to group" button.
- * - If groups exist, shares invite for the most recent one.
- * - If no groups, shows inline name input to create one intentionally.
+ * - 0 groups: shows inline name input to create one.
+ * - 1 group: shares invite directly.
+ * - 2+ groups: shows a compact picker first.
  */
 export default function InviteToGroupButton({ variant = 'outline', className = '' }: Props) {
   const [showCreate, setShowCreate] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerGroups, setPickerGroups] = useState<GroupWithActivity[]>([]);
   const [groupName, setGroupName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const shareGroupInvite = async (g: { invite_code: string; name: string; id: string; creator_session_id: string; created_at: string }) => {
     const text = buildGroupInviteText(g as any);
@@ -31,17 +35,27 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
   };
 
   const handleClick = async () => {
+    setLoading(true);
     try {
       const groups = await getMyGroups();
-      if (groups.length > 0) {
+      if (groups.length === 0) {
+        setShowCreate(true);
+      } else if (groups.length === 1) {
         await shareGroupInvite(groups[0]);
       } else {
-        // Show creation form instead of auto-creating
-        setShowCreate(true);
+        // Multiple groups — show picker
+        setPickerGroups(groups);
+        setShowPicker(true);
       }
     } catch {
       toast({ title: 'Something went wrong', variant: 'destructive' });
     }
+    setLoading(false);
+  };
+
+  const handlePickGroup = async (g: GroupWithActivity) => {
+    setShowPicker(false);
+    await shareGroupInvite(g);
   };
 
   const handleCreate = async () => {
@@ -62,6 +76,43 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
     setCreating(false);
   };
 
+  // --- Group picker ---
+  if (showPicker) {
+    return (
+      <div className="rounded-xl border border-border/50 bg-card p-3 space-y-1.5 w-full">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Share which group?</p>
+          <button onClick={() => setShowPicker(false)} className="text-muted-foreground/30 hover:text-muted-foreground">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {pickerGroups.slice(0, 6).map(g => (
+          <button
+            key={g.id}
+            onClick={() => handlePickGroup(g)}
+            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors text-left group"
+          >
+            <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+              <Users className="h-3 w-3 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-display font-bold text-foreground truncate">{g.name}</p>
+              <p className="text-[10px] text-muted-foreground/50">{g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}</p>
+            </div>
+            <ChevronRight className="h-3 w-3 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
+          </button>
+        ))}
+        <button
+          onClick={() => { setShowPicker(false); setShowCreate(true); }}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors text-left text-muted-foreground/50 hover:text-muted-foreground text-[11px]"
+        >
+          <span className="text-xs">+</span> Create new group
+        </button>
+      </div>
+    );
+  }
+
+  // --- Create form ---
   if (showCreate) {
     return (
       <div className="rounded-xl border border-border/50 bg-card p-3 space-y-2 w-full">
@@ -92,8 +143,9 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
       variant={variant}
       className={`rounded-xl active:scale-[0.97] transition-transform ${className}`}
       onClick={handleClick}
+      disabled={loading}
     >
-      <UserPlus className="h-3 w-3 mr-1.5" /> Invite to group
+      {loading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <UserPlus className="h-3 w-3 mr-1.5" />} Invite to group
     </Button>
   );
 }
