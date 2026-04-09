@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, X, Loader2, ArrowRight, LogOut, Radio } from 'lucide-react';
+import { Users, Plus, X, Loader2, ArrowRight, LogOut, Radio, LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import JinxLogo from '@/components/JinxLogo';
@@ -21,6 +21,7 @@ export default function Groups() {
   const [needsName, setNeedsName] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -61,6 +62,15 @@ export default function Groups() {
     setLeaving(false);
   };
 
+  const handleJoinByLink = () => {
+    const trimmed = joinCode.trim();
+    if (!trimmed) return;
+    // Extract invite code from full URL or just code
+    const match = trimmed.match(/\/g\/([^\s/]+)/);
+    const code = match ? match[1] : trimmed;
+    navigate(`/g/${code}`);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/80 shrink-0">
@@ -70,21 +80,30 @@ export default function Groups() {
           </Link>
           <div className="flex items-center gap-2">
             <PlayerIdentity />
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
-              <Link to="/archive">Archive</Link>
-            </Button>
             <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold px-4 h-8" asChild>
               <Link to="/play">Play</Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
+              <Link to="/archive">Archive</Link>
             </Button>
           </div>
         </div>
       </header>
 
+      {/* Active tab indicator */}
+      <div className="border-b border-border/40 bg-background">
+        <div className="max-w-sm mx-auto flex h-9 items-center gap-1 px-5">
+          <Link to="/play" className="text-[11px] font-medium text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-md transition-colors">Play</Link>
+          <span className="text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-md">Groups</span>
+          <Link to="/archive" className="text-[11px] font-medium text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-md transition-colors">Archive</Link>
+        </div>
+      </div>
+
       <div className="flex-1">
         <div className="max-w-sm mx-auto px-5 pt-8 pb-12 w-full">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-xl font-bold tracking-tight text-foreground mb-1">Your Groups</h1>
-            <p className="text-xs text-muted-foreground mb-6">Recurring social contexts for daily JINX</p>
+            <p className="text-xs text-muted-foreground/70 mb-6">Play JINX with the same people each day</p>
           </motion.div>
 
           {loading ? (
@@ -149,20 +168,36 @@ export default function Groups() {
                 </motion.div>
               ))}
 
+              {/* Empty state */}
               {groups.length === 0 && !showCreate && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10 space-y-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                    <Users className="h-6 w-6 text-primary" />
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10 space-y-5">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Users className="h-7 w-7 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground mb-1">No groups yet</p>
-                    <p className="text-xs text-muted-foreground max-w-[14rem] mx-auto">
-                      Create a recurring group for friends, family, or coworkers to play JINX together daily.
+                    <p className="text-base font-bold text-foreground mb-1.5">No groups yet</p>
+                    <p className="text-[13px] text-muted-foreground leading-relaxed max-w-[16rem] mx-auto">
+                      Create a group for friends, family, or coworkers — then play JINX together every day without sharing a new link.
                     </p>
                   </div>
-                  <Button onClick={() => setShowCreate(true)} className="rounded-xl h-10 px-6 text-sm">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Create a group
-                  </Button>
+                  <div className="space-y-2 max-w-[14rem] mx-auto">
+                    <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-10 px-6 text-sm font-semibold">
+                      <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a group
+                    </Button>
+                    <button
+                      onClick={() => {
+                        const code = prompt('Paste an invite link or code:');
+                        if (code) {
+                          const match = code.match(/\/g\/([^\s/]+)/);
+                          navigate(`/g/${match ? match[1] : code.trim()}`);
+                        }
+                      }}
+                      className="w-full text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors py-1.5"
+                    >
+                      <LinkIcon className="h-3 w-3 inline mr-1" />
+                      Join with an invite link
+                    </button>
+                  </div>
                 </motion.div>
               )}
 
@@ -183,7 +218,7 @@ export default function Groups() {
                     ) : (
                       <>
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Create a group</p>
+                          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">New group</p>
                           <button onClick={() => setShowCreate(false)} className="text-muted-foreground/30 hover:text-muted-foreground">
                             <X className="h-3.5 w-3.5" />
                           </button>
