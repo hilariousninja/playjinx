@@ -83,24 +83,24 @@ export default function Landing() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center w-full max-w-md py-10"
+          className="text-center w-full max-w-lg py-10"
         >
           <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-4">Daily Crowd Word Game</p>
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-foreground mb-4">JINX</h1>
 
-          <p className="text-sm text-primary max-w-xs mx-auto font-semibold leading-relaxed">Think the same. Rank higher.</p>
+          <p className="text-sm text-primary max-w-sm mx-auto font-semibold leading-relaxed">Think the same. Rank higher.</p>
 
-          <p className="text-[13px] text-muted-foreground max-w-[15rem] mx-auto mt-3 mb-8 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground max-w-[18rem] mx-auto mt-3 mb-8 leading-relaxed">
             See two words. Predict the bridge word most people will pick.
           </p>
 
           {allDone ? (
-            <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="game-card-elevated inline-block px-8 py-5 mb-4">
+            <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="game-card-elevated inline-block px-10 py-6 mb-4 w-full max-w-sm">
               <CheckCircle2 className="h-6 w-6 text-primary mx-auto mb-2" />
               <p className="font-semibold text-[15px] mb-0.5 text-foreground">Today's JINX complete</p>
               <p className="text-[11px] text-muted-foreground mb-4">Results update live — check back for rank changes.</p>
-              <div className="flex flex-col gap-2 w-full max-w-[16rem] mx-auto">
+              <div className="flex flex-col gap-2 w-full max-w-[18rem] mx-auto">
                 <Button size="lg" className="rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm w-full active:scale-[0.97] transition-transform"
                   onClick={async () => {
                     try {
@@ -123,14 +123,14 @@ export default function Landing() {
                 </Button>
               </div>
               {showRoomCard && (
-                <div className="mt-5 w-full max-w-[16rem] mx-auto text-left">
+                <div className="mt-5 w-full max-w-[18rem] mx-auto text-left">
                   <MyRoomCard />
                 </div>
               )}
             </motion.div>
           ) : (
             <>
-              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="game-card-elevated inline-block px-10 py-5 mb-7">
+              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="game-card-elevated inline-block w-full max-w-sm px-10 py-6 mb-7">
                 <p className="text-[9px] text-muted-foreground/60 uppercase tracking-[0.2em] font-display mb-3">Example prompt</p>
                 <PromptPair wordA="COW" wordB="SNOW" size="md" className="mb-3" />
                 <div className="flex items-center justify-center gap-2">
@@ -140,7 +140,7 @@ export default function Landing() {
               </motion.div>
 
               <div className="flex gap-3 justify-center flex-wrap">
-                <Button size="lg" className="rounded-lg px-7 h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px]" asChild>
+                <Button size="lg" className="rounded-lg px-10 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px]" asChild>
                   <Link to="/play">
                     {someStarted ? 'Continue playing' : 'Play today'} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -160,7 +160,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-8 w-full max-w-[18rem] mx-auto text-left"
+              className="mt-8 w-full max-w-xs mx-auto text-left"
             >
               <p className="text-[9px] uppercase tracking-[0.15em] font-display text-muted-foreground/40 mb-2 flex items-center justify-center gap-1.5"><Users className="h-2.5 w-2.5" /> Your groups</p>
               <GroupsList />
