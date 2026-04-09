@@ -85,10 +85,10 @@ export default function Landing() {
           transition={{ duration: 0.5 }}
           className="text-center w-full max-w-md py-6"
         >
-          <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-1">Daily Crowd Word Game</p>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-foreground mb-1">JINX</h1>
-          <p className="text-sm text-primary font-semibold mb-0.5">Think the same. Rank higher.</p>
-          <p className="text-[13px] text-muted-foreground mx-auto mb-5 leading-relaxed">
+          <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-2">Daily Crowd Word Game</p>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-foreground mb-2">JINX</h1>
+          <p className="text-sm text-primary font-semibold mb-1.5">Think the same. Rank higher.</p>
+          <p className="text-[13px] text-muted-foreground mx-auto mb-6 leading-relaxed">
             See two words. Predict the bridge word most people will pick.
           </p>
 
@@ -130,14 +130,13 @@ export default function Landing() {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="game-card-elevated inline-block w-full max-w-xs px-6 pt-4 pb-5 rounded-xl"
+              className="game-card-elevated inline-block w-full max-w-sm px-8 pt-5 pb-6 rounded-xl"
             >
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <PromptPair wordA="COW" wordB="SNOW" size="md" />
-              </div>
-              <div className="flex items-center justify-center gap-1.5 mb-4">
+              <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.2em] font-display mb-3">Example prompt</p>
+              <PromptPair wordA="COW" wordB="SNOW" size="md" className="mb-3" />
+              <div className="flex items-center justify-center gap-1.5 mb-5">
                 <span className="text-muted-foreground/40 text-xs">→</span>
-                <span className="text-primary text-base font-display font-bold tracking-tight">Milk</span>
+                <span className="text-primary text-lg font-display font-bold tracking-tight">Milk</span>
               </div>
               <Button size="lg" className="rounded-lg w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px]" asChild>
                 <Link to="/play">
@@ -145,7 +144,7 @@ export default function Landing() {
                 </Link>
               </Button>
               {someStarted && (
-                <Button size="default" variant="ghost" className="w-full mt-1 text-muted-foreground text-sm" asChild>
+                <Button size="default" variant="ghost" className="w-full mt-1.5 text-muted-foreground text-sm" asChild>
                   <Link to="/archive">View results</Link>
                 </Button>
               )}
