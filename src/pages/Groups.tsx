@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, X, Loader2, ArrowRight, LogOut, Radio, LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import JinxLogo from '@/components/JinxLogo';
-import PlayerIdentity from '@/components/PlayerIdentity';
+import AppHeader from '@/components/AppHeader';
 import { getMyGroups, createGroup, leaveGroup, type GroupWithActivity } from '@/lib/groups';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 import DisplayNameInput from '@/components/DisplayNameInput';
@@ -73,31 +72,7 @@ export default function Groups() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border/80 shrink-0">
-        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
-          <Link to="/">
-            <JinxLogo size={18} className="text-foreground text-base" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <PlayerIdentity />
-            <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold px-4 h-8" asChild>
-              <Link to="/play">Play</Link>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
-              <Link to="/archive">Archive</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Active tab indicator */}
-      <div className="border-b border-border/40 bg-background">
-        <div className="max-w-sm mx-auto flex h-9 items-center gap-1 px-5">
-          <Link to="/play" className="text-[11px] font-medium text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-md transition-colors">Play</Link>
-          <span className="text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-md">Groups</span>
-          <Link to="/archive" className="text-[11px] font-medium text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-md transition-colors">Archive</Link>
-        </div>
-      </div>
+      <AppHeader />
 
       <div className="flex-1">
         <div className="max-w-sm mx-auto px-5 pt-6 pb-10 w-full">

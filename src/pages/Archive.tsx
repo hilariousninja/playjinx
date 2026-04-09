@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
-import PlayerIdentity from '@/components/PlayerIdentity';
 import PromptPair from '@/components/PromptPair';
 import MyRoomCard from '@/components/MyRoomCard';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import {
 import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
-import JinxLogo from '@/components/JinxLogo';
+import AppHeader from '@/components/AppHeader';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import InviteToGroupButton from '@/components/InviteToGroupButton';
 import { toast } from '@/hooks/use-toast';
