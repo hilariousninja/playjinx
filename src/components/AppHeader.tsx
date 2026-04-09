@@ -34,9 +34,13 @@ export default function AppHeader({ hasNewRoomActivity }: Props) {
               to={to}
               className={cn(
                 'relative text-sm font-medium px-3 py-1.5 rounded-md transition-colors',
-                isActive(to)
-                  ? 'text-foreground bg-muted'
-                  : 'text-muted-foreground hover:text-foreground'
+                to === '/play'
+                  ? isActive(to)
+                    ? 'text-primary-foreground bg-primary shadow-sm'
+                    : 'text-primary hover:bg-primary/10'
+                  : isActive(to)
+                    ? 'text-foreground bg-muted font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               {label}
