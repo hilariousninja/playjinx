@@ -132,7 +132,7 @@ export default function Landing() {
               transition={{ delay: 0.2 }}
               className="game-card-elevated inline-block w-full max-w-sm px-7 pt-3.5 pb-4 rounded-xl"
             >
-              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-display mb-2.5 text-left">Example prompt</p>
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-display mb-2.5 text-left inline-block border border-border rounded px-2 py-0.5">Example prompt</p>
               <div className="flex items-center justify-center gap-3 mb-4">
                 <PromptPair wordA="COW" wordB="SNOW" size="sm" />
                 <span className="text-foreground/30 text-sm font-bold">→</span>
