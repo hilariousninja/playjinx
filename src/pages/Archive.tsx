@@ -319,6 +319,9 @@ export default function Archive() {
           </Link>
           <div className="flex items-center gap-2">
             <PlayerIdentity />
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
+              <Link to="/groups">Groups</Link>
+            </Button>
             <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
               <Link to="/play">Play</Link>
             </Button>

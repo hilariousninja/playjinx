@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Landing from "./pages/Landing";
+import Groups from "./pages/Groups";
 import Play from "./pages/Play";
 import Archive from "./pages/Archive";
 import AdminLogin from "./pages/AdminLogin";
@@ -38,6 +39,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/groups" element={<Groups />} />
           <Route path="/play" element={<Play />} />
           <Route path="/archive" element={<Archive />} />
           <Route path="/results" element={<Navigate to="/archive" replace />} />

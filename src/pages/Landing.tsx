@@ -58,6 +58,9 @@ export default function Landing() {
           </Link>
           <div className="flex items-center gap-2">
             <PlayerIdentity />
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
+              <Link to="/groups">Groups</Link>
+            </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm relative" asChild>
               <Link to="/archive">
                 Archive
