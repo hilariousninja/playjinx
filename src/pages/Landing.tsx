@@ -78,12 +78,12 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-5">
+      <main className="flex-1 flex justify-center px-5 pt-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center w-full max-w-md py-4"
+          className="text-center w-full max-w-md"
         >
           <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">Daily Crowd Word Game</p>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-foreground mb-3">JINX</h1>
