@@ -148,8 +148,14 @@ export default function GroupToday() {
       <header className="border-b border-border/80 shrink-0">
         <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
           <Link to="/"><JinxLogo size={18} className="text-foreground text-base" /></Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <PlayerIdentity />
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
+              <Link to="/groups">Groups</Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
+              <Link to="/archive">Archive</Link>
+            </Button>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="text-muted-foreground/40 hover:text-muted-foreground transition-colors"
