@@ -201,7 +201,7 @@ export default function Play() {
         </div>
       </header>
 
-      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[5vh] md:pt-[6vh]' : 'pt-[12vh] md:pt-[14vh]'} transition-all duration-300`}>
+      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[4vh] md:pt-[5vh]' : 'pt-[10vh] md:pt-[12vh]'} transition-all duration-300`}>
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
@@ -211,7 +211,7 @@ export default function Play() {
                   <div className="mb-4">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
                   </div>
-                  <p className="text-[14px] font-bold text-primary mb-7">What will most people say?</p>
+                  <p className="text-[13px] font-bold text-primary mb-5">What will most people say?</p>
                   <div className="relative">
                     <Input
                       value={inputVal}

@@ -100,10 +100,10 @@ export default function Groups() {
       </div>
 
       <div className="flex-1">
-        <div className="max-w-sm mx-auto px-5 pt-8 pb-12 w-full">
+        <div className="max-w-sm mx-auto px-5 pt-6 pb-10 w-full">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-xl font-bold tracking-tight text-foreground mb-1">Your Groups</h1>
-            <p className="text-xs text-muted-foreground/70 mb-6">Play JINX with the same people each day</p>
+            <h1 className="text-lg font-bold tracking-tight text-foreground mb-0.5">Your Groups</h1>
+            <p className="text-[12px] text-muted-foreground/70 mb-5">Play JINX with the same people each day</p>
           </motion.div>
 
           {loading ? (
@@ -170,18 +170,18 @@ export default function Groups() {
 
               {/* Empty state */}
               {groups.length === 0 && !showCreate && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10 space-y-5">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                    <Users className="h-7 w-7 text-primary" />
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Users className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-base font-bold text-foreground mb-1.5">No groups yet</p>
-                    <p className="text-[13px] text-muted-foreground leading-relaxed max-w-[16rem] mx-auto">
+                    <p className="text-[15px] font-bold text-foreground mb-1">No groups yet</p>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[15rem] mx-auto">
                       Create a group for friends, family, or coworkers — then play JINX together every day without sharing a new link.
                     </p>
                   </div>
                   <div className="space-y-2 max-w-[14rem] mx-auto">
-                    <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-10 px-6 text-sm font-semibold">
+                    <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-9 px-6 text-sm font-semibold">
                       <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a group
                     </Button>
                     <button
