@@ -86,7 +86,7 @@ export default function Landing() {
           className="text-center w-full max-w-md"
         >
           <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">Daily Crowd Word Game</p>
-          <h1 className="text-7xl font-black tracking-tighter text-foreground mb-3 md:text-9xl">JINX</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground mb-3 md:text-8xl">JINX</h1>
           <p className="text-[15px] text-primary font-semibold mb-2 py-[3px] my-0">Think the same. Rank higher.</p>
           <p className="text-[13px] text-muted-foreground mx-auto mb-6 leading-relaxed py-[3px]">
             See two words. Predict the bridge word most people will pick.
