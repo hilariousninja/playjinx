@@ -78,7 +78,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 flex justify-center px-5 pt-8">
+      <main className="flex-1 flex justify-center px-5 pt-8 pb-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -86,7 +86,7 @@ export default function Landing() {
           className="text-center w-full max-w-md"
         >
           <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">Daily Crowd Word Game</p>
-          <h1 className="text-5xl font-bold tracking-tighter text-foreground mb-3 md:text-7xl">JINX</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground mb-3 md:text-8xl bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">JINX</h1>
           <p className="text-[15px] text-primary font-semibold mb-2 py-[3px] my-0">Think the same. Rank higher.</p>
           <p className="text-[13px] text-muted-foreground mx-auto mb-6 leading-relaxed py-[3px]">
             See two words. Predict the bridge word most people will pick.
@@ -165,9 +165,9 @@ export default function Landing() {
         </motion.div>
       </main>
 
-      <section className="border-t border-border py-6 px-5 mt-2">
+      <section className="border-t border-border py-5 px-5">
         <div className="max-w-md mx-auto">
-          <h2 className="font-bold text-center mb-5 tracking-tight text-foreground text-lg">How to play</h2>
+          <h2 className="font-bold text-center mb-4 tracking-tight text-foreground text-base uppercase tracking-[0.15em] font-display text-muted-foreground/60">How to play</h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {[
               { num: '1', title: 'See two words', desc: 'Find the bridge word most people will think of.' },
