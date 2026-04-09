@@ -168,27 +168,35 @@ export default function GroupToday() {
 
       <div className="flex-1 flex flex-col items-center pt-[4vh] md:pt-[6vh] pb-8 px-5">
         <div className="w-full max-w-sm mx-auto">
-          {/* Group header */}
+          {/* Group header — active/live feel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center mb-5"
+            className="text-center mb-6"
           >
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 mb-3">
-              <Users className="h-3 w-3 text-primary" />
-              <span className="text-[11px] font-display font-bold text-primary uppercase tracking-[0.1em]">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/15 mb-3">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[12px] font-display font-bold text-primary tracking-tight">
                 {group.name}
               </span>
             </div>
 
-            <h1 className="font-display font-black text-2xl tracking-tight text-foreground mb-1">
+            <h1 className="font-display font-black text-2xl tracking-tight text-foreground mb-2">
               Today's JINX
             </h1>
 
-            <p className="text-xs text-muted-foreground">
-              {members.length} {members.length === 1 ? 'member' : 'members'}
-              {answeredMembers > 0 && ` · ${answeredMembers} played today`}
-            </p>
+            <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
+              <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+              {answeredMembers > 0 && (
+                <>
+                  <span className="w-px h-3 bg-border" />
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    {answeredMembers} played today
+                  </span>
+                </>
+              )}
+            </div>
           </motion.div>
 
           {/* Play CTA if not played */}
