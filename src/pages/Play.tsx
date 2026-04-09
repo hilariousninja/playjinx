@@ -167,13 +167,12 @@ export default function Play() {
         {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       </AnimatePresence>
 
-      <header className="border-b border-border/80 shrink-0">
-        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
+      <header className="border-b border-border shrink-0">
+        <div className="flex items-center justify-between h-14 max-w-xl mx-auto px-5">
           <Link to="/">
-            <JinxLogo size={18} className="text-foreground text-base" />
+            <JinxLogo size={22} className="text-foreground text-lg" />
           </Link>
           <div className="flex items-center gap-3">
-            <PlayerIdentity />
             <div className="flex items-center gap-1.5">
               {prompts.map((p, i) => (
                 <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); setInputError(null); }}
@@ -197,6 +196,7 @@ export default function Play() {
                 </Link>
               </Button>
             )}
+            <PlayerIdentity />
           </div>
         </div>
       </header>
@@ -211,7 +211,7 @@ export default function Play() {
                   <div className="mb-4">
                     <PromptPair wordA={prompt.word_a} wordB={prompt.word_b} size="lg" />
                   </div>
-                  <p className="text-[13px] font-bold text-primary mb-5">What will most people say?</p>
+                  <p className="text-sm font-bold text-primary mb-5">What will most people say?</p>
                   <div className="relative">
                     <Input
                       value={inputVal}
