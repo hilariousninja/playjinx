@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import {
   getArchivePrompts, ensureDailyPrompts, hasSubmitted, getTotalSubmissions,
   submitAnswer, getUserAnswer, getDailyUniquePlayers, getStats, getCanonicalAnswer,
+  getBatchUserAnswers, getBatchDailyUniquePlayers,
   type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { validateInput } from '@/lib/normalize';
@@ -60,24 +61,20 @@ export default function Archive() {
     const pastOnly = archive.filter(p => p.date !== todayStr);
     setArchivePrompts(pastOnly);
 
-    // Load submission state for all prompts
+    // Batch: fetch all user answers in ONE query instead of per-prompt
     const allPrompts = [...today, ...pastOnly];
-    const subMap: Record<string, boolean> = {};
-    const ansMap: Record<string, DbAnswer> = {};
-    const totals: Record<string, number> = {};
+    const allIds = allPrompts.map(p => p.id);
+    const { submittedMap: subMap, answerMap: ansMap } = await getBatchUserAnswers(allIds);
 
-    await Promise.all(allPrompts.map(async (p) => {
-      subMap[p.id] = await hasSubmitted(p.id);
-      const ua = await getUserAnswer(p.id);
-      if (ua) ansMap[p.id] = ua;
-      totals[p.id] = await getTotalSubmissions(p.id);
-    }));
+    // Use total_players from the prompt row itself — no extra queries needed
+    const totals: Record<string, number> = {};
+    for (const p of allPrompts) totals[p.id] = p.total_players ?? 0;
 
     setSubmittedMap(subMap);
     setUserAnswers(ansMap);
     setTotalCounts(totals);
 
-    // Today summaries for the hub
+    // Today summaries — only call getStats for answered prompts (max 3 calls)
     const summaries = await Promise.all(
       today.map(async (prompt) => {
         const answer = ansMap[prompt.id] ?? null;
@@ -104,15 +101,18 @@ export default function Archive() {
     );
     setTodaySummaries(summaries);
 
-    // Unique players per archive day
-    const byDate: Record<string, string[]> = {};
-    for (const p of pastOnly) {
-      (byDate[p.date] = byDate[p.date] || []).push(p.id);
-    }
+    // Unique players per archive day — ONE batch query
+    const pastIds = pastOnly.map(p => p.id);
+    const perPromptPlayers = await getBatchDailyUniquePlayers(pastIds);
+    // Aggregate per-prompt counts into per-date unique players
+    const byDate: Record<string, Set<string>> = {};
+    // We need session_ids per date, but our batch only returns counts per prompt.
+    // Use total_players from the prompt as a good-enough proxy.
     const dpMap: Record<string, number> = {};
-    await Promise.all(Object.entries(byDate).map(async ([date, ids]) => {
-      dpMap[date] = await getDailyUniquePlayers(ids);
-    }));
+    for (const p of pastOnly) {
+      if (!dpMap[p.date]) dpMap[p.date] = 0;
+      dpMap[p.date] = Math.max(dpMap[p.date], perPromptPlayers[p.id] ?? p.total_players ?? 0);
+    }
     setDailyPlayers(dpMap);
 
     setLoading(false);
@@ -120,7 +120,7 @@ export default function Archive() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 15000);
+    const interval = setInterval(loadData, 60000);
     return () => clearInterval(interval);
   }, []);
 

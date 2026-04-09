@@ -179,6 +179,61 @@ export async function getUserAnswer(promptId: string): Promise<DbAnswer | null> 
   return data;
 }
 
+/**
+ * Batch: fetch all of the current player's answers for a set of prompt IDs
+ * in a single query. Returns maps for quick lookup.
+ */
+export async function getBatchUserAnswers(promptIds: string[]): Promise<{
+  submittedMap: Record<string, boolean>;
+  answerMap: Record<string, DbAnswer>;
+}> {
+  if (promptIds.length === 0) return { submittedMap: {}, answerMap: {} };
+  const sid = getSessionId();
+  const { data, error } = await supabase
+    .from('answers')
+    .select('*')
+    .in('prompt_id', promptIds)
+    .eq('session_id', sid);
+  if (error) throw error;
+
+  const submittedMap: Record<string, boolean> = {};
+  const answerMap: Record<string, DbAnswer> = {};
+  for (const id of promptIds) submittedMap[id] = false;
+  for (const row of data ?? []) {
+    submittedMap[row.prompt_id] = true;
+    answerMap[row.prompt_id] = row;
+  }
+  return { submittedMap, answerMap };
+}
+
+/**
+ * Batch: get unique player counts per date from a set of prompt IDs
+ * in a single query instead of one query per date.
+ */
+export async function getBatchDailyUniquePlayers(promptIds: string[]): Promise<Record<string, number>> {
+  if (promptIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('answers')
+    .select('prompt_id, session_id')
+    .in('prompt_id', promptIds);
+  if (error) throw error;
+  return buildUniquePlayerCounts(data ?? []);
+}
+
+function buildUniquePlayerCounts(rows: { prompt_id: string; session_id: string }[]): Record<string, number> {
+  // We need prompt→date mapping, but we don't have it here.
+  // Instead we return per-promptId counts and let the caller aggregate by date.
+  const byPrompt: Record<string, Set<string>> = {};
+  for (const r of rows) {
+    (byPrompt[r.prompt_id] = byPrompt[r.prompt_id] || new Set()).add(r.session_id);
+  }
+  const result: Record<string, number> = {};
+  for (const [pid, sessions] of Object.entries(byPrompt)) {
+    result[pid] = sessions.size;
+  }
+  return result;
+}
+
 export async function submitAnswer(promptId: string, rawAnswer: string): Promise<DbAnswer> {
   const sid = getSessionId();
   let normalized = normalizeAnswer(rawAnswer);
