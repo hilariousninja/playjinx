@@ -165,19 +165,19 @@ export default function Landing() {
         </motion.div>
       </main>
 
-      <section className="border-t border-border py-10 px-5">
+      <section className="border-t border-border py-6 px-5 mt-2">
         <div className="max-w-md mx-auto">
-          <h2 className="font-bold text-center mb-6 tracking-tight text-foreground text-xl">How it works</h2>
-          <div className="grid grid-cols-2 gap-5">
+          <h2 className="font-bold text-center mb-5 tracking-tight text-foreground text-lg">How to play</h2>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {[
-              { num: '1', title: 'See the prompt', desc: 'Two words appear.' },
-              { num: '2', title: 'Submit one word', desc: 'Guess one bridge word.' },
-              { num: '3', title: 'See the crowd\'s answers', desc: 'Watch the clusters form.' },
-              { num: '4', title: 'Rank higher', desc: 'Match the crowd.' },
+              { num: '1', title: 'See two words', desc: 'Find the bridge word most people will think of.' },
+              { num: '2', title: 'Submit one answer', desc: 'Pick one word that feels most likely to match the crowd.' },
+              { num: '3', title: 'Watch the patterns form', desc: 'See which answers cluster and which ones miss.' },
+              { num: '4', title: 'Rank higher', desc: 'The closer you are to the crowd, the better you score.' },
             ].map((s) => (
               <div key={s.num} className="text-center">
-                <span className="font-display text-2xl font-bold text-primary/30">{s.num}</span>
-                <h3 className="font-semibold mt-1 mb-0.5 text-sm text-foreground">{s.title}</h3>
+                <span className="font-display text-lg font-bold text-primary/25">{s.num}</span>
+                <h3 className="font-semibold mt-0.5 mb-0.5 text-sm text-foreground">{s.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
               </div>
             ))}
