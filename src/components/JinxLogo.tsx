@@ -30,8 +30,12 @@ export default function JinxLogo({ size = 24, className = '', showWordmark = tru
           opacity="0.25"
           strokeLinecap="round"
         />
-        {/* Center meeting dot */}
-        <circle cx={w / 2} cy={cy} r={r * 0.5} className="fill-primary" opacity="0.5" />
+        {/* Center spark */}
+        <polygon
+          points={`${w/2 - r*0.45},${cy - r*0.7} ${w/2 + r*0.1},${cy - r*0.1} ${w/2 - r*0.1},${cy + r*0.1} ${w/2 + r*0.45},${cy + r*0.7}`}
+          className="fill-primary"
+          opacity="0.7"
+        />
       </svg>
       {showWordmark && (
         <span className="font-display font-bold tracking-tighter text-foreground">JINX</span>
