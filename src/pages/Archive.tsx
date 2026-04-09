@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
-import PlayerIdentity from '@/components/PlayerIdentity';
 import PromptPair from '@/components/PromptPair';
 import MyRoomCard from '@/components/MyRoomCard';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import {
 import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
-import JinxLogo from '@/components/JinxLogo';
+import AppHeader from '@/components/AppHeader';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import InviteToGroupButton from '@/components/InviteToGroupButton';
 import { toast } from '@/hooks/use-toast';
@@ -235,7 +234,7 @@ export default function Archive() {
               <ArrowLeft className="h-4 w-4" />
             </button>
             <Link to="/">
-              <JinxLogo size={18} className="text-foreground text-base" />
+              <span className="font-display font-bold tracking-tighter text-foreground">JINX</span>
             </Link>
             <span className="w-4" />
           </div>
@@ -312,22 +311,7 @@ export default function Archive() {
   // ─── MAIN LIST ───
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border/80 shrink-0">
-        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
-          <Link to="/">
-            <JinxLogo size={18} className="text-foreground text-base" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <PlayerIdentity />
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
-              <Link to="/groups">Groups</Link>
-            </Button>
-            <Button size="sm" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-4 text-xs h-8" asChild>
-              <Link to="/play">Play</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="flex-1">
         <div className="max-w-[22rem] mx-auto px-5 pt-6 pb-8 w-full">

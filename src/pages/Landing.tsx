@@ -6,8 +6,7 @@ import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
-import JinxLogo from '@/components/JinxLogo';
-import PlayerIdentity from '@/components/PlayerIdentity';
+import AppHeader from '@/components/AppHeader';
 import MyRoomCard from '@/components/MyRoomCard';
 import GroupsList from '@/components/GroupsList';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
@@ -51,32 +50,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border">
-        <div className="max-w-xl mx-auto flex items-center justify-between h-14 px-5">
-          <Link to="/">
-            <JinxLogo size={22} className="text-foreground text-lg" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <PlayerIdentity />
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm" asChild>
-              <Link to="/groups">Groups</Link>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm relative" asChild>
-              <Link to="/archive">
-                Archive
-                {hasNewRoomActivity && (
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
-                )}
-              </Link>
-            </Button>
-            {!allDone && (
-              <Button size="sm" className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold px-4" asChild>
-                <Link to="/play">Play</Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader hasNewRoomActivity={hasNewRoomActivity} />
 
       <main className="flex justify-center px-5 pt-8 pb-6">
         <motion.div
