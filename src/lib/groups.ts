@@ -78,7 +78,7 @@ function generateInviteCode(groupName: string): string {
 
 export async function createGroup(name: string): Promise<JinxGroup> {
   const sessionId = getPlayerId();
-  const inviteCode = generateInviteCode();
+  const inviteCode = generateInviteCode(name);
 
   const { data, error } = await supabase
     .from('groups')
