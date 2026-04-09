@@ -185,7 +185,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-4 space-y-1.5 px-5">
+      <footer className="border-t border-border py-2.5 space-y-1 px-5">
         <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
