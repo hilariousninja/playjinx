@@ -85,13 +85,13 @@ export default function Landing() {
           transition={{ duration: 0.5 }}
           className="text-center w-full max-w-lg py-10"
         >
-          <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-4">Daily Crowd Word Game</p>
+          <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-2">Daily Crowd Word Game</p>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-foreground mb-4">JINX</h1>
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-foreground mb-2">JINX</h1>
 
           <p className="text-sm text-primary max-w-sm mx-auto font-semibold leading-relaxed">Think the same. Rank higher.</p>
 
-          <p className="text-[13px] text-muted-foreground max-w-[18rem] mx-auto mt-3 mb-8 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground max-w-[18rem] mx-auto mt-1.5 mb-5 leading-relaxed">
             See two words. Predict the bridge word most people will pick.
           </p>
 
@@ -130,9 +130,9 @@ export default function Landing() {
             </motion.div>
           ) : (
             <>
-              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="game-card-elevated inline-block w-full max-w-sm px-10 py-6 mb-7">
-                <p className="text-[9px] text-muted-foreground/60 uppercase tracking-[0.2em] font-display mb-3">Example prompt</p>
-                <PromptPair wordA="COW" wordB="SNOW" size="md" className="mb-3" />
+              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="game-card-elevated inline-block w-full max-w-sm px-8 py-4 mb-4">
+                <p className="text-[9px] text-muted-foreground/60 uppercase tracking-[0.2em] font-display mb-2">Example prompt</p>
+                <PromptPair wordA="COW" wordB="SNOW" size="md" className="mb-2" />
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-muted-foreground/50 text-sm">→</span>
                   <span className="text-primary text-lg font-display font-bold tracking-tight">Milk</span>
