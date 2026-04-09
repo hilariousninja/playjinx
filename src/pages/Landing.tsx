@@ -83,7 +83,7 @@ export default function Landing() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center w-full max-w-md py-6"
+          className="text-center w-full max-w-md py-4"
         >
           <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">Daily Crowd Word Game</p>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-foreground mb-3">JINX</h1>
@@ -130,10 +130,10 @@ export default function Landing() {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="game-card-elevated inline-block w-full max-w-sm px-7 pt-3 pb-4 rounded-xl"
+              className="game-card-elevated inline-block w-full max-w-sm px-7 pt-3.5 pb-4 rounded-xl"
             >
-              <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.2em] font-display mb-1.5">Example prompt</p>
-              <div className="flex items-center justify-center gap-3 mb-3">
+              <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.2em] font-display mb-2">Example prompt</p>
+              <div className="flex items-center justify-center gap-3 mb-3.5">
                 <PromptPair wordA="COW" wordB="SNOW" size="sm" />
                 <span className="text-muted-foreground/30 text-xs">→</span>
                 <span className="text-primary text-base font-display font-bold tracking-tight">Milk</span>
