@@ -78,7 +78,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex justify-center px-5 pt-8">
+      <main className="flex justify-center px-5 pt-8 pb-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
