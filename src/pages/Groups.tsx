@@ -145,17 +145,17 @@ export default function Groups() {
 
               {/* Empty state */}
               {groups.length === 0 && !showCreate && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8 space-y-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                    <Users className="h-6 w-6 text-primary" />
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-5 space-y-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[15px] font-bold text-foreground mb-1">No groups yet</p>
-                    <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[15rem] mx-auto">
-                      Create a group for friends, family, or coworkers — then play JINX together every day without sharing a new link.
+                    <p className="text-[15px] font-bold text-foreground mb-0.5">No groups yet</p>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[14rem] mx-auto">
+                      Create a group you can come back to every day — no new links needed.
                     </p>
                   </div>
-                  <div className="space-y-2 max-w-[14rem] mx-auto">
+                  <div className="space-y-1.5 max-w-[14rem] mx-auto pt-1">
                     <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-9 px-6 text-sm font-semibold">
                       <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a group
                     </Button>
@@ -167,9 +167,9 @@ export default function Groups() {
                           navigate(`/g/${match ? match[1] : code.trim()}`);
                         }
                       }}
-                      className="w-full text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors py-1.5"
+                      className="w-full text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors py-2 flex items-center justify-center gap-1.5 rounded-lg hover:bg-accent/50"
                     >
-                      <LinkIcon className="h-3 w-3 inline mr-1" />
+                      <LinkIcon className="h-3 w-3" />
                       Join with an invite link
                     </button>
                   </div>
