@@ -390,7 +390,7 @@ export default function Archive() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.04, duration: 0.3 }}
-                          onClick={() => setSelected(p.id)}
+                         onClick={() => setSelected(p.id)}
                           className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 transition-all hover:border-primary/20 hover:shadow-sm group"
                         >
                           <div className="min-w-0 flex-1">
@@ -398,21 +398,14 @@ export default function Archive() {
                               {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
                             </p>
                             {answered && userAnswers[p.id] ? (
-                              <p className="text-[11px] text-muted-foreground/50 mt-0.5 font-display">
+                              <p className="text-xs text-muted-foreground/60 mt-0.5 font-display">
                                 → {userAnswers[p.id].raw_answer}
                               </p>
                             ) : !answered ? (
-                              <p className="text-[10px] text-muted-foreground/40 mt-0.5">Not answered</p>
+                              <p className="text-[11px] text-muted-foreground/40 mt-0.5">Not answered</p>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-4">
-                            {answered && (
-                              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/8 text-primary/60">
-                                <Check className="h-2 w-2" /> Played
-                              </span>
-                            )}
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
-                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground/25 group-hover:text-primary/40 transition-colors shrink-0 ml-3" />
                         </motion.button>
                       );
                     })}
