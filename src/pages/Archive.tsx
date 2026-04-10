@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
+import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import AppHeader from '@/components/AppHeader';
-import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
@@ -41,12 +40,9 @@ export default function Archive() {
   const [userAnswers, setUserAnswers] = useState<Record<string, DbAnswer>>({});
   const [totalCounts, setTotalCounts] = useState<Record<string, number>>({});
   const [dailyPlayers, setDailyPlayers] = useState<Record<string, number>>({});
-  const [challengeCopied, setChallengeCopied] = useState(false);
-  const [resultsCopied, setResultsCopied] = useState(false);
 
   const now = new Date();
   const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
-  const todayLabel = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
   const loadData = async () => {
     const [archive, today] = await Promise.all([
@@ -55,17 +51,13 @@ export default function Archive() {
     ]);
 
     setTodayPrompts(today);
-
-    // Filter archive to exclude today
     const pastOnly = archive.filter(p => p.date !== todayStr);
     setArchivePrompts(pastOnly);
 
-    // Batch: fetch all user answers in ONE query instead of per-prompt
     const allPrompts = [...today, ...pastOnly];
     const allIds = allPrompts.map(p => p.id);
     const { submittedMap: subMap, answerMap: ansMap } = await getBatchUserAnswers(allIds);
 
-    // Use total_players from the prompt row itself — no extra queries needed
     const totals: Record<string, number> = {};
     for (const p of allPrompts) totals[p.id] = p.total_players ?? 0;
 
@@ -73,7 +65,6 @@ export default function Archive() {
     setUserAnswers(ansMap);
     setTotalCounts(totals);
 
-    // Today summaries — only call getStats for answered prompts (max 3 calls)
     const summaries = await Promise.all(
       today.map(async (prompt) => {
         const answer = ansMap[prompt.id] ?? null;
@@ -100,13 +91,8 @@ export default function Archive() {
     );
     setTodaySummaries(summaries);
 
-    // Unique players per archive day — ONE batch query
     const pastIds = pastOnly.map(p => p.id);
     const perPromptPlayers = await getBatchDailyUniquePlayers(pastIds);
-    // Aggregate per-prompt counts into per-date unique players
-    const byDate: Record<string, Set<string>> = {};
-    // We need session_ids per date, but our batch only returns counts per prompt.
-    // Use total_players from the prompt as a good-enough proxy.
     const dpMap: Record<string, number> = {};
     for (const p of pastOnly) {
       if (!dpMap[p.date]) dpMap[p.date] = 0;
@@ -159,7 +145,6 @@ export default function Archive() {
   const allTodayAnswered = todaySummaries.length > 0 && todaySummaries.every(s => s.answer);
   const todayAnsweredCount = todaySummaries.filter(s => s.answer).length;
 
-  // Match tier helpers
   const getMatchTier = (s: PromptSummary) => {
     if (!s.answer) return null;
     const isBest = s.rank === 1;
@@ -170,53 +155,9 @@ export default function Archive() {
     return { label: 'Unique', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted/50' };
   };
 
-  // Sharing
-  const getAnswerEmoji = (topPercent: number) => {
-    if (topPercent <= 15) return '🟩';
-    if (topPercent <= 50) return '🟨';
-    return '🟥';
-  };
-
-  const challengeText = [
-    '⚡ JINX Daily', '', 'Can you match me?', '',
-    ...todaySummaries.map(s => `${s.prompt.word_a.toUpperCase()} + ${s.prompt.word_b.toUpperCase()}`),
-    '', 'playjinx.com',
-  ].join('\n');
-
   const bestHit = allTodayAnswered
     ? todaySummaries.reduce((best, s) => s.matchCount > best.matchCount ? s : best, todaySummaries[0])
     : null;
-
-  const resultsText = allTodayAnswered
-    ? [
-        `⚡ JINX Daily — ${todayLabel}`, '',
-        ...todaySummaries.map(s => `${getAnswerEmoji(s.topPercent)} ${s.answer?.raw_answer?.toUpperCase()}`),
-        '', ...(bestHit?.answer ? [`Best hit: ${bestHit.answer.raw_answer.toUpperCase()}`] : []),
-        '', 'Can you match me?', 'playjinx.com',
-      ].join('\n')
-    : '';
-
-  const handleCopyChallenge = async () => {
-    if (challengeCopied) return;
-    try {
-      const ch = await createChallenge(todayPrompts);
-      const text = buildChallengeShareText(todayPrompts, ch.token);
-      if (navigator.share) {
-        try { await navigator.share({ text }); return; } catch {}
-      }
-      await navigator.clipboard.writeText(text);
-      setChallengeCopied(true);
-      setTimeout(() => setChallengeCopied(false), 2500);
-    } catch {
-      toast({ title: 'Could not create challenge', variant: 'destructive' });
-    }
-  };
-
-  const handleCopyResults = () => {
-    navigator.clipboard.writeText(resultsText);
-    setResultsCopied(true);
-    setTimeout(() => setResultsCopied(false), 2500);
-  };
 
   // ─── DETAIL SCREEN ───
   const selectedPrompt = [...todayPrompts, ...archivePrompts].find(p => p.id === selected);
@@ -315,32 +256,23 @@ export default function Archive() {
       <div className="flex-1">
         <div className="max-w-[22rem] mx-auto px-5 pt-6 pb-8 w-full">
 
-          {/* ─── TODAY SECTION ─── */}
+          {/* ─── TODAY SUMMARY ─── */}
           {todayPrompts.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              {/* Today header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold tracking-tight text-foreground">Today</h1>
-                  <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
-                    <Zap className="h-2 w-2" /> Live
-                  </span>
+                  {!allTodayAnswered && (
+                    <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
+                      <Zap className="h-2 w-2" /> Live
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] text-muted-foreground/40 font-display tabular-nums">
                   {todayAnsweredCount}/{todaySummaries.length} answered
                 </span>
               </div>
-
-              {/* Share actions — compact row */}
-              {allTodayAnswered && (
-                <div className="flex items-center gap-2 mb-3">
-                  <Button className="flex-1 rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
-                    {challengeCopied ? <><Check className="h-3 w-3 mr-1" /> Copied!</> : <><Zap className="h-3 w-3 mr-1" /> Challenge a friend</>}
-                  </Button>
-                  <Button variant="outline" className="rounded-xl h-9 px-3 text-xs" onClick={handleCopyResults}>
-                    {resultsCopied ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
-                  </Button>
-                </div>
-              )}
 
               {/* Today prompt cards */}
               <div className="space-y-2">
@@ -408,19 +340,25 @@ export default function Archive() {
                 </div>
               )}
 
-              {/* Countdown */}
+              {/* All done: countdown */}
               {allTodayAnswered && (
                 <div className="text-center mt-4">
-                  <Countdown />
+                  <p className="text-[9px] text-muted-foreground/30">
+                    <Countdown />
+                  </p>
                 </div>
               )}
             </motion.div>
           )}
 
-          {/* ─── ARCHIVE HISTORY ─── */}
+          {/* ─── PAST DAYS ─── */}
           {Object.keys(grouped).length > 0 && (
             <div>
-              <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/30 mb-3 flex items-center gap-1.5"><ArrowLeft className="h-2.5 w-2.5" /> Past days</p>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-px flex-1 bg-border/40" />
+                <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/30">Past days</p>
+                <div className="h-px flex-1 bg-border/40" />
+              </div>
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
                 const dayPlayerCount = dailyPlayers[date] ?? 0;
