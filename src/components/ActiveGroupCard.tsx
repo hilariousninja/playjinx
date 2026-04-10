@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, UserPlus, Radio, Plus, Loader2, X } from 'lucide-react';
+import { Users, UserPlus, Radio, Plus, Loader2, X, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getMyGroups, createGroup, buildGroupInviteText, type GroupWithActivity } from '@/lib/groups';
