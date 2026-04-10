@@ -16,7 +16,7 @@ import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { recordMatchesForChallenge } from '@/lib/social-memory';
-import InviteToGroupButton from '@/components/InviteToGroupButton';
+import ActiveGroupCard from '@/components/ActiveGroupCard';
 import { toast } from '@/hooks/use-toast';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
@@ -296,7 +296,7 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
-                      <InviteToGroupButton className="w-full h-10 text-sm" />
+                      <ActiveGroupCard className="w-full" />
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>

@@ -17,7 +17,7 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import AppHeader from '@/components/AppHeader';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import InviteToGroupButton from '@/components/InviteToGroupButton';
+import ActiveGroupCard from '@/components/ActiveGroupCard';
 import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
@@ -360,7 +360,7 @@ export default function Archive() {
                   <Button className="w-full rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
                     {challengeCopied ? <><Check className="h-3.5 w-3.5 mr-1.5" /> Challenge copied!</> : <><Zap className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend</>}
                   </Button>
-                  <InviteToGroupButton className="w-full h-9 font-medium text-xs border-border/60" />
+                  <ActiveGroupCard className="w-full" />
                   <Button variant="ghost" className="w-full rounded-xl h-8 font-medium text-[10px] text-muted-foreground/40 active:scale-[0.97] transition-transform" onClick={handleCopyResults}>
                     {resultsCopied ? <><Check className="h-3 w-3 mr-1.5" /> Results copied!</> : <><Share2 className="h-3 w-3 mr-1.5" /> Share my results</>}
                   </Button>
