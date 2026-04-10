@@ -40,7 +40,6 @@ export default function Play() {
   const [phase, setPhase] = useState<Record<string, Phase>>({});
   const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
-  
 
   useEffect(() => {
     if (!hasSeenOnboarding()) setShowOnboarding(true);
@@ -115,12 +114,10 @@ export default function Play() {
         setPhase(prev => ({ ...prev, [prompt.id]: 'results' }));
         setSubmitting(false);
 
-        // If playing via challenge and all prompts now done, record matches and redirect
         if (challengeToken) {
           const newSubmitted = { ...submitted, [prompt.id]: true };
           const nowAllDone = prompts.every(p => newSubmitted[p.id]);
           if (nowAllDone) {
-            // Record match history from completed participation data
             getChallengeByToken(challengeToken).then(ch => {
               if (ch) recordMatchesForChallenge(ch.id).catch(() => {});
             });
@@ -159,6 +156,8 @@ export default function Play() {
   const isSubmitted = submitted[prompt.id];
   const allDone = prompts.every(p => submitted[p.id]);
   const completedCount = prompts.filter(p => submitted[p.id]).length;
+  const isMidRun = !allDone;
+  const hasMorePrompts = currentIdx < prompts.length - 1;
   const showPromptPager = isSubmitted && currentPhase === 'results';
   const showMobileNav = allDone && currentPhase === 'results';
 
@@ -198,7 +197,7 @@ export default function Play() {
         </div>
       </header>
 
-      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[3vh] md:pt-[4vh]' : 'pt-[10vh] md:pt-[12vh]'} transition-all duration-300`}>
+      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[4vh] md:pt-[5vh]' : 'pt-[10vh] md:pt-[12vh]'} transition-all duration-300`}>
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
@@ -257,31 +256,24 @@ export default function Play() {
               )}
 
               {currentPhase === 'results' && isSubmitted && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-2">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+                  {/* Band 1: Result payoff (ResultsView has player count in supporting line) */}
                   <ResultsView promptId={prompt.id} />
 
-                  {/* Player count under result */}
-                  {(playerCounts[prompt.id] ?? 0) > 0 && (
-                    <p className="text-[10px] text-muted-foreground/40 flex items-center justify-center gap-1 mt-2">
-                      <Users className="h-2.5 w-2.5" />
-                      {playerCounts[prompt.id]} players
-                    </p>
-                  )}
-
-                  {/* ─── Mid-run: Next prompt is primary, challenge is secondary ─── */}
-                  {currentIdx < prompts.length - 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 space-y-2">
-                      <Button onClick={goNext} className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform">
+                  {/* Band 2: Primary action */}
+                  {isMidRun && hasMorePrompts && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5">
+                      <Button onClick={goNext} className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
                     </motion.div>
                   )}
 
-                  {/* ─── All done: Challenge is primary ─── */}
+                  {/* Band 2 (all done): Challenge is primary */}
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 text-center space-y-3">
                       <Button
-                        className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform"
+                        className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
                         onClick={async () => {
                           try {
                             const ch = await createChallenge(prompts);
@@ -296,20 +288,20 @@ export default function Play() {
                           }
                         }}
                       >
-                        <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
+                        <Share2 className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend
                       </Button>
 
-                      {/* ─── Secondary: compact group link + archive ─── */}
-                      <div className="pt-2.5 border-t border-border/30 space-y-1.5">
+                      {/* Band 3: Secondary paths */}
+                      <div className="pt-3 border-t border-border/40 space-y-2">
                         <ActiveGroupCard className="w-full" maxGroups={1} compact />
-                        <Button variant="ghost" className="w-full rounded-lg h-7 text-[10px] text-muted-foreground/50 hover:text-foreground" asChild>
+                        <Button variant="outline" className="w-full rounded-xl h-8 text-xs text-muted-foreground hover:text-foreground border-border/50" asChild>
                           <Link to="/archive">View all results</Link>
                         </Button>
                       </div>
 
-                      {/* Timer */}
+                      {/* Timer — subtle */}
                       {currentIdx === prompts.length - 1 && (
-                        <p className="text-[9px] text-muted-foreground/25 flex items-center justify-center gap-1 mt-1">
+                        <p className="text-[9px] text-muted-foreground/30 flex items-center justify-center gap-1 mt-1">
                           <Countdown />
                         </p>
                       )}
@@ -322,10 +314,10 @@ export default function Play() {
 
           {showPromptPager && (
             <div className="flex justify-between mt-6">
-              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] font-display font-semibold text-muted-foreground/50 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent/50">
+              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-accent/50 active:bg-accent/70">
                 <ArrowLeft className="h-3 w-3" /> Prev
               </button>
-              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] font-display font-semibold text-muted-foreground/50 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent/50">
+              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-accent/50 active:bg-accent/70">
                 Next <ArrowRight className="h-3 w-3" />
               </button>
             </div>
