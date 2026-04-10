@@ -282,22 +282,6 @@ export default function ResultsView({ promptId }: Props) {
         )}
       </motion.div>
 
-      {/* Footer — stats + live */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/30"
-      >
-        <span>{total} players</span>
-        <span>·</span>
-        <span>{unique} unique</span>
-        <span>·</span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--match-best))] animate-pulse" />
-          Live
-        </span>
-      </motion.div>
     </div>
   );
 }
