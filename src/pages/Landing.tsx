@@ -50,7 +50,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader hasNewRoomActivity={hasNewRoomActivity} />
+      <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <main className="flex justify-center px-5 pt-8 pb-6">
         <motion.div
