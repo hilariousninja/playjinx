@@ -357,9 +357,9 @@ export default function Archive() {
           {Object.keys(grouped).length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-5">
-                <div className="h-px flex-1 bg-border/50" />
-                <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/40">Past days</p>
-                <div className="h-px flex-1 bg-border/50" />
+                <div className="h-px flex-1 bg-border/60" />
+                <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/50 font-semibold">Past days</p>
+                <div className="h-px flex-1 bg-border/60" />
               </div>
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
