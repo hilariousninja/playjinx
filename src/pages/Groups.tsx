@@ -108,38 +108,29 @@ export default function Groups() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-0 group/card">
-                      <Link
-                        to={`/g/${g.invite_code}/today`}
-                        className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border/50 bg-card hover:border-primary/20 transition-all group flex-1 min-w-0"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Users className="h-4 w-4 text-primary" />
+                    <Link
+                      to={`/g/${g.invite_code}/today`}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border/50 bg-card hover:border-primary/20 transition-all group w-full"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-[13px] font-display font-bold text-foreground truncate min-w-0">{g.name}</p>
+                          {g.hasActivityToday && (
+                            <span className="text-[7px] bg-primary text-primary-foreground px-1.5 py-px rounded-full font-display font-bold leading-none flex items-center gap-0.5 shrink-0 whitespace-nowrap">
+                              <Radio className="h-1.5 w-1.5" /> Live
+                            </span>
+                          )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-display font-bold text-foreground truncate">{g.name}</p>
-                            {g.hasActivityToday && (
-                              <span className="text-[7px] bg-primary text-primary-foreground px-1.5 py-px rounded-full font-display font-bold leading-none flex items-center gap-0.5">
-                                <Radio className="h-1.5 w-1.5" /> Live
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground/60 leading-tight mt-0.5">
-                            {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
-                            {g.todayAnsweredCount > 0 && ` · ${g.todayAnsweredCount} played today`}
-                          </p>
-                        </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
-                      </Link>
-                      <button
-                        onClick={() => setConfirmLeave(g.id)}
-                        className="ml-1 p-1.5 rounded-lg text-muted-foreground/0 group-hover/card:text-muted-foreground/30 hover:!text-destructive/60 transition-colors shrink-0"
-                        title="Leave group"
-                      >
-                        <LogOut className="h-3 w-3" />
-                      </button>
-                    </div>
+                        <p className="text-[11px] text-muted-foreground/60 leading-tight mt-0.5">
+                          {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
+                          {g.todayAnsweredCount > 0 && ` · ${g.todayAnsweredCount} played today`}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
+                    </Link>
                   )}
                 </motion.div>
               ))}

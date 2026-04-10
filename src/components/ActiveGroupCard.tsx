@@ -119,7 +119,7 @@ export default function ActiveGroupCard({ className = '' }: Props) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-display font-bold text-foreground truncate">{g.name}</p>
+                <p className="text-[13px] font-display font-bold text-foreground truncate">{g.name}</p>
                 {g.hasActivityToday && (
                   <span className="text-[7px] bg-primary text-primary-foreground px-1.5 py-px rounded-full font-display font-bold leading-none flex items-center gap-0.5 shrink-0">
                     <Radio className="h-1.5 w-1.5" /> Live
