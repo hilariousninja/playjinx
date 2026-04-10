@@ -257,23 +257,24 @@ export default function Play() {
 
               {currentPhase === 'results' && isSubmitted && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-                  {/* Band 1: Result payoff (ResultsView has player count in supporting line) */}
+                  {/* Band 1: Result */}
                   <ResultsView promptId={prompt.id} />
 
-                  {/* Band 2: Primary action */}
+                  {/* ── Mid-run: single clear Next prompt CTA ── */}
                   {isMidRun && hasMorePrompts && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5">
-                      <Button onClick={goNext} className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 space-y-3">
+                      <Button onClick={goNext} className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
                     </motion.div>
                   )}
 
-                  {/* Band 2 (all done): Challenge is primary */}
+                  {/* ── All done: full completion stack ── */}
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 text-center space-y-3">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 space-y-4">
+                      {/* Primary: Challenge */}
                       <Button
-                        className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
+                        className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
                         onClick={async () => {
                           try {
                             const ch = await createChallenge(prompts);
@@ -291,20 +292,18 @@ export default function Play() {
                         <Share2 className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend
                       </Button>
 
-                      {/* Band 3: Secondary paths */}
-                      <div className="pt-3 border-t border-border/40 space-y-2">
-                        <ActiveGroupCard className="w-full" maxGroups={1} compact />
-                        <Button variant="outline" className="w-full rounded-xl h-8 text-xs text-muted-foreground hover:text-foreground border-border/50" asChild>
-                          <Link to="/archive">View all results</Link>
-                        </Button>
+                      {/* Secondary: Group + Archive links */}
+                      <div className="flex items-center gap-3">
+                        <ActiveGroupCard className="flex-1 min-w-0" maxGroups={1} compact />
+                        <Link to="/archive" className="text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                          All results →
+                        </Link>
                       </div>
 
-                      {/* Timer — subtle */}
-                      {currentIdx === prompts.length - 1 && (
-                        <p className="text-[9px] text-muted-foreground/30 flex items-center justify-center gap-1 mt-1">
-                          <Countdown />
-                        </p>
-                      )}
+                      {/* Timer */}
+                      <p className="text-center text-[9px] text-muted-foreground/40">
+                        <Countdown />
+                      </p>
                     </motion.div>
                   )}
                 </motion.div>
@@ -314,10 +313,10 @@ export default function Play() {
 
           {showPromptPager && (
             <div className="flex justify-between mt-6">
-              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-accent/50 active:bg-accent/70">
+              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] font-display font-semibold text-muted-foreground/60 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1 px-3 py-2 rounded-lg border border-border/40 hover:border-border hover:bg-accent/50 active:bg-accent/70">
                 <ArrowLeft className="h-3 w-3" /> Prev
               </button>
-              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-accent/50 active:bg-accent/70">
+              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] font-display font-semibold text-muted-foreground/60 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1 px-3 py-2 rounded-lg border border-border/40 hover:border-border hover:bg-accent/50 active:bg-accent/70">
                 Next <ArrowRight className="h-3 w-3" />
               </button>
             </div>
