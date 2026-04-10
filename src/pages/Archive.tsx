@@ -17,7 +17,6 @@ import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
 import AppHeader from '@/components/AppHeader';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import ActiveGroupCard from '@/components/ActiveGroupCard';
 import { toast } from '@/hooks/use-toast';
 
 interface PromptSummary {
