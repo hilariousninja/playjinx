@@ -374,25 +374,28 @@ export default function Archive() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[12px] tracking-tight text-muted-foreground/50 mb-1">
+                            <p className="font-display font-bold text-[12px] tracking-tight text-muted-foreground/50 mb-0.5">
                               {s.prompt.word_a} <span className="text-primary/40">+</span> {s.prompt.word_b}
                             </p>
-                            <p className="font-display font-bold text-[15px] text-foreground mb-1 break-words">
-                              {s.answer.raw_answer}
-                            </p>
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-display font-bold text-[15px] text-foreground break-words">
+                                {s.answer.raw_answer}
+                              </p>
                               {tier && TIcon && (
-                                <span className={`inline-flex items-center gap-1 text-[10px] font-display font-bold px-2 py-0.5 rounded-full ${tier.bg} ${tier.color}`}>
-                                  <TIcon className="h-2.5 w-2.5" />
+                                <span className={`inline-flex items-center gap-0.5 text-[9px] font-display font-bold px-1.5 py-0.5 rounded-full ${tier.bg} ${tier.color} shrink-0`}>
+                                  <TIcon className="h-2 w-2" />
                                   {tier.label}
                                 </span>
                               )}
-                              <span className="text-[10px] text-muted-foreground/35 font-display">
-                                #{s.rank} · {s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}
-                              </span>
                             </div>
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors shrink-0" />
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="text-right">
+                              <p className="text-[11px] font-display font-bold text-foreground/70">#{s.rank}</p>
+                              <p className="text-[9px] text-muted-foreground/40 font-display">{s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}</p>
+                            </div>
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
+                          </div>
                         </div>
                       </button>
                     ) : (
