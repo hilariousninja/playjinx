@@ -119,14 +119,14 @@ export default function ActiveGroupCard({ className = '', maxGroups = 3, compact
     return (
       <Link
         to={`/g/${g.invite_code}/today`}
-        className={`flex items-center gap-2 py-1.5 rounded-lg text-[10px] font-display text-muted-foreground/50 hover:text-foreground transition-colors ${className}`}
+        className={`flex items-center gap-2 py-2 px-3 rounded-lg border border-border/40 hover:border-primary/20 bg-card/50 hover:bg-card text-[11px] font-display text-muted-foreground hover:text-foreground transition-all ${className}`}
       >
-        <Users className="h-3 w-3 text-primary/50" />
+        <Users className="h-3 w-3 text-primary/60" />
         <span className="font-semibold truncate">{g.name}</span>
         {g.hasActivityToday && (
           <span className="text-[7px] bg-primary/10 text-primary px-1 py-px rounded-full font-bold">Live</span>
         )}
-        <ArrowRight className="h-2.5 w-2.5 ml-auto shrink-0" />
+        <ArrowRight className="h-2.5 w-2.5 ml-auto shrink-0 text-muted-foreground/40" />
       </Link>
     );
   }

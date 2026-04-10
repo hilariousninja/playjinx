@@ -260,17 +260,21 @@ export default function Archive() {
           {todayPrompts.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
               {/* Today header */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold tracking-tight text-foreground">Today</h1>
-                  {!allTodayAnswered && (
+                  {!allTodayAnswered ? (
                     <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
                       <Zap className="h-2 w-2" /> Live
                     </span>
+                  ) : (
+                    <span className="text-[7px] bg-primary/8 text-primary/60 px-1.5 py-0.5 rounded-full font-display font-bold">
+                      Complete
+                    </span>
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground/40 font-display tabular-nums">
-                  {todayAnsweredCount}/{todaySummaries.length} answered
+                <span className="text-[10px] text-muted-foreground/50 font-display tabular-nums">
+                  {todayAnsweredCount}/{todaySummaries.length}
                 </span>
               </div>
 
@@ -306,7 +310,7 @@ export default function Archive() {
                                 {tier.label}
                               </span>
                             )}
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
                           </div>
                         </div>
                       </button>
@@ -320,9 +324,9 @@ export default function Archive() {
                             <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
                               {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
                             </p>
-                            <p className="text-[10px] text-muted-foreground/30 mt-1">Not answered</p>
+                            <p className="text-[10px] text-muted-foreground/40 mt-1">Tap to play</p>
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors shrink-0" />
+                          <ArrowRight className="h-3.5 w-3.5 text-primary/40 group-hover:text-primary transition-colors shrink-0" />
                         </div>
                       </Link>
                     )}
@@ -334,7 +338,7 @@ export default function Archive() {
               {/* Continue playing CTA */}
               {!allTodayAnswered && (
                 <div className="mt-3">
-                  <Button className="w-full rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm" asChild>
+                  <Button className="w-full rounded-xl h-10 font-semibold text-sm" asChild>
                     <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
                   </Button>
                 </div>
@@ -342,11 +346,9 @@ export default function Archive() {
 
               {/* All done: countdown */}
               {allTodayAnswered && (
-                <div className="text-center mt-4">
-                  <p className="text-[9px] text-muted-foreground/30">
-                    <Countdown />
-                  </p>
-                </div>
+                <p className="text-center text-[9px] text-muted-foreground/40 mt-4">
+                  <Countdown />
+                </p>
               )}
             </motion.div>
           )}
@@ -354,25 +356,29 @@ export default function Archive() {
           {/* ─── PAST DAYS ─── */}
           {Object.keys(grouped).length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-px flex-1 bg-border/40" />
-                <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/30">Past days</p>
-                <div className="h-px flex-1 bg-border/40" />
+              <div className="flex items-center gap-2 mb-5">
+                <div className="h-px flex-1 bg-border/50" />
+                <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/40">Past days</p>
+                <div className="h-px flex-1 bg-border/50" />
               </div>
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
                 const dayPlayerCount = dailyPlayers[date] ?? 0;
+                const dayAnswered = ps.filter(p => submittedMap[p.id]).length;
                 return (
                 <div key={date} className="mb-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
+                    <p className="text-[11px] uppercase tracking-widest font-display text-muted-foreground/50 font-semibold">
                       {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </p>
-                    {dayPlayerCount > 0 && (
-                      <span className="text-[9px] text-muted-foreground/30 font-display tabular-nums flex items-center gap-1">
-                        <Users className="h-2.5 w-2.5" /> {dayPlayerCount}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2.5 text-[9px] text-muted-foreground/40 font-display tabular-nums">
+                      {dayPlayerCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-2.5 w-2.5" /> {dayPlayerCount}
+                        </span>
+                      )}
+                      <span>{dayAnswered}/{ps.length}</span>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -396,20 +402,16 @@ export default function Archive() {
                                 → {userAnswers[p.id].raw_answer}
                               </p>
                             ) : !answered ? (
-                              <p className="text-[10px] text-muted-foreground/30 mt-0.5">Not answered</p>
+                              <p className="text-[10px] text-muted-foreground/40 mt-0.5">Not answered</p>
                             ) : null}
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-4">
-                            {answered ? (
-                              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/5 text-primary/50">
+                            {answered && (
+                              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/8 text-primary/60">
                                 <Check className="h-2 w-2" /> Played
                               </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/25 font-display tabular-nums">
-                                {totalCounts[p.id] ?? 0} played
-                              </span>
                             )}
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
                           </div>
                         </motion.button>
                       );
