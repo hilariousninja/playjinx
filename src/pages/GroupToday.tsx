@@ -155,9 +155,9 @@ export default function GroupToday() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center mb-6"
           >
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/15 mb-3">
-              <Users className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[12px] font-display font-bold text-primary tracking-tight">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/15 mb-3 max-w-[85%]">
+              <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-[12px] font-display font-bold text-primary tracking-tight truncate">
                 {group.name}
               </span>
             </div>
@@ -208,7 +208,7 @@ export default function GroupToday() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8 space-y-3 mb-4"
+              className="text-center py-6 space-y-3 mb-2"
             >
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10">
                 <Radio className="h-3 w-3 text-primary animate-pulse" />
@@ -220,9 +220,6 @@ export default function GroupToday() {
                   : `${others.length} ${others.length === 1 ? 'member hasn\'t' : 'members haven\'t'} played yet today`
                 }
               </p>
-              <Button onClick={handleInvite} variant="outline" className="rounded-xl h-10 text-sm">
-                <Share2 className="h-3.5 w-3.5 mr-2" /> Invite to group
-              </Button>
             </motion.div>
           )}
 
@@ -237,23 +234,23 @@ export default function GroupToday() {
             </motion.div>
           )}
 
-          {/* Actions */}
+          {/* Single action bar — no duplicates */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="mt-6 space-y-2"
+            className="mt-4 space-y-2"
           >
             <Button
               onClick={handleInvite}
-              variant={hasPlayed && answeredMembers >= 2 ? 'default' : 'outline'}
+              variant="outline"
               className="w-full rounded-xl h-10 text-sm active:scale-[0.97] transition-transform"
             >
               <Share2 className="h-3.5 w-3.5 mr-2" /> Invite to group
             </Button>
 
             {hasPlayed && (
-              <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
+              <Button variant="ghost" className="w-full rounded-xl h-9 text-xs text-muted-foreground" asChild>
                 <Link to="/archive">View crowd results</Link>
               </Button>
             )}
