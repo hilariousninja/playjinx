@@ -143,9 +143,9 @@ export default function ActiveGroupCard({ className = '', maxGroups = 3 }: Props
       {groups.length > maxGroups && (
         <Link
           to="/groups"
-          className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground text-center block py-1 transition-colors"
+          className="flex items-center justify-center gap-1.5 text-[11px] font-display font-semibold text-muted-foreground/50 hover:text-foreground py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors mx-auto w-fit"
         >
-          View all {groups.length} groups
+          View all {groups.length} groups <ArrowRight className="h-3 w-3" />
         </Link>
       )}
     </div>
