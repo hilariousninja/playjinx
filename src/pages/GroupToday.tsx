@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Share2, Loader2, AlertCircle, ArrowRight, Zap, LogOut, Settings, Radio } from 'lucide-react';
+import { Users, Share2, Loader2, AlertCircle, ArrowRight, Zap, LogOut, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
