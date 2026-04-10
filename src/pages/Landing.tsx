@@ -11,6 +11,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupsList from '@/components/GroupsList';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import { getMyGroups, buildGroupInviteText, createGroup, type GroupWithActivity } from '@/lib/groups';
 import { toast } from '@/hooks/use-toast';
 
@@ -21,6 +22,7 @@ export default function Landing() {
   const [myGroups, setMyGroups] = useState<GroupWithActivity[]>([]);
   const navigate = useNavigate();
   const hasNewRoomActivity = useRoomHasNewActivity();
+  const hasGroupActivity = useGroupHasActivity();
 
   useEffect(() => {
     (async () => {
@@ -48,7 +50,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader hasNewRoomActivity={hasNewRoomActivity} />
+      <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <main className="flex justify-center px-5 pt-8 pb-6">
         <motion.div
@@ -157,7 +159,7 @@ export default function Landing() {
         <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
-      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} />
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
     </div>
   );
 }

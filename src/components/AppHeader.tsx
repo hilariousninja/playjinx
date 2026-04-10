@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   hasNewRoomActivity?: boolean;
+  hasGroupActivity?: boolean;
 }
 
 const navItems = [
@@ -13,7 +14,7 @@ const navItems = [
   { to: '/archive', label: 'Archive' },
 ];
 
-export default function AppHeader({ hasNewRoomActivity }: Props) {
+export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Props) {
   const { pathname } = useLocation();
 
   const isActive = (to: string) => {
@@ -46,6 +47,9 @@ export default function AppHeader({ hasNewRoomActivity }: Props) {
             >
               {label}
               {to === '/archive' && hasNewRoomActivity && (
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+              {to === '/groups' && hasGroupActivity && !isActive(to) && (
                 <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
               )}
             </Link>
