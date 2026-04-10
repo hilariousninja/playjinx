@@ -9,9 +9,10 @@ import { toast } from '@/hooks/use-toast';
 
 interface Props {
   className?: string;
+  maxGroups?: number;
 }
 
-export default function ActiveGroupCard({ className = '' }: Props) {
+export default function ActiveGroupCard({ className = '', maxGroups = 3 }: Props) {
   const navigate = useNavigate();
   const [groups, setGroups] = useState<GroupWithActivity[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -107,7 +108,7 @@ export default function ActiveGroupCard({ className = '' }: Props) {
   // --- Active groups: whole card is a link, invite is a small secondary action ---
   return (
     <div className={`space-y-1.5 ${className}`}>
-      {groups.slice(0, 3).map(g => (
+      {groups.slice(0, maxGroups).map(g => (
         <Link
           key={g.id}
           to={`/g/${g.invite_code}/today`}
@@ -139,7 +140,7 @@ export default function ActiveGroupCard({ className = '' }: Props) {
           </button>
         </Link>
       ))}
-      {groups.length > 3 && (
+      {groups.length > maxGroups && (
         <Link
           to="/groups"
           className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground text-center block py-1 transition-colors"

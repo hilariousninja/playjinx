@@ -270,7 +270,7 @@ export default function Play() {
                   )}
 
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3 text-center space-y-2">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3 text-center space-y-1.5">
                       <Button
                         className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform"
                         onClick={async () => {
@@ -289,15 +289,14 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
-                      <ActiveGroupCard className="w-full" />
+                      <ActiveGroupCard className="w-full" maxGroups={1} />
                       <Button variant="outline" className="w-full rounded-xl h-8 text-[11px]" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>
-                      {currentIdx === prompts.length - 1 && <Countdown />}
                       {currentIdx === prompts.length - 1 && (
-                        <div className="mt-2">
-                          <SocialMemoryCard compact contextualEmptyState />
-                        </div>
+                        <p className="text-[10px] text-muted-foreground/40 flex items-center justify-center gap-1 pt-1">
+                          <Countdown />
+                        </p>
                       )}
                     </motion.div>
                   )}
