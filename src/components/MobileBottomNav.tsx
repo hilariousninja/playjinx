@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   hasNewRoomActivity?: boolean;
+  hasGroupActivity?: boolean;
 }
 
 const navItems = [
@@ -12,7 +13,7 @@ const navItems = [
   { to: '/archive', label: 'Archive', icon: Archive },
 ];
 
-export default function MobileBottomNav({ hasNewRoomActivity }: Props) {
+export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity }: Props) {
   const { pathname } = useLocation();
 
   const isActive = (to: string) => {
@@ -25,6 +26,9 @@ export default function MobileBottomNav({ hasNewRoomActivity }: Props) {
       <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => {
           const active = isActive(to);
+          const showDot =
+            (to === '/archive' && hasNewRoomActivity) ||
+            (to === '/groups' && hasGroupActivity && !pathname.startsWith('/groups'));
           return (
             <Link
               key={to}
@@ -44,7 +48,7 @@ export default function MobileBottomNav({ hasNewRoomActivity }: Props) {
               <span className={cn('text-[10px] leading-none', active ? 'font-bold' : 'font-medium')}>
                 {label}
               </span>
-              {to === '/archive' && hasNewRoomActivity && (
+              {showDot && (
                 <span className="absolute top-2 right-1/4 w-1.5 h-1.5 rounded-full bg-primary" />
               )}
             </Link>
