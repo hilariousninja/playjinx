@@ -61,9 +61,9 @@ export default function Landing() {
         >
           <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">Daily Crowd Word Game</p>
           <h1 className="text-6xl font-black tracking-tighter text-foreground mb-3 md:text-8xl">JINX</h1>
-          <p className="text-[15px] text-primary font-semibold mb-2 py-[3px] my-0">Think the same. Rank higher.</p>
+          <p className="text-[15px] text-primary font-semibold mb-2 py-[3px] my-0">Think the same. Spot the patterns.</p>
           <p className="text-[13px] text-muted-foreground mx-auto mb-6 leading-relaxed py-[3px]">
-            See two words. Predict the bridge word most people will pick.
+            See two words. Predict the bridge word the crowd will pick.
           </p>
 
           {allDone ? (
@@ -140,10 +140,10 @@ export default function Landing() {
           <h2 className="font-bold text-center mb-4 text-base uppercase tracking-[0.15em] font-display text-foreground/80">How to play</h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {[
-              { num: '1', title: 'See two words', desc: 'Find the bridge word most people will think of.' },
-              { num: '2', title: 'Submit one answer', desc: 'Pick one word that feels most likely to match the crowd.' },
-              { num: '3', title: 'Watch the patterns form', desc: 'See which answers cluster and which ones miss.' },
-              { num: '4', title: 'Rank higher', desc: 'The closer you are to the crowd, the better you score.' },
+              { num: '1', title: 'See two words', desc: 'Find the bridge word that connects them.' },
+              { num: '2', title: 'Submit one answer', desc: 'Pick the word you think most people will say.' },
+              { num: '3', title: 'Watch the crowd form', desc: 'See which answers cluster together.' },
+              { num: '4', title: 'See how close you were', desc: 'The strongest match is the one the crowd picks most.' },
             ].map((s) => (
               <div key={s.num} className="text-center">
                 <span className="font-display text-lg font-bold text-primary/40">{s.num}</span>
