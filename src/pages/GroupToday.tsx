@@ -3,8 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, Share2, Loader2, AlertCircle, ArrowRight, Zap, LogOut, Settings, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import JinxLogo from '@/components/JinxLogo';
-import PlayerIdentity from '@/components/PlayerIdentity';
+import AppHeader from '@/components/AppHeader';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import RoomResults from '@/components/RoomResults';
 import {
   getGroupByInviteCode,
@@ -145,26 +145,7 @@ export default function GroupToday() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border/80 shrink-0">
-        <div className="flex items-center justify-between h-14 max-w-lg mx-auto px-5">
-          <Link to="/"><JinxLogo size={18} className="text-foreground text-base" /></Link>
-          <div className="flex items-center gap-2">
-            <PlayerIdentity />
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
-              <Link to="/groups">Groups</Link>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs" asChild>
-              <Link to="/archive">Archive</Link>
-            </Button>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-            >
-              <Settings className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="flex-1 flex flex-col items-center pt-[4vh] md:pt-[6vh] pb-8 px-5">
         <div className="w-full max-w-sm mx-auto">
