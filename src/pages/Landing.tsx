@@ -91,11 +91,7 @@ export default function Landing() {
                   <Link to="/archive"><Eye className="h-4 w-4 mr-2" /> View results</Link>
                 </Button>
               </div>
-              {showRoomCard && (
-                <div className="mt-4 w-full text-left">
-                  <MyRoomCard />
-                </div>
-              )}
+              {/* Room card removed — groups are the main social path */}
             </motion.div>
           ) : (
             <motion.div
