@@ -357,7 +357,7 @@ export default function Archive() {
               {/* Room card removed — groups are the main social path */}
 
               {/* Today prompt cards */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {todaySummaries.map((s, i) => {
                   const tier = getMatchTier(s);
                   const isBestHit = bestHit && s.prompt.id === bestHit.prompt.id;
@@ -368,32 +368,31 @@ export default function Archive() {
                     {s.answer ? (
                       <button
                         onClick={() => setSelected(s.prompt.id)}
-                        className={`w-full text-left bg-card border rounded-xl px-3.5 py-2.5 hover:border-primary/20 transition-all group ${
-                          isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/50'
+                        className={`w-full text-left bg-card border rounded-xl px-4 py-3 hover:border-primary/20 transition-all group ${
+                          isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/60'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[12px] tracking-tight text-muted-foreground/50 mb-0.5">
-                              {s.prompt.word_a} <span className="text-primary/40">+</span> {s.prompt.word_b}
+                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
+                              {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
                             </p>
-                            <div className="flex items-center gap-1.5">
-                              <p className="font-display font-bold text-[15px] text-foreground break-words">
-                                {s.answer.raw_answer}
-                              </p>
+                            <p className="text-[10px] text-muted-foreground/40 mt-1 font-display flex items-center gap-1.5">
+                              → {s.answer.raw_answer}
                               {tier && TIcon && (
-                                <span className={`inline-flex items-center gap-0.5 text-[9px] font-display font-bold px-1.5 py-0.5 rounded-full ${tier.bg} ${tier.color} shrink-0`}>
+                                <span className={`inline-flex items-center gap-0.5 text-[8px] font-bold px-1 py-px rounded-full ${tier.bg} ${tier.color}`}>
                                   <TIcon className="h-2 w-2" />
                                   {tier.label}
                                 </span>
                               )}
-                            </div>
+                            </p>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <div className="text-right">
-                              <p className="text-[11px] font-display font-bold text-foreground/70">#{s.rank}</p>
-                              <p className="text-[9px] text-muted-foreground/40 font-display">{s.matchCount} {s.matchCount === 1 ? 'match' : 'matches'}</p>
-                            </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-4">
+                            {s.rank > 0 && (
+                              <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums">
+                                #{s.rank} · {s.matchCount}
+                              </span>
+                            )}
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
                           </div>
                         </div>
@@ -401,14 +400,14 @@ export default function Archive() {
                     ) : (
                       <Link
                         to="/play"
-                        className="block bg-card border border-border/50 rounded-xl px-5 py-3.5 hover:border-primary/20 transition-all group"
+                        className="block bg-card border border-border/60 rounded-xl px-4 py-3 hover:border-primary/20 transition-all group"
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground mb-1">
+                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
                               {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
                             </p>
-                            <p className="text-[11px] text-muted-foreground/30">Not answered</p>
+                            <p className="text-[10px] text-muted-foreground/30 mt-1">Not answered</p>
                           </div>
                           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors shrink-0" />
                         </div>
