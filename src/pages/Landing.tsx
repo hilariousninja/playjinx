@@ -159,7 +159,7 @@ export default function Landing() {
         <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
-      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} />
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
     </div>
   );
 }
