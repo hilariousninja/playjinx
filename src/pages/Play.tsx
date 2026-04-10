@@ -198,7 +198,7 @@ export default function Play() {
         </div>
       </header>
 
-      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[4vh] md:pt-[5vh]' : 'pt-[10vh] md:pt-[12vh]'} transition-all duration-300`}>
+      <div className={`flex-1 flex flex-col items-center ${isSubmitted && currentPhase === 'results' ? 'pt-[3vh] md:pt-[4vh]' : 'pt-[10vh] md:pt-[12vh]'} transition-all duration-300`}>
         <div className="w-full max-w-[22rem] mx-auto px-5">
           <AnimatePresence mode="wait">
             <motion.div key={prompt.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
@@ -257,11 +257,12 @@ export default function Play() {
               )}
 
               {currentPhase === 'results' && isSubmitted && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-4">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-2">
                   <ResultsView promptId={prompt.id} />
 
+                  {/* ─── Primary action ─── */}
                   {currentIdx < prompts.length - 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4">
                       <Button onClick={goNext} className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
@@ -269,7 +270,8 @@ export default function Play() {
                   )}
 
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3 text-center space-y-1.5">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center">
+                      {/* ─── Primary: Challenge ─── */}
                       <Button
                         className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform"
                         onClick={async () => {
@@ -288,12 +290,18 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
-                      <ActiveGroupCard className="w-full" maxGroups={1} />
-                      <Button variant="outline" className="w-full rounded-xl h-8 text-[11px]" asChild>
-                        <Link to="/archive">View all results</Link>
-                      </Button>
+
+                      {/* ─── Secondary: Group + Archive ─── */}
+                      <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+                        <ActiveGroupCard className="w-full" maxGroups={1} />
+                        <Button variant="outline" className="w-full rounded-xl h-8 text-[11px]" asChild>
+                          <Link to="/archive">View all results</Link>
+                        </Button>
+                      </div>
+
+                      {/* ─── Tertiary: Timer ─── */}
                       {currentIdx === prompts.length - 1 && (
-                        <p className="text-[10px] text-muted-foreground/40 flex items-center justify-center gap-1 pt-1">
+                        <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1 mt-3">
                           <Countdown />
                         </p>
                       )}
