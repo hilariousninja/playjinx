@@ -9,7 +9,7 @@ import { ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer, getTotal
 import { validateInput } from '@/lib/normalize';
 import ResultsView from '@/components/ResultsView';
 import Countdown from '@/components/Countdown';
-import SocialMemoryCard from '@/components/SocialMemoryCard';
+import JinxLogo from '@/components/JinxLogo';
 import JinxLogo from '@/components/JinxLogo';
 import PlayerIdentity from '@/components/PlayerIdentity';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
