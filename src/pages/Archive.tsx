@@ -319,53 +319,45 @@ export default function Archive() {
           {/* ─── TODAY SECTION ─── */}
           {todayPrompts.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-              <div className="text-center mb-4">
-                <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-1.5">
                   <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-display">{todayLabel}</p>
                   <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
                     <Zap className="h-2 w-2" /> Live
                   </span>
                 </div>
                 {allTodayAnswered ? (
-                  <>
-                    <h1 className="text-lg font-bold tracking-tight text-foreground mb-0.5">Today's JINX complete</h1>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h1 className="text-lg font-bold tracking-tight text-foreground">Today's JINX complete</h1>
                     {bestHit?.answer && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="inline-flex items-center gap-1.5 bg-[hsl(var(--match-best)/0.08)] text-[hsl(var(--match-best))] px-3 py-1 rounded-full mt-2"
-                      >
-                        <Trophy className="h-3 w-3" />
-                        <span className="text-[11px] font-display font-bold">Best hit: {bestHit.answer.raw_answer.toUpperCase()}</span>
-                      </motion.div>
+                      <span className="inline-flex items-center gap-1 bg-[hsl(var(--match-best)/0.08)] text-[hsl(var(--match-best))] px-2.5 py-0.5 rounded-full">
+                        <Trophy className="h-2.5 w-2.5" />
+                        <span className="text-[10px] font-display font-bold">{bestHit.answer.raw_answer.toUpperCase()}</span>
+                      </span>
                     )}
-                    <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1.5 mt-2">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--match-best))] animate-pulse" />
-                      Results update live
-                    </p>
-                  </>
+                  </div>
                 ) : todayAnsweredCount > 0 ? (
-                  <h1 className="text-xl font-bold tracking-tight text-foreground">
+                  <h1 className="text-lg font-bold tracking-tight text-foreground">
                     {todayAnsweredCount} of {todaySummaries.length} answered
                   </h1>
                 ) : (
-                  <h1 className="text-xl font-bold tracking-tight text-foreground">Today's prompts</h1>
+                  <h1 className="text-lg font-bold tracking-tight text-foreground">Today's prompts</h1>
                 )}
               </div>
 
-              {/* Share buttons */}
+              {/* Share actions — compact row */}
               {allTodayAnswered && (
-                <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-3 space-y-1.5">
-                  <Button className="w-full rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
-                    {challengeCopied ? <><Check className="h-3.5 w-3.5 mr-1.5" /> Challenge copied!</> : <><Zap className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend</>}
+                <div className="flex items-center gap-2 mb-3">
+                  <Button className="flex-1 rounded-xl h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs active:scale-[0.97] transition-transform" onClick={handleCopyChallenge}>
+                    {challengeCopied ? <><Check className="h-3 w-3 mr-1" /> Copied!</> : <><Zap className="h-3 w-3 mr-1" /> Challenge a friend</>}
                   </Button>
-                  <ActiveGroupCard className="w-full" />
-                  <Button variant="ghost" className="w-full rounded-xl h-8 font-medium text-[10px] text-muted-foreground/40 active:scale-[0.97] transition-transform" onClick={handleCopyResults}>
-                    {resultsCopied ? <><Check className="h-3 w-3 mr-1.5" /> Results copied!</> : <><Share2 className="h-3 w-3 mr-1.5" /> Share my results</>}
+                  <Button variant="outline" className="rounded-xl h-9 px-3 text-xs" onClick={handleCopyResults}>
+                    {resultsCopied ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
                   </Button>
-                </motion.div>
+                </div>
               )}
+
+              <ActiveGroupCard className="mb-3" />
 
               {/* Room card removed — groups are the main social path */}
 
