@@ -17,7 +17,7 @@ import {
   type GroupMember,
   type GroupDayResult,
 } from '@/lib/groups';
-import { getPlayerId, ensureDailyPrompts, getCompletedPrompts } from '@/lib/store';
+import { getPlayerId, ensureDailyPrompts, syncCompletionStatus } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -59,10 +59,10 @@ export default function GroupToday() {
 
         setGroup(g);
 
-        // Check if played today
+        // Check if played today — sync from server for reliability
         const prompts = await ensureDailyPrompts();
-        const completed = getCompletedPrompts();
-        setHasPlayed(prompts.every(p => completed.has(p.id)));
+        const statusMap = await syncCompletionStatus(prompts);
+        setHasPlayed(prompts.length > 0 && prompts.every(p => statusMap[p.id]));
 
         await loadData(g);
         setLoading(false);
