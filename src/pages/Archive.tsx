@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, Share2, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
-import MyRoomCard from '@/components/MyRoomCard';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -367,12 +367,7 @@ export default function Archive() {
                 </motion.div>
               )}
 
-              {/* My Room Card */}
-              {allTodayAnswered && (
-                <div className="mb-3">
-                  <MyRoomCard />
-                </div>
-              )}
+              {/* Room card removed — groups are the main social path */}
 
               {/* Today prompt cards */}
               <div className="space-y-2">

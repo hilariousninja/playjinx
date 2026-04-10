@@ -128,17 +128,22 @@ export default function SocialMemoryCard({ refreshKey = 0, compact = false }: Pr
           </div>
         )}
 
-        {/* Recurring overlap */}
+        {/* Recurring overlap — only if meaningful (2+ matches) */}
         {recurring.length > 0 && !weeklyBest && (
           <div className="pt-1 border-t border-border/30">
             <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.12em] font-medium mb-0.5">
               Recurring overlap
             </p>
-            {recurring.slice(0, 2).map((r) => (
+            {recurring.filter(r => r.totalMatched > 0).slice(0, 2).map((r) => (
               <p key={r.name} className="text-foreground/70 font-display">
                 You and <span className="font-semibold">{r.name}</span> JINXed {r.totalMatched} times this week
               </p>
             ))}
+            {recurring.filter(r => r.totalMatched > 0).length === 0 && (
+              <p className="text-[12px] text-muted-foreground/50">
+                Play with your group to build match history
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -153,10 +153,11 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-5 space-y-2 px-5">
+      <footer className="border-t border-border py-5 space-y-2 px-5 pb-20 md:pb-5">
         <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} />
     </div>
   );
 }
