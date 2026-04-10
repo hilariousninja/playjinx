@@ -16,9 +16,11 @@ import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { createChallenge, buildChallengeShareText, getChallengeByToken } from '@/lib/challenge';
 import { getDisplayName, joinChallengeRoom } from '@/lib/challenge-room';
 import { recordMatchesForChallenge } from '@/lib/social-memory';
-import MyRoomCard from '@/components/MyRoomCard';
 import InviteToGroupButton from '@/components/InviteToGroupButton';
 import { toast } from '@/hooks/use-toast';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { useGroupHasActivity } from '@/hooks/use-group-activity';
 
 type Phase = 'input' | 'calculating' | 'results';
 
@@ -26,6 +28,8 @@ export default function Play() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const challengeToken = searchParams.get('challenge');
+  const hasNewRoomActivity = useRoomHasNewActivity();
+  const hasGroupActivity = useGroupHasActivity();
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [inputVal, setInputVal] = useState('');
@@ -156,13 +160,14 @@ export default function Play() {
   const isSubmitted = submitted[prompt.id];
   const allDone = prompts.every(p => submitted[p.id]);
   const completedCount = prompts.filter(p => submitted[p.id]).length;
-  const showBottomNav = isSubmitted && currentPhase === 'results';
+  const showPromptPager = isSubmitted && currentPhase === 'results';
+  const showMobileNav = allDone && currentPhase === 'results';
 
   const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); setInputError(null); };
   const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); setInputError(null); };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={`min-h-screen bg-background flex flex-col ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
       <AnimatePresence>
         {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       </AnimatePresence>
@@ -291,15 +296,14 @@ export default function Play() {
                       >
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
-                      <InviteToGroupButton className="w-full h-9 text-xs" />
-                      <MyRoomCard />
+                      <InviteToGroupButton className="w-full h-10 text-sm" />
                       <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>
                       {currentIdx === prompts.length - 1 && <Countdown />}
                       {currentIdx === prompts.length - 1 && (
                         <div className="mt-3">
-                          <SocialMemoryCard compact />
+                          <SocialMemoryCard compact contextualEmptyState />
                         </div>
                       )}
                     </motion.div>
@@ -309,7 +313,7 @@ export default function Play() {
             </motion.div>
           </AnimatePresence>
 
-          {showBottomNav && (
+          {showPromptPager && (
             <div className="flex justify-between mt-6">
               <button onClick={goPrev} disabled={currentIdx === 0} className="text-[10px] uppercase tracking-wide text-muted-foreground/30 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
                 <ArrowLeft className="h-3 w-3" /> Prev
@@ -325,6 +329,7 @@ export default function Play() {
       <footer className="border-t border-border py-3 shrink-0">
         <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
       </footer>
+      {showMobileNav && <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />}
     </div>
   );
 }
