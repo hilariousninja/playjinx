@@ -27,7 +27,8 @@ export default function AppHeader({ hasNewRoomActivity }: Props) {
         <Link to="/">
           <JinxLogo size={22} className="text-foreground text-lg" />
         </Link>
-        <div className="flex items-center gap-1">
+        {/* Desktop nav — hidden on mobile (bottom nav used instead) */}
+        <div className="hidden md:flex items-center gap-1">
           {navItems.map(({ to, label }) => (
             <Link
               key={to}
@@ -49,9 +50,9 @@ export default function AppHeader({ hasNewRoomActivity }: Props) {
               )}
             </Link>
           ))}
-          <div className="ml-2">
-            <PlayerIdentity />
-          </div>
+        </div>
+        <div className="flex items-center">
+          <PlayerIdentity />
         </div>
       </div>
     </header>
