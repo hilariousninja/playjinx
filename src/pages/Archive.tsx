@@ -319,25 +319,16 @@ export default function Archive() {
           {/* ─── TODAY SECTION ─── */}
           {todayPrompts.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-              <div className="mb-3">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <p className="text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-display">{todayLabel}</p>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold tracking-tight text-foreground">Today</h1>
                   <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
                     <Zap className="h-2 w-2" /> Live
                   </span>
                 </div>
-                {allTodayAnswered ? (
-                  <div className="flex items-baseline gap-2">
-                    <h1 className="text-lg font-bold tracking-tight text-foreground">Today's JINX</h1>
-                    <span className="text-[10px] text-muted-foreground/40 font-display">{todayAnsweredCount}/{todaySummaries.length} answered</span>
-                  </div>
-                ) : todayAnsweredCount > 0 ? (
-                  <h1 className="text-lg font-bold tracking-tight text-foreground">
-                    {todayAnsweredCount} of {todaySummaries.length} answered
-                  </h1>
-                ) : (
-                  <h1 className="text-lg font-bold tracking-tight text-foreground">Today's prompts</h1>
-                )}
+                <span className="text-[10px] text-muted-foreground/40 font-display tabular-nums">
+                  {todayAnsweredCount}/{todaySummaries.length} answered
+                </span>
               </div>
 
               {/* Share actions — compact row */}
@@ -377,20 +368,15 @@ export default function Archive() {
                             <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
                               {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
                             </p>
-                            <p className="text-[10px] text-muted-foreground/40 mt-1 font-display flex items-center gap-1.5">
+                            <p className="text-[11px] text-muted-foreground/50 mt-0.5 font-display">
                               → {s.answer.raw_answer}
-                              {tier && TIcon && (
-                                <span className={`inline-flex items-center gap-0.5 text-[8px] font-bold px-1 py-px rounded-full ${tier.bg} ${tier.color}`}>
-                                  <TIcon className="h-2 w-2" />
-                                  {tier.label}
-                                </span>
-                              )}
                             </p>
                           </div>
-                          <div className="flex items-center gap-3 shrink-0 ml-4">
-                            {s.rank > 0 && (
-                              <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums">
-                                #{s.rank} · {s.matchCount}
+                          <div className="flex items-center gap-2 shrink-0 ml-4">
+                            {tier && TIcon && (
+                              <span className={`inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full ${tier.bg} ${tier.color}`}>
+                                <TIcon className="h-2 w-2" />
+                                {tier.label}
                               </span>
                             )}
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
@@ -443,14 +429,9 @@ export default function Archive() {
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => (
                 <div key={date} className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
-                      {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/25 font-display tabular-nums">
-                      {dailyPlayers[date] ?? 0} players
-                    </span>
-                  </div>
+                  <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40 mb-2">
+                    {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </p>
 
                   <div className="space-y-2">
                     {ps.map((p, i) => {
@@ -469,21 +450,23 @@ export default function Archive() {
                               {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
                             </p>
                             {answered && userAnswers[p.id] ? (
-                              <p className="text-[10px] text-muted-foreground/40 mt-1 font-display flex items-center gap-1.5">
+                              <p className="text-[11px] text-muted-foreground/50 mt-0.5 font-display">
                                 → {userAnswers[p.id].raw_answer}
-                                <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1 py-px rounded-full bg-primary/5 text-primary/50">
-                                  <Check className="h-2 w-2" />
-                                  Played
-                                </span>
                               </p>
                             ) : !answered ? (
-                              <p className="text-[10px] text-muted-foreground/30 mt-1">Not answered</p>
+                              <p className="text-[10px] text-muted-foreground/30 mt-0.5">Not answered</p>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-3 shrink-0 ml-4">
-                            <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums">
-                              {totalCounts[p.id] ?? 0} played
-                            </span>
+                          <div className="flex items-center gap-2 shrink-0 ml-4">
+                            {answered ? (
+                              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/5 text-primary/50">
+                                <Check className="h-2 w-2" /> Played
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground/25 font-display tabular-nums">
+                                {totalCounts[p.id] ?? 0} played
+                              </span>
+                            )}
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
                           </div>
                         </motion.button>

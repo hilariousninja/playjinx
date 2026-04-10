@@ -314,10 +314,10 @@ export default function Play() {
 
           {showPromptPager && (
             <div className="flex justify-between mt-6">
-              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[10px] uppercase tracking-wide text-muted-foreground/30 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] font-display font-semibold text-muted-foreground/50 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent/50">
                 <ArrowLeft className="h-3 w-3" /> Prev
               </button>
-              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[10px] uppercase tracking-wide text-muted-foreground/30 hover:text-muted-foreground disabled:opacity-0 transition-all flex items-center gap-1">
+              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] font-display font-semibold text-muted-foreground/50 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-accent/50">
                 Next <ArrowRight className="h-3 w-3" />
               </button>
             </div>
