@@ -48,8 +48,8 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity }
               <span className={cn('text-[10px] leading-none', active ? 'font-bold' : 'font-medium')}>
                 {label}
               </span>
-              {showDot && (
-                <span className="absolute top-2 right-1/4 w-1.5 h-1.5 rounded-full bg-primary" />
+              {showDot && !active && (
+                <span className="absolute top-2.5 left-1/2 translate-x-2 w-1 h-1 rounded-full bg-primary/60" />
               )}
             </Link>
           );

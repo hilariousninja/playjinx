@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, BarChart3, Share2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, Share2 } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -177,7 +177,7 @@ export default function Play() {
           <Link to="/">
             <JinxLogo size={22} className="text-foreground text-lg" />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-1.5">
               {prompts.map((p, i) => (
                 <button key={p.id} onClick={() => { setCurrentIdx(i); setInputVal(''); setInputError(null); }}
@@ -191,16 +191,9 @@ export default function Play() {
                 />
               ))}
             </div>
-            <span className="text-[10px] text-muted-foreground/60 font-display tabular-nums">
+            <span className="text-[10px] text-muted-foreground/50 font-display tabular-nums">
               {completedCount}/{prompts.length}
             </span>
-            {completedCount > 0 && (
-              <Button variant="ghost" size="sm" className="text-muted-foreground/60 hover:text-foreground h-7 w-7 p-0" asChild>
-                <Link to="/archive">
-                  <BarChart3 className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            )}
             <PlayerIdentity />
           </div>
         </div>
