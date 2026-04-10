@@ -22,6 +22,7 @@ export default function Landing() {
   const [myGroups, setMyGroups] = useState<GroupWithActivity[]>([]);
   const navigate = useNavigate();
   const hasNewRoomActivity = useRoomHasNewActivity();
+  const hasGroupActivity = useGroupHasActivity();
 
   useEffect(() => {
     (async () => {
