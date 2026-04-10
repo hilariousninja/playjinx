@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import AppHeader from '@/components/AppHeader';
-import MyRoomCard from '@/components/MyRoomCard';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupsList from '@/components/GroupsList';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import { isRoomToday } from '@/lib/my-room';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { getMyGroups, buildGroupInviteText, createGroup, type GroupWithActivity } from '@/lib/groups';
 import { toast } from '@/hooks/use-toast';
@@ -45,7 +44,6 @@ export default function Landing() {
 
   const allDone = loaded && prompts.length > 0 && prompts.every(p => completedIds.has(p.id));
   const someStarted = loaded && prompts.some(p => completedIds.has(p.id));
-  const showRoomCard = allDone && isRoomToday();
   const hasGroups = myGroups.length > 0;
 
   return (
@@ -93,11 +91,7 @@ export default function Landing() {
                   <Link to="/archive"><Eye className="h-4 w-4 mr-2" /> View results</Link>
                 </Button>
               </div>
-              {showRoomCard && (
-                <div className="mt-4 w-full text-left">
-                  <MyRoomCard />
-                </div>
-              )}
+              {/* Room card removed — groups are the main social path */}
             </motion.div>
           ) : (
             <motion.div
@@ -159,10 +153,11 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-5 space-y-2 px-5">
+      <footer className="border-t border-border py-5 space-y-2 px-5 pb-20 md:pb-5">
         <Countdown />
         <p className="text-center text-[10px] text-muted-foreground/40 tracking-wide">JINX — daily crowd word game</p>
       </footer>
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} />
     </div>
   );
 }
