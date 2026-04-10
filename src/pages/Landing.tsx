@@ -11,6 +11,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupsList from '@/components/GroupsList';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import { getMyGroups, buildGroupInviteText, createGroup, type GroupWithActivity } from '@/lib/groups';
 import { toast } from '@/hooks/use-toast';
 
