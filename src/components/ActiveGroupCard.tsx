@@ -10,9 +10,10 @@ import { toast } from '@/hooks/use-toast';
 interface Props {
   className?: string;
   maxGroups?: number;
+  compact?: boolean;
 }
 
-export default function ActiveGroupCard({ className = '', maxGroups = 3 }: Props) {
+export default function ActiveGroupCard({ className = '', maxGroups = 3, compact = false }: Props) {
   const navigate = useNavigate();
   const [groups, setGroups] = useState<GroupWithActivity[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -89,6 +90,13 @@ export default function ActiveGroupCard({ className = '', maxGroups = 3 }: Props
 
   // --- No groups → compact start CTA ---
   if (groups.length === 0) {
+    if (compact) {
+      return (
+        <Link to="/groups" className={`flex items-center justify-center gap-1.5 text-[10px] font-display font-semibold text-muted-foreground/40 hover:text-foreground py-1.5 rounded-lg hover:bg-accent/50 transition-colors ${className}`}>
+          <Users className="h-3 w-3" /> Start a group
+        </Link>
+      );
+    }
     return (
       <button
         onClick={() => setShowCreate(true)}
@@ -105,7 +113,25 @@ export default function ActiveGroupCard({ className = '', maxGroups = 3 }: Props
     );
   }
 
-  // --- Active groups: whole card is a link, invite is a small secondary action ---
+  // --- Compact mode: lightweight inline strip ---
+  if (compact) {
+    const g = groups[0];
+    return (
+      <Link
+        to={`/g/${g.invite_code}/today`}
+        className={`flex items-center gap-2 py-1.5 rounded-lg text-[10px] font-display text-muted-foreground/50 hover:text-foreground transition-colors ${className}`}
+      >
+        <Users className="h-3 w-3 text-primary/50" />
+        <span className="font-semibold truncate">{g.name}</span>
+        {g.hasActivityToday && (
+          <span className="text-[7px] bg-primary/10 text-primary px-1 py-px rounded-full font-bold">Live</span>
+        )}
+        <ArrowRight className="h-2.5 w-2.5 ml-auto shrink-0" />
+      </Link>
+    );
+  }
+
+  // --- Active groups: full card layout ---
   return (
     <div className={`space-y-1.5 ${className}`}>
       {groups.slice(0, maxGroups).map(g => (
@@ -140,14 +166,6 @@ export default function ActiveGroupCard({ className = '', maxGroups = 3 }: Props
           </button>
         </Link>
       ))}
-      {groups.length > maxGroups && (
-        <Link
-          to="/groups"
-          className="flex items-center justify-center gap-1.5 text-[11px] font-display font-semibold text-muted-foreground/50 hover:text-foreground py-2 px-3 rounded-lg hover:bg-accent/50 transition-colors mx-auto w-fit"
-        >
-          View all {groups.length} groups <ArrowRight className="h-3 w-3" />
-        </Link>
-      )}
     </div>
   );
 }
