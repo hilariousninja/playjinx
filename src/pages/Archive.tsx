@@ -327,14 +327,9 @@ export default function Archive() {
                   </span>
                 </div>
                 {allTodayAnswered ? (
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h1 className="text-lg font-bold tracking-tight text-foreground">Today's JINX complete</h1>
-                    {bestHit?.answer && (
-                      <span className="inline-flex items-center gap-1 bg-[hsl(var(--match-best)/0.08)] text-[hsl(var(--match-best))] px-2.5 py-0.5 rounded-full">
-                        <Trophy className="h-2.5 w-2.5" />
-                        <span className="text-[10px] font-display font-bold">{bestHit.answer.raw_answer.toUpperCase()}</span>
-                      </span>
-                    )}
+                  <div className="flex items-baseline gap-2">
+                    <h1 className="text-lg font-bold tracking-tight text-foreground">Today's JINX</h1>
+                    <span className="text-[10px] text-muted-foreground/40 font-display">{todayAnsweredCount}/{todaySummaries.length} answered</span>
                   </div>
                 ) : todayAnsweredCount > 0 ? (
                   <h1 className="text-lg font-bold tracking-tight text-foreground">
@@ -362,7 +357,7 @@ export default function Archive() {
               {/* Room card removed — groups are the main social path */}
 
               {/* Today prompt cards */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {todaySummaries.map((s, i) => {
                   const tier = getMatchTier(s);
                   const isBestHit = bestHit && s.prompt.id === bestHit.prompt.id;
@@ -373,16 +368,16 @@ export default function Archive() {
                     {s.answer ? (
                       <button
                         onClick={() => setSelected(s.prompt.id)}
-                        className={`w-full text-left bg-card border rounded-xl px-4 py-3 hover:border-primary/20 transition-all group ${
+                        className={`w-full text-left bg-card border rounded-xl px-3.5 py-2.5 hover:border-primary/20 transition-all group ${
                           isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/50'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[13px] tracking-tight text-muted-foreground/50 mb-1.5">
+                            <p className="font-display font-bold text-[12px] tracking-tight text-muted-foreground/50 mb-1">
                               {s.prompt.word_a} <span className="text-primary/40">+</span> {s.prompt.word_b}
                             </p>
-                            <p className="font-display font-bold text-[17px] text-foreground mb-1.5 break-words">
+                            <p className="font-display font-bold text-[15px] text-foreground mb-1 break-words">
                               {s.answer.raw_answer}
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">

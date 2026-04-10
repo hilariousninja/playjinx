@@ -262,8 +262,8 @@ export default function Play() {
                   <ResultsView promptId={prompt.id} />
 
                   {currentIdx < prompts.length - 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4">
-                      <Button onClick={goNext} className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3">
+                      <Button onClick={goNext} className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
                     </motion.div>
@@ -272,7 +272,7 @@ export default function Play() {
                   {allDone && !challengeToken && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
                       <Button
-                        className="w-full rounded-xl h-10 font-semibold text-sm active:scale-[0.97] transition-transform"
+                        className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform"
                         onClick={async () => {
                           try {
                             const ch = await createChallenge(prompts);
@@ -290,12 +290,12 @@ export default function Play() {
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
                       <ActiveGroupCard className="w-full" />
-                      <Button variant="outline" className="w-full rounded-xl h-9 text-xs" asChild>
+                      <Button variant="outline" className="w-full rounded-xl h-8 text-[11px]" asChild>
                         <Link to="/archive">View all results</Link>
                       </Button>
                       {currentIdx === prompts.length - 1 && <Countdown />}
                       {currentIdx === prompts.length - 1 && (
-                        <div className="mt-3">
+                        <div className="mt-2">
                           <SocialMemoryCard compact contextualEmptyState />
                         </div>
                       )}
