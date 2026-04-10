@@ -504,9 +504,10 @@ export default function Archive() {
         </div>
       </div>
 
-      <footer className="border-t border-border py-3 shrink-0">
+      <footer className="border-t border-border py-3 pb-20 md:pb-3 shrink-0">
         <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
       </footer>
+      <MobileBottomNav />
     </div>
   );
 }
