@@ -161,7 +161,7 @@ export default function Play() {
   const showMobileNav = allDone && currentPhase === 'results';
 
   const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); setInputError(null); };
-  const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); setInputError(null); };
+  
 
   return (
     <div className={`min-h-screen bg-background flex flex-col ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
