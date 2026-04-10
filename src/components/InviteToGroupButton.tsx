@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Loader2, X, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,9 +23,35 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
   const [showCreate, setShowCreate] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerGroups, setPickerGroups] = useState<GroupWithActivity[]>([]);
+  const [knownGroups, setKnownGroups] = useState<GroupWithActivity[] | null>(null);
   const [groupName, setGroupName] = useState('');
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+
+    (async () => {
+      try {
+        const groups = await getMyGroups();
+        if (!ignore) setKnownGroups(groups);
+      } catch {
+        if (!ignore) setKnownGroups([]);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const loadGroups = async () => {
+    const groups = await getMyGroups();
+    setKnownGroups(groups);
+    return groups;
+  };
+
+  const truncateGroupName = (name: string) => (name.length > 18 ? `${name.slice(0, 17)}…` : name);
 
   const shareGroupInvite = async (g: { invite_code: string; name: string; id: string; creator_session_id: string; created_at: string }) => {
     const text = buildGroupInviteText(g as any);
@@ -39,7 +65,7 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
   const handleClick = async () => {
     setLoading(true);
     try {
-      const groups = await getMyGroups();
+      const groups = await loadGroups();
       if (groups.length === 0) {
         setShowCreate(true);
       } else if (groups.length === 1) {
@@ -79,12 +105,23 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
     setCreating(false);
   };
 
+  const groupCount = knownGroups?.length ?? 0;
+  const singleGroup = groupCount === 1 ? knownGroups?.[0] : null;
+  const buttonLabel = knownGroups === null
+    ? 'Invite to group'
+    : groupCount === 0
+      ? 'Start a group'
+      : groupCount === 1
+        ? `Invite to ${truncateGroupName(singleGroup?.name ?? 'your group')}`
+        : 'Choose a group';
+  const ButtonIcon = knownGroups !== null && groupCount > 0 ? Users : UserPlus;
+
   // --- Group picker ---
   if (showPicker) {
     return (
       <div className="rounded-xl border border-border/50 bg-card p-3 space-y-1.5 w-full">
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Share which group?</p>
+          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Choose a group</p>
           <button onClick={() => setShowPicker(false)} className="text-muted-foreground/30 hover:text-muted-foreground">
             <X className="h-3.5 w-3.5" />
           </button>
@@ -120,7 +157,7 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
     return (
       <div className="rounded-xl border border-border/50 bg-card p-3 space-y-2 w-full">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Name your group</p>
+          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Start a group</p>
           <button onClick={() => setShowCreate(false)} className="text-muted-foreground/30 hover:text-muted-foreground">
             <X className="h-3.5 w-3.5" />
           </button>
@@ -135,7 +172,7 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
           onKeyDown={e => e.key === 'Enter' && handleCreate()}
         />
         <Button onClick={handleCreate} disabled={creating} className="w-full rounded-lg h-9 text-sm">
-          {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Create & share invite'}
+          {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Create group'}
         </Button>
       </div>
     );
@@ -148,7 +185,8 @@ export default function InviteToGroupButton({ variant = 'outline', className = '
       onClick={handleClick}
       disabled={loading}
     >
-      {loading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <UserPlus className="h-3 w-3 mr-1.5" />} Invite to group
+      {loading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <ButtonIcon className="h-3 w-3 mr-1.5" />}
+      <span className="max-w-[14rem] truncate">{buttonLabel}</span>
     </Button>
   );
 }

@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Users, TrendingUp, Share2 } from 'lucide-react';
+import { Zap, Users, TrendingUp } from 'lucide-react';
 import { getSocialInsights, type SocialInsight } from '@/lib/social-memory';
+import { getMyGroups } from '@/lib/groups';
 
 interface Props {
   /** Trigger a refresh (e.g. after recording matches) */
   refreshKey?: number;
   /** Compact mode for inline placement */
   compact?: boolean;
+  /** Make empty states smarter for the completed daily results screen */
+  contextualEmptyState?: boolean;
 }
 
-export default function SocialMemoryCard({ refreshKey = 0, compact = false }: Props) {
+export default function SocialMemoryCard({ refreshKey = 0, compact = false, contextualEmptyState = false }: Props) {
   const [insights, setInsights] = useState<SocialInsight | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasGroups, setHasGroups] = useState(false);
+  const [groupsLoaded, setGroupsLoaded] = useState(!contextualEmptyState);
 
   useEffect(() => {
     (async () => {
@@ -26,10 +31,33 @@ export default function SocialMemoryCard({ refreshKey = 0, compact = false }: Pr
     })();
   }, [refreshKey]);
 
-  if (loading || !insights) return null;
+  useEffect(() => {
+    if (!contextualEmptyState) return;
+
+    let ignore = false;
+
+    (async () => {
+      try {
+        const groups = await getMyGroups();
+        if (!ignore) setHasGroups(groups.length > 0);
+      } catch {
+        if (!ignore) setHasGroups(false);
+      }
+
+      if (!ignore) setGroupsLoaded(true);
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [contextualEmptyState]);
+
+  if (loading || !insights || !groupsLoaded) return null;
 
   // No data at all — show empty state prompting social play
   if (!insights.hasData) {
+    if (contextualEmptyState && !hasGroups) return null;
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 6 }}
@@ -44,16 +72,21 @@ export default function SocialMemoryCard({ refreshKey = 0, compact = false }: Pr
           </span>
         </div>
         <p className="text-[12px] text-muted-foreground/50">
-          Share today's JINX to start building your match history
+          {contextualEmptyState && hasGroups
+            ? 'Play with your group to start seeing who matches'
+            : 'Share today\'s JINX to start building your match history'}
         </p>
       </motion.div>
     );
   }
 
   const { todayMatches, weeklyBest, recurring, todayPeopleCount } = insights;
+  const recurringMatches = recurring.filter(r => r.totalMatched > 0);
 
   // No matches today but have historical data
-  if (todayMatches.length === 0 && !weeklyBest && recurring.length === 0) {
+  if (todayMatches.length === 0 && !weeklyBest && recurringMatches.length === 0) {
+    if (contextualEmptyState && !hasGroups) return null;
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 6 }}
@@ -68,7 +101,9 @@ export default function SocialMemoryCard({ refreshKey = 0, compact = false }: Pr
           </span>
         </div>
         <p className="text-[12px] text-muted-foreground/50">
-          No shared matches yet today — play with friends to see who you think like
+          {contextualEmptyState && hasGroups
+            ? 'Once your group answers, your strongest overlaps will show up here'
+            : 'No shared matches yet today — play with friends to see who you think like'}
         </p>
       </motion.div>
     );
@@ -134,12 +169,12 @@ export default function SocialMemoryCard({ refreshKey = 0, compact = false }: Pr
             <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.12em] font-medium mb-0.5">
               Recurring overlap
             </p>
-            {recurring.filter(r => r.totalMatched > 0).slice(0, 2).map((r) => (
+            {recurringMatches.slice(0, 2).map((r) => (
               <p key={r.name} className="text-foreground/70 font-display">
                 You and <span className="font-semibold">{r.name}</span> JINXed {r.totalMatched} times this week
               </p>
             ))}
-            {recurring.filter(r => r.totalMatched > 0).length === 0 && (
+            {recurringMatches.length === 0 && (
               <p className="text-[12px] text-muted-foreground/50">
                 Play with your group to build match history
               </p>
