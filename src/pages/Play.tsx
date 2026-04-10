@@ -270,7 +270,7 @@ export default function Play() {
                   )}
 
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3 text-center space-y-2">
                       <Button
                         className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform"
                         onClick={async () => {
