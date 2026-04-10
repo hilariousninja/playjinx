@@ -30,7 +30,7 @@ export default function GroupToday() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasPlayed, setHasPlayed] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const myId = getPlayerId();
 
@@ -259,20 +259,37 @@ export default function GroupToday() {
             )}
           </motion.div>
 
-          {/* Settings dropdown */}
-          {showSettings && (
+          {/* Leave group */}
+          {!confirmLeave ? (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/40 hover:text-destructive/60 transition-colors py-2 mt-2"
+            >
+              <LogOut className="h-3 w-3" />
+              Leave group
+            </button>
+          ) : (
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 rounded-xl border border-border/50 bg-card p-3 space-y-2"
+              className="mt-3 rounded-xl border border-destructive/20 bg-card p-3 flex items-center gap-2"
             >
-              <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">Group settings</p>
-              <button
+              <p className="text-xs text-muted-foreground flex-1">
+                Leave <span className="font-semibold text-foreground">{group.name}</span>?
+              </p>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-3 text-[11px] rounded-lg"
                 onClick={handleLeave}
-                className="flex items-center gap-2 w-full text-left text-sm text-destructive/70 hover:text-destructive py-1.5 px-2 rounded-lg hover:bg-destructive/5 transition-colors"
               >
-                <LogOut className="h-3.5 w-3.5" />
-                Leave group
+                Leave
+              </Button>
+              <button
+                onClick={() => setConfirmLeave(false)}
+                className="text-muted-foreground/40 hover:text-muted-foreground"
+              >
+                <span className="text-xs">✕</span>
               </button>
             </motion.div>
           )}
