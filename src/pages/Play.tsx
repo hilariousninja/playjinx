@@ -260,18 +260,26 @@ export default function Play() {
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-2">
                   <ResultsView promptId={prompt.id} />
 
-                  {/* ─── Primary action ─── */}
+                  {/* Player count under result */}
+                  {(playerCounts[prompt.id] ?? 0) > 0 && (
+                    <p className="text-[10px] text-muted-foreground/40 flex items-center justify-center gap-1 mt-2">
+                      <Users className="h-2.5 w-2.5" />
+                      {playerCounts[prompt.id]} players
+                    </p>
+                  )}
+
+                  {/* ─── Mid-run: Next prompt is primary, challenge is secondary ─── */}
                   {currentIdx < prompts.length - 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 space-y-2">
                       <Button onClick={goNext} className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
                     </motion.div>
                   )}
 
+                  {/* ─── All done: Challenge is primary ─── */}
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center">
-                      {/* ─── Primary: Challenge ─── */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4 text-center space-y-2.5">
                       <Button
                         className="w-full rounded-xl h-9 font-semibold text-xs active:scale-[0.97] transition-transform"
                         onClick={async () => {
@@ -291,17 +299,17 @@ export default function Play() {
                         <Share2 className="h-3.5 w-3.5 mr-2" /> Challenge a friend
                       </Button>
 
-                      {/* ─── Secondary: Group + Archive ─── */}
-                      <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
-                        <ActiveGroupCard className="w-full" maxGroups={1} />
-                        <Button variant="outline" className="w-full rounded-xl h-8 text-[11px]" asChild>
+                      {/* ─── Secondary: compact group link + archive ─── */}
+                      <div className="pt-2.5 border-t border-border/30 space-y-1.5">
+                        <ActiveGroupCard className="w-full" maxGroups={1} compact />
+                        <Button variant="ghost" className="w-full rounded-lg h-7 text-[10px] text-muted-foreground/50 hover:text-foreground" asChild>
                           <Link to="/archive">View all results</Link>
                         </Button>
                       </div>
 
-                      {/* ─── Tertiary: Timer ─── */}
+                      {/* Timer */}
                       {currentIdx === prompts.length - 1 && (
-                        <p className="text-[10px] text-muted-foreground/30 flex items-center justify-center gap-1 mt-3">
+                        <p className="text-[9px] text-muted-foreground/25 flex items-center justify-center gap-1 mt-1">
                           <Countdown />
                         </p>
                       )}

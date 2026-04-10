@@ -343,10 +343,6 @@ export default function Archive() {
                 </div>
               )}
 
-              <ActiveGroupCard className="mb-3" />
-
-              {/* Room card removed — groups are the main social path */}
-
               {/* Today prompt cards */}
               <div className="space-y-2">
                 {todaySummaries.map((s, i) => {
@@ -427,11 +423,20 @@ export default function Archive() {
             <div>
               <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/30 mb-3 flex items-center gap-1.5"><ArrowLeft className="h-2.5 w-2.5" /> Past days</p>
 
-              {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => (
+              {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
+                const dayPlayerCount = dailyPlayers[date] ?? 0;
+                return (
                 <div key={date} className="mb-6">
-                  <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40 mb-2">
-                    {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/40">
+                      {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </p>
+                    {dayPlayerCount > 0 && (
+                      <span className="text-[9px] text-muted-foreground/30 font-display tabular-nums flex items-center gap-1">
+                        <Users className="h-2.5 w-2.5" /> {dayPlayerCount}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="space-y-2">
                     {ps.map((p, i) => {
@@ -474,7 +479,8 @@ export default function Archive() {
                     })}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
