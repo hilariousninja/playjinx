@@ -468,17 +468,21 @@ export default function Archive() {
                             <p className="font-display font-bold text-foreground text-[14px] tracking-tight">
                               {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
                             </p>
-                            {answered && userAnswers[p.id] && (
-                              <p className="text-[10px] text-muted-foreground/40 mt-1 font-display">
+                            {answered && userAnswers[p.id] ? (
+                              <p className="text-[10px] text-muted-foreground/40 mt-1 font-display flex items-center gap-1.5">
                                 → {userAnswers[p.id].raw_answer}
+                                <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1 py-px rounded-full bg-primary/5 text-primary/50">
+                                  <Check className="h-2 w-2" />
+                                  Played
+                                </span>
                               </p>
-                            )}
+                            ) : !answered ? (
+                              <p className="text-[10px] text-muted-foreground/30 mt-1">Not answered</p>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-3 shrink-0 ml-4">
-                            {answered && <Check className="h-3 w-3 text-primary/60" />}
-                            <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums flex items-center gap-1">
-                              <Users className="h-2.5 w-2.5" />
-                              {totalCounts[p.id] ?? 0}
+                            <span className="text-[10px] text-muted-foreground/30 font-display tabular-nums">
+                              {totalCounts[p.id] ?? 0} played
                             </span>
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
                           </div>
