@@ -367,18 +367,18 @@ export default function Archive() {
                 const dayAnswered = ps.filter(p => submittedMap[p.id]).length;
                 return (
                 <div key={date} className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[11px] uppercase tracking-widest font-display text-muted-foreground/50 font-semibold">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-xs uppercase tracking-widest font-display text-muted-foreground font-semibold">
                       {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </p>
-                    <div className="flex items-center gap-2.5 text-[9px] text-muted-foreground/40 font-display tabular-nums">
+                    <span className="text-xs text-muted-foreground/60 font-display tabular-nums flex items-center gap-1.5">
                       {dayPlayerCount > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-2.5 w-2.5" /> {dayPlayerCount}
-                        </span>
+                        <>
+                          <Users className="h-3 w-3" />
+                          <span>{dayPlayerCount} played</span>
+                        </>
                       )}
-                      <span>{dayAnswered}/{ps.length}</span>
-                    </div>
+                    </span>
                   </div>
 
                   <div className="space-y-2">
