@@ -357,9 +357,9 @@ export default function Archive() {
           {Object.keys(grouped).length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-5">
-                <div className="h-px flex-1 bg-border/50" />
-                <p className="text-[9px] uppercase tracking-widest font-display text-muted-foreground/40">Past days</p>
-                <div className="h-px flex-1 bg-border/50" />
+                <div className="h-px flex-1 bg-border/60" />
+                <p className="text-[10px] uppercase tracking-widest font-display text-muted-foreground/50 font-semibold">Past days</p>
+                <div className="h-px flex-1 bg-border/60" />
               </div>
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
@@ -367,18 +367,18 @@ export default function Archive() {
                 const dayAnswered = ps.filter(p => submittedMap[p.id]).length;
                 return (
                 <div key={date} className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[11px] uppercase tracking-widest font-display text-muted-foreground/50 font-semibold">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-xs uppercase tracking-widest font-display text-muted-foreground font-semibold">
                       {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </p>
-                    <div className="flex items-center gap-2.5 text-[9px] text-muted-foreground/40 font-display tabular-nums">
+                    <span className="text-xs text-muted-foreground/60 font-display tabular-nums flex items-center gap-1.5">
                       {dayPlayerCount > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-2.5 w-2.5" /> {dayPlayerCount}
-                        </span>
+                        <>
+                          <Users className="h-3 w-3" />
+                          <span>{dayPlayerCount} played</span>
+                        </>
                       )}
-                      <span>{dayAnswered}/{ps.length}</span>
-                    </div>
+                    </span>
                   </div>
 
                   <div className="space-y-2">
@@ -390,7 +390,7 @@ export default function Archive() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.04, duration: 0.3 }}
-                          onClick={() => setSelected(p.id)}
+                         onClick={() => setSelected(p.id)}
                           className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 transition-all hover:border-primary/20 hover:shadow-sm group"
                         >
                           <div className="min-w-0 flex-1">
@@ -398,21 +398,14 @@ export default function Archive() {
                               {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
                             </p>
                             {answered && userAnswers[p.id] ? (
-                              <p className="text-[11px] text-muted-foreground/50 mt-0.5 font-display">
+                              <p className="text-xs text-muted-foreground/60 mt-0.5 font-display">
                                 → {userAnswers[p.id].raw_answer}
                               </p>
                             ) : !answered ? (
-                              <p className="text-[10px] text-muted-foreground/40 mt-0.5">Not answered</p>
+                              <p className="text-[11px] text-muted-foreground/40 mt-0.5">Not answered</p>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-4">
-                            {answered && (
-                              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/8 text-primary/60">
-                                <Check className="h-2 w-2" /> Played
-                              </span>
-                            )}
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
-                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground/25 group-hover:text-primary/40 transition-colors shrink-0 ml-3" />
                         </motion.button>
                       );
                     })}

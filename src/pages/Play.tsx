@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Send, Check, Loader2, Zap, Users, Share2 } from 'lucide-react';
+import { ArrowRight, Send, Check, Loader2, Zap, Users, Share2 } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -158,11 +158,10 @@ export default function Play() {
   const completedCount = prompts.filter(p => submitted[p.id]).length;
   const isMidRun = !allDone;
   const hasMorePrompts = currentIdx < prompts.length - 1;
-  const showPromptPager = isSubmitted && currentPhase === 'results';
   const showMobileNav = allDone && currentPhase === 'results';
 
   const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); setInputError(null); };
-  const goPrev = () => { setCurrentIdx(i => Math.max(0, i - 1)); setInputVal(''); setInputError(null); };
+  
 
   return (
     <div className={`min-h-screen bg-background flex flex-col ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
@@ -271,10 +270,9 @@ export default function Play() {
 
                   {/* ── All done: full completion stack ── */}
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 space-y-4">
-                      {/* Primary: Challenge */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 space-y-3">
                       <Button
-                        className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
+                        className="w-full rounded-xl h-12 font-semibold text-sm active:scale-[0.97] transition-transform"
                         onClick={async () => {
                           try {
                             const ch = await createChallenge(prompts);
@@ -289,19 +287,17 @@ export default function Play() {
                           }
                         }}
                       >
-                        <Share2 className="h-3.5 w-3.5 mr-1.5" /> Challenge a friend
+                        <Share2 className="h-4 w-4 mr-1.5" /> Challenge a friend
                       </Button>
 
-                      {/* Secondary: Group + Archive links */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between gap-4 px-1">
                         <ActiveGroupCard className="flex-1 min-w-0" maxGroups={1} compact />
-                        <Link to="/archive" className="text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                        <Link to="/archive" className="text-xs font-display font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0">
                           All results →
                         </Link>
                       </div>
 
-                      {/* Timer */}
-                      <p className="text-center text-[9px] text-muted-foreground/40">
+                      <p className="text-center text-[10px] text-muted-foreground/40 pt-1">
                         <Countdown />
                       </p>
                     </motion.div>
@@ -311,16 +307,6 @@ export default function Play() {
             </motion.div>
           </AnimatePresence>
 
-          {showPromptPager && (
-            <div className="flex justify-between mt-6">
-              <button onClick={goPrev} disabled={currentIdx === 0} className="text-[11px] font-display font-semibold text-muted-foreground/60 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1 px-3 py-2 rounded-lg border border-border/40 hover:border-border hover:bg-accent/50 active:bg-accent/70">
-                <ArrowLeft className="h-3 w-3" /> Prev
-              </button>
-              <button onClick={goNext} disabled={currentIdx === prompts.length - 1} className="text-[11px] font-display font-semibold text-muted-foreground/60 hover:text-foreground disabled:invisible transition-colors flex items-center gap-1 px-3 py-2 rounded-lg border border-border/40 hover:border-border hover:bg-accent/50 active:bg-accent/70">
-                Next <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
