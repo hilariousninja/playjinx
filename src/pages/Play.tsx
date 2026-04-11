@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, Check, Loader2, Zap, Users, Share2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Send, Check, Loader2, Zap, Users, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -157,11 +157,12 @@ export default function Play() {
   const allDone = prompts.every(p => submitted[p.id]);
   const completedCount = prompts.filter(p => submitted[p.id]).length;
   const isMidRun = !allDone;
-  const hasMorePrompts = currentIdx < prompts.length - 1;
+  const canGoPrev = currentIdx > 0;
+  const canGoNext = currentIdx < prompts.length - 1;
   const showMobileNav = allDone && currentPhase === 'results';
 
-  const goNext = () => { setCurrentIdx(i => Math.min(prompts.length - 1, i + 1)); setInputVal(''); setInputError(null); };
-  
+  const goPrev = () => { if (canGoPrev) { setCurrentIdx(i => i - 1); setInputVal(''); setInputError(null); } };
+  const goNext = () => { if (canGoNext) { setCurrentIdx(i => i + 1); setInputVal(''); setInputError(null); } };
 
   return (
     <div className={`min-h-screen bg-background flex flex-col ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
@@ -256,23 +257,59 @@ export default function Play() {
 
               {currentPhase === 'results' && isSubmitted && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-                  {/* Band 1: Result */}
                   <ResultsView promptId={prompt.id} />
 
-                  {/* ── Mid-run: single clear Next prompt CTA ── */}
-                  {isMidRun && hasMorePrompts && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 space-y-3">
+                  {/* ── Pager: always shown on results ── */}
+                  {prompts.length > 1 && (
+                    <div className="flex items-center justify-center gap-3 mt-4">
+                      <button
+                        onClick={goPrev}
+                        disabled={!canGoPrev}
+                        className={`flex items-center gap-1 text-xs font-display font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                          canGoPrev
+                            ? 'text-foreground hover:bg-accent'
+                            : 'text-muted-foreground/20 cursor-default'
+                        }`}
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                      </button>
+                      <span className="text-[10px] text-muted-foreground/40 font-display tabular-nums">
+                        {currentIdx + 1} / {prompts.length}
+                      </span>
+                      <button
+                        onClick={goNext}
+                        disabled={!canGoNext}
+                        className={`flex items-center gap-1 text-xs font-display font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                          canGoNext
+                            ? 'text-foreground hover:bg-accent'
+                            : 'text-muted-foreground/20 cursor-default'
+                        }`}
+                      >
+                        Next <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* ── Mid-run: clear Next prompt CTA ── */}
+                  {isMidRun && canGoNext && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-4">
                       <Button onClick={goNext} className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform">
                         Next prompt <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                       </Button>
                     </motion.div>
                   )}
 
-                  {/* ── All done: full completion stack ── */}
+                  {/* ── All done: completion state ── */}
                   {allDone && !challengeToken && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 space-y-3">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-5 space-y-3">
+                      {/* Completion banner */}
+                      <div className="text-center py-2">
+                        <p className="text-xs font-display font-bold text-primary uppercase tracking-widest">All done for today</p>
+                      </div>
+
+                      {/* Primary CTA */}
                       <Button
-                        className="w-full rounded-xl h-12 font-semibold text-sm active:scale-[0.97] transition-transform"
+                        className="w-full rounded-xl h-11 font-semibold text-sm active:scale-[0.97] transition-transform"
                         onClick={async () => {
                           try {
                             const ch = await createChallenge(prompts);
@@ -290,14 +327,24 @@ export default function Play() {
                         <Share2 className="h-4 w-4 mr-1.5" /> Challenge a friend
                       </Button>
 
-                      <div className="flex items-center justify-between gap-4 px-1">
-                        <ActiveGroupCard className="flex-1 min-w-0" maxGroups={1} compact />
-                        <Link to="/archive" className="text-xs font-display font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                          All results →
+                      {/* Secondary row */}
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to="/groups"
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-display font-semibold text-muted-foreground hover:text-foreground py-2 rounded-lg border border-border/60 hover:border-border transition-colors bg-card"
+                        >
+                          <Users className="h-3.5 w-3.5" /> Groups
+                        </Link>
+                        <Link
+                          to="/archive"
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-display font-semibold text-muted-foreground hover:text-foreground py-2 rounded-lg border border-border/60 hover:border-border transition-colors bg-card"
+                        >
+                          All results
                         </Link>
                       </div>
 
-                      <p className="text-center text-[10px] text-muted-foreground/40 pt-1">
+                      {/* Timer */}
+                      <p className="text-center text-[10px] text-muted-foreground/40">
                         <Countdown />
                       </p>
                     </motion.div>
