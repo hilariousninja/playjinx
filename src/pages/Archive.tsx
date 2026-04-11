@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, Zap, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
+import { ArrowLeft, Users, Send, Check, Loader2, ChevronRight, ArrowRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { Button } from '@/components/ui/button';
@@ -148,16 +148,17 @@ export default function Archive() {
   const getMatchTier = (s: PromptSummary) => {
     if (!s.answer) return null;
     const isBest = s.rank === 1;
-    if (isBest) return { label: 'Strongest hit', icon: Trophy, color: 'text-[hsl(var(--match-best))]', bg: 'bg-[hsl(var(--match-best)/0.08)]' };
-    if (s.rank <= 2) return { label: 'Strong', icon: Target, color: 'text-[hsl(var(--match-strong))]', bg: 'bg-[hsl(var(--match-strong)/0.08)]' };
-    if (s.rank <= 4) return { label: 'Good', icon: TrendingUp, color: 'text-[hsl(var(--match-good))]', bg: 'bg-[hsl(var(--match-good)/0.08)]' };
-    if (s.matchCount > 1) return { label: 'Decent', icon: Sparkles, color: 'text-[hsl(var(--match-decent))]', bg: 'bg-[hsl(var(--match-decent)/0.08)]' };
-    return { label: 'Unique', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted/50' };
+    if (isBest) return { label: 'Strongest', icon: Trophy, color: 'text-[hsl(var(--match-best))]', bg: 'bg-[hsl(var(--match-best)/0.1)]' };
+    if (s.rank <= 2) return { label: 'Strong', icon: Target, color: 'text-[hsl(var(--match-strong))]', bg: 'bg-[hsl(var(--match-strong)/0.1)]' };
+    if (s.rank <= 4) return { label: 'Good', icon: TrendingUp, color: 'text-[hsl(var(--match-good))]', bg: 'bg-[hsl(var(--match-good)/0.1)]' };
+    if (s.matchCount > 1) return { label: 'Decent', icon: Sparkles, color: 'text-[hsl(var(--match-decent))]', bg: 'bg-[hsl(var(--match-decent)/0.1)]' };
+    return { label: 'Unique', icon: Minus, color: 'text-muted-foreground', bg: 'bg-muted/60' };
   };
 
-  const bestHit = allTodayAnswered
-    ? todaySummaries.reduce((best, s) => s.matchCount > best.matchCount ? s : best, todaySummaries[0])
-    : null;
+  // Today player count (max across prompts)
+  const todayPlayerCount = todaySummaries.length > 0
+    ? Math.max(...todaySummaries.map(s => s.total))
+    : 0;
 
   // ─── DETAIL SCREEN ───
   const selectedPrompt = [...todayPrompts, ...archivePrompts].find(p => p.id === selected);
@@ -228,12 +229,12 @@ export default function Archive() {
             {isSubmitted && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mt-2">
                 <ResultsView promptId={selectedPrompt.id} />
-                <div className="mt-4 text-center">
+                <div className="mt-5 text-center">
                   <button
                     onClick={() => { setSelected(null); setInputVal(''); setInputError(null); }}
-                    className="text-[10px] uppercase tracking-wide text-muted-foreground/30 hover:text-muted-foreground transition-colors"
+                    className="text-xs font-display font-semibold text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    ← Back
+                    ← Back to archive
                   </button>
                 </div>
               </motion.div>
@@ -249,6 +250,144 @@ export default function Archive() {
   }
 
   // ─── MAIN LIST ───
+  // Shared day section renderer for consistent visual rhythm
+  const renderDaySection = (
+    date: string,
+    prompts: DbPrompt[],
+    playerCount: number,
+    isToday: boolean,
+  ) => {
+    const dateObj = new Date(date + 'T12:00:00');
+    const heading = isToday
+      ? 'Today'
+      : dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+    return (
+      <div key={date} className="mb-6">
+        {/* Day header — same structure for today and past */}
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <p className="text-xs uppercase tracking-widest font-display text-muted-foreground font-bold">
+              {heading}
+            </p>
+            {isToday && !allTodayAnswered && (
+              <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold">
+                Live
+              </span>
+            )}
+            {isToday && allTodayAnswered && (
+              <span className="text-[8px] bg-primary/8 text-primary/60 px-1.5 py-0.5 rounded-full font-display font-bold">
+                Done
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground/50 font-display tabular-nums flex items-center gap-1">
+            {playerCount > 0 && (
+              <>
+                <Users className="h-3 w-3" />
+                {playerCount}
+              </>
+            )}
+          </span>
+        </div>
+
+        {/* Prompt rows */}
+        <div className="space-y-1.5">
+          {isToday ? (
+            todaySummaries.map((s, i) => {
+              const tier = getMatchTier(s);
+              const TIcon = tier?.icon;
+
+              return (
+                <motion.div key={s.prompt.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 + i * 0.04 }}>
+                  {s.answer ? (
+                    <button
+                      onClick={() => setSelected(s.prompt.id)}
+                      className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 transition-all hover:border-primary/20 hover:shadow-sm group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
+                          {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
+                        </p>
+                        <p className="text-xs text-muted-foreground/50 mt-0.5 font-display">
+                          → {s.answer.raw_answer}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        {tier && TIcon && (
+                          <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${tier.bg} ${tier.color}`}>
+                            <TIcon className="h-2.5 w-2.5" />
+                            {tier.label}
+                          </span>
+                        )}
+                        <ChevronRight className="h-4 w-4 text-muted-foreground/25 group-hover:text-primary/40 transition-colors" />
+                      </div>
+                    </button>
+                  ) : (
+                    <Link
+                      to="/play"
+                      className="flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 hover:border-primary/20 transition-all group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
+                          {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
+                        </p>
+                        <p className="text-[11px] text-primary/60 mt-0.5 font-display font-medium">Tap to play</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-primary/40 group-hover:text-primary transition-colors shrink-0" />
+                    </Link>
+                  )}
+                </motion.div>
+              );
+            })
+          ) : (
+            prompts.map((p, i) => {
+              const answered = submittedMap[p.id];
+              return (
+                <motion.button
+                  key={p.id}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.25 }}
+                  onClick={() => setSelected(p.id)}
+                  className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 transition-all hover:border-primary/20 hover:shadow-sm group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display font-bold text-foreground text-[14px] tracking-tight">
+                      {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
+                    </p>
+                    {answered && userAnswers[p.id] ? (
+                      <p className="text-xs text-muted-foreground/50 mt-0.5 font-display">
+                        → {userAnswers[p.id].raw_answer}
+                      </p>
+                    ) : !answered ? (
+                      <p className="text-[11px] text-muted-foreground/40 mt-0.5 font-display">Not answered</p>
+                    ) : null}
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/25 group-hover:text-primary/40 transition-colors shrink-0 ml-3" />
+                </motion.button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Today-specific actions */}
+        {isToday && !allTodayAnswered && (
+          <div className="mt-3">
+            <Button className="w-full rounded-xl h-10 font-semibold text-sm" asChild>
+              <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
+            </Button>
+          </div>
+        )}
+        {isToday && allTodayAnswered && (
+          <p className="text-center text-[10px] text-muted-foreground/40 mt-3">
+            <Countdown />
+          </p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader />
@@ -256,100 +395,10 @@ export default function Archive() {
       <div className="flex-1">
         <div className="max-w-[22rem] mx-auto px-5 pt-6 pb-8 w-full">
 
-          {/* ─── TODAY SUMMARY ─── */}
+          {/* ─── TODAY ─── */}
           {todayPrompts.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-              {/* Today header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold tracking-tight text-foreground">Today</h1>
-                  {!allTodayAnswered ? (
-                    <span className="text-[7px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-display font-bold flex items-center gap-0.5">
-                      <Zap className="h-2 w-2" /> Live
-                    </span>
-                  ) : (
-                    <span className="text-[7px] bg-primary/8 text-primary/60 px-1.5 py-0.5 rounded-full font-display font-bold">
-                      Complete
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] text-muted-foreground/50 font-display tabular-nums">
-                  {todayAnsweredCount}/{todaySummaries.length}
-                </span>
-              </div>
-
-              {/* Today prompt cards */}
-              <div className="space-y-2">
-                {todaySummaries.map((s, i) => {
-                  const tier = getMatchTier(s);
-                  const isBestHit = bestHit && s.prompt.id === bestHit.prompt.id;
-                  const TIcon = tier?.icon;
-
-                  return (
-                  <motion.div key={s.prompt.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + i * 0.05 }}>
-                    {s.answer ? (
-                      <button
-                        onClick={() => setSelected(s.prompt.id)}
-                        className={`w-full text-left bg-card border rounded-xl px-4 py-3 hover:border-primary/20 transition-all group ${
-                          isBestHit && allTodayAnswered ? 'border-[hsl(var(--match-best)/0.2)] shadow-[0_0_0_1px_hsl(var(--match-best)/0.05)]' : 'border-border/60'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
-                              {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground/50 mt-0.5 font-display">
-                              → {s.answer.raw_answer}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-4">
-                            {tier && TIcon && (
-                              <span className={`inline-flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full ${tier.bg} ${tier.color}`}>
-                                <TIcon className="h-2 w-2" />
-                                {tier.label}
-                              </span>
-                            )}
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
-                          </div>
-                        </div>
-                      </button>
-                    ) : (
-                      <Link
-                        to="/play"
-                        className="block bg-card border border-border/60 rounded-xl px-4 py-3 hover:border-primary/20 transition-all group"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-[14px] tracking-tight text-foreground">
-                              {s.prompt.word_a} <span className="text-primary/50">+</span> {s.prompt.word_b}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/40 mt-1">Tap to play</p>
-                          </div>
-                          <ArrowRight className="h-3.5 w-3.5 text-primary/40 group-hover:text-primary transition-colors shrink-0" />
-                        </div>
-                      </Link>
-                    )}
-                  </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Continue playing CTA */}
-              {!allTodayAnswered && (
-                <div className="mt-3">
-                  <Button className="w-full rounded-xl h-10 font-semibold text-sm" asChild>
-                    <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
-                  </Button>
-                </div>
-              )}
-
-              {/* All done: countdown */}
-              {allTodayAnswered && (
-                <p className="text-center text-[9px] text-muted-foreground/40 mt-4">
-                  <Countdown />
-                </p>
-              )}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              {renderDaySection(todayStr, todayPrompts, todayPlayerCount, true)}
             </motion.div>
           )}
 
@@ -364,54 +413,7 @@ export default function Archive() {
 
               {Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0])).map(([date, ps]) => {
                 const dayPlayerCount = dailyPlayers[date] ?? 0;
-                const dayAnswered = ps.filter(p => submittedMap[p.id]).length;
-                return (
-                <div key={date} className="mb-6">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <p className="text-xs uppercase tracking-widest font-display text-muted-foreground font-semibold">
-                      {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </p>
-                    <span className="text-xs text-muted-foreground/60 font-display tabular-nums flex items-center gap-1.5">
-                      {dayPlayerCount > 0 && (
-                        <>
-                          <Users className="h-3 w-3" />
-                          <span>{dayPlayerCount} played</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {ps.map((p, i) => {
-                      const answered = submittedMap[p.id];
-                      return (
-                        <motion.button
-                          key={p.id}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.04, duration: 0.3 }}
-                         onClick={() => setSelected(p.id)}
-                          className="w-full text-left flex items-center justify-between bg-card border border-border/60 rounded-xl px-4 py-3 transition-all hover:border-primary/20 hover:shadow-sm group"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="font-display font-bold text-foreground text-[14px] tracking-tight">
-                              {p.word_a} <span className="text-primary/50">+</span> {p.word_b}
-                            </p>
-                            {answered && userAnswers[p.id] ? (
-                              <p className="text-xs text-muted-foreground/60 mt-0.5 font-display">
-                                → {userAnswers[p.id].raw_answer}
-                              </p>
-                            ) : !answered ? (
-                              <p className="text-[11px] text-muted-foreground/40 mt-0.5">Not answered</p>
-                            ) : null}
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground/25 group-hover:text-primary/40 transition-colors shrink-0 ml-3" />
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </div>
-                );
+                return renderDaySection(date, ps, dayPlayerCount, false);
               })}
             </div>
           )}
