@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer,
+  ensureDailyPrompts, submitAnswer, getBatchUserAnswers,
   getTotalSubmissions, getCompletedPrompts, markPromptCompleted,
   type DbPrompt, type DbAnswer,
 } from '@/lib/store';
