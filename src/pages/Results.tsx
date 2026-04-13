@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Share2, ChevronRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronRight } from 'lucide-react';
 import {
   ensureDailyPrompts, getUserAnswer, getStats, getCanonicalAnswer,
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
@@ -93,9 +92,9 @@ export default function Results() {
     : null;
 
   const avgRank = answered.length > 0 ? answered.reduce((s, r) => s + r.rank, 0) / answered.length : 0;
-  const vibe = avgRank <= 1.5 ? { label: 'Strong crowd read', color: 'text-[hsl(var(--success))]', bg: 'bg-[hsl(var(--success))]/10' }
-    : avgRank <= 3 ? { label: 'Solid instincts', color: 'text-primary', bg: 'bg-primary/10' }
-    : { label: 'Unique thinker', color: 'text-muted-foreground', bg: 'bg-muted' };
+  const vibe = avgRank <= 1.5 ? { label: 'Pretty in sync' }
+    : avgRank <= 3 ? { label: 'Solid instincts' }
+    : { label: 'Unique thinker' };
 
   const handleShare = async () => {
     const prompts = results.map(r => r.prompt);
@@ -127,51 +126,69 @@ export default function Results() {
     }
   };
 
-  const getTierInfo = (rank: number, matchCount: number) => {
-    if (rank === 1) return { label: '#1', color: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]', icon: Trophy };
-    if (rank === 2) return { label: '#2', color: 'bg-primary/12 text-primary', icon: Target };
-    if (rank <= 4) return { label: `#${rank}`, color: 'bg-muted text-muted-foreground', icon: TrendingUp };
-    if (matchCount > 1) return { label: `#${rank}`, color: 'bg-muted text-muted-foreground', icon: Sparkles };
-    return { label: 'Unique', color: 'bg-muted text-muted-foreground', icon: Minus };
+  const getRankStyle = (rank: number) => {
+    if (rank === 1) return { border: 'border-l-[3px] border-l-[hsl(var(--success))]', badge: 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]', label: `#1 · ${0}%` };
+    if (rank === 2) return { border: 'border-l-[3px] border-l-primary', badge: 'bg-primary/10 text-[hsl(var(--warning-foreground))]', label: `#2 · ${0}%` };
+    return { border: 'border-l-[3px] border-l-border', badge: 'bg-muted text-muted-foreground', label: `#${rank} · ${0}%` };
   };
+
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
-      <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
+      <AppHeader
+        hasNewRoomActivity={hasNewRoomActivity}
+        hasGroupActivity={hasGroupActivity}
+        rightContent={<span className="text-[11px] text-muted-foreground">{dateLabel}</span>}
+      />
 
-      <div className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-8 space-y-4">
+      <div className="flex-1 max-w-md mx-auto w-full px-4 pt-4 pb-8 space-y-3">
         {/* Brag block */}
         <BragBlock
           answeredCount={answered.length}
           totalCount={results.length}
           vibeLabel={vibe.label}
-          vibeColor={vibe.color}
+          vibeColor=""
           bestAnswer={bestResult?.answer?.raw_answer}
           bestPct={bestResult?.percentage}
           topPicks={topPicks}
         />
 
-        {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-2.5 text-center">
+        {/* Stats row — v8 ms-row */}
+        <div className="flex bg-card rounded-[11px] border border-foreground/[0.08] overflow-hidden">
           {[
-            { value: topPicks, label: 'top picks' },
-            { value: answered.length > 0 ? Math.max(...answered.map(r => r.total)) : 0, label: 'players today' },
-            { value: answered.length > 0 ? answered.reduce((s, r) => s + r.stats.length, 0) : 0, label: 'unique answers' },
-          ].map(s => (
-            <div key={s.label} className="bg-card border border-border/60 rounded-xl py-3">
-              <p className="text-xl font-black text-foreground tracking-tight">{s.value}</p>
-              <p className="text-[9px] text-muted-foreground/60 font-display uppercase tracking-wider mt-0.5">{s.label}</p>
+            { value: `${topPicks}/${results.length}`, label: 'Top picks' },
+            { value: bestResult ? `Top ${Math.max(bestResult.percentage, 1)}%` : '—', label: 'Best result' },
+            { value: answered.reduce((s, r) => s + r.stats.length, 0), label: 'Unique answers' },
+          ].map((s, i) => (
+            <div key={s.label} className={`flex-1 text-center py-[9px] px-1 ${i > 0 ? 'border-l border-foreground/[0.08]' : ''}`}>
+              <span className="text-[14px] font-bold text-primary block mb-px">{s.value}</span>
+              <span className="text-[9px] text-muted-foreground leading-tight">{s.label}</span>
             </div>
           ))}
         </div>
 
-        {/* Per-prompt cards */}
+        {/* Section label */}
+        <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground mt-1 mb-0">
+          How the crowd voted
+        </p>
+
+        {/* Per-prompt result cards — v8 rc style with left border */}
         {results.map((r, i) => {
-          const tier = getTierInfo(r.rank, r.matchCount);
-          const TierIcon = tier.icon;
           const barWidth = r.total > 0 && r.matchCount > 0
-            ? Math.max(Math.round((r.matchCount / r.total) * 100), 4)
-            : 0;
+            ? Math.max(Math.round((r.matchCount / r.total) * 100), 4) : 0;
+          const topStat = r.stats[0];
+          const isTopPick = r.rank === 1;
+          const borderClass = r.rank === 1 ? 'border-l-[3px] border-l-[hsl(var(--success))]'
+            : r.rank === 2 ? 'border-l-[3px] border-l-primary'
+            : 'border-l-[3px] border-l-border';
+          const badgeCls = r.rank === 1 ? 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]'
+            : r.rank === 2 ? 'bg-primary/10 text-[hsl(var(--warning-foreground))]'
+            : 'bg-muted text-muted-foreground';
+          const barCls = r.rank === 1 ? 'bg-[hsl(var(--success))]/10'
+            : r.rank === 2 ? 'bg-primary/10'
+            : 'bg-foreground/[0.06]';
 
           return (
             <motion.div
@@ -179,73 +196,84 @@ export default function Results() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.05 }}
-              className="bg-card border border-border/60 rounded-xl p-4"
+              className={`bg-card rounded-[12px] border border-foreground/[0.08] p-[11px_12px] ${borderClass}`}
             >
-              <p className="text-[9px] font-display text-muted-foreground/40 uppercase tracking-wider mb-2.5">
-                {r.prompt.word_a} + {r.prompt.word_b}
-              </p>
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-[5px]">
+                <span className="text-[11px] font-medium text-muted-foreground tracking-[0.04em]">
+                  {r.prompt.word_a} + {r.prompt.word_b}
+                </span>
+                <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${badgeCls}`}>
+                  #{r.rank} · {r.percentage}%
+                </span>
+              </div>
 
               {r.answer ? (
                 <>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-black text-foreground tracking-tight">
-                        {r.answer.raw_answer}
-                      </span>
-                      <span className="text-[8px] text-primary font-bold uppercase tracking-wider bg-primary/8 px-1.5 py-0.5 rounded">You</span>
-                    </div>
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${tier.color}`}>
-                      <TierIcon className="h-2.5 w-2.5" />
-                      {tier.label}
+                  {/* Answer + you tag */}
+                  <div className="flex items-center gap-[5px] mb-[6px]">
+                    <span className="text-[17px] font-bold text-foreground">
+                      {r.answer.raw_answer}
+                    </span>
+                    <span className="text-[9px] font-semibold bg-primary text-white px-[5px] py-[2px] rounded">
+                      you
                     </span>
                   </div>
 
-                  <div className="relative h-7 rounded-lg bg-muted/40 overflow-hidden mb-2.5">
+                  {/* Distribution bar */}
+                  <div className="h-[18px] bg-muted/40 rounded-[5px] overflow-hidden mb-[3px]">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${barWidth}%` }}
                       transition={{ duration: 0.6, delay: 0.2 + i * 0.05 }}
-                      className="absolute inset-y-0 left-0 rounded-lg bg-primary/25"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[12px] font-display font-bold text-foreground/50">
-                      {r.percentage}%
-                    </span>
+                      className={`h-full rounded-[5px] flex items-center px-[7px] ${barCls}`}
+                    >
+                      <span className={`text-[10px] font-semibold ${
+                        r.rank === 1 ? 'text-[hsl(142_72%_30%)]' : r.rank === 2 ? 'text-[hsl(var(--warning-foreground))]' : 'text-muted-foreground'
+                      }`}>
+                        {r.userCanonical || r.answer.normalized_answer}
+                      </span>
+                    </motion.div>
                   </div>
+
+                  {/* Context line */}
+                  <p className="text-[10px] text-muted-foreground mb-[5px]">
+                    {r.percentage}% · {isTopPick ? 'top pick' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
+                  </p>
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground/40 mb-2.5 font-medium">Missed</p>
+                <p className="text-[12px] text-muted-foreground/40 mb-[5px] italic">Missed</p>
               )}
 
+              {/* See all answers */}
               <button
                 onClick={() => setDrawerPrompt(r)}
-                className="flex items-center gap-1 text-[11px] text-primary font-bold hover:underline"
+                className="w-full bg-transparent border-none border-t border-foreground/[0.08] pt-[7px] text-[11px] text-primary font-medium cursor-pointer text-left flex items-center justify-between"
               >
-                See all {r.stats.length} answers <ChevronRight className="h-3 w-3" />
+                <span>{r.stats.length} answers</span>
+                <span>→</span>
               </button>
             </motion.div>
           );
         })}
 
-        {/* Bottom CTAs */}
-        <div className="space-y-3 pt-3">
-          <Button
+        {/* Bottom CTAs — v8: share primary, challenge text */}
+        <div className="space-y-[10px] pt-[14px]">
+          <button
             onClick={handleShare}
-            size="lg"
-            className="w-full rounded-xl h-[52px] bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-[15px] active:scale-[0.97] transition-transform shadow-sm shadow-primary/20"
+            className="w-full py-[13px] bg-primary text-white border-none rounded-[12px] text-[14px] font-semibold cursor-pointer active:scale-[0.97] transition-transform"
           >
-            <Share2 className="h-4 w-4 mr-2" /> Share your results
-          </Button>
+            Share results
+          </button>
 
           <button
             onClick={handleChallenge}
-            className="w-full text-center text-sm text-primary font-bold hover:underline py-2"
+            className="block w-full text-center text-[12px] text-muted-foreground py-1 cursor-pointer"
           >
-            Challenge a friend →
+            <span className="text-primary font-medium">Challenge a friend →</span>
           </button>
 
-          <div className="pt-1">
-            <Countdown />
-          </div>
+          <Countdown />
         </div>
       </div>
 

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Loader2, Zap, CornerDownLeft } from 'lucide-react';
-import PromptPair from '@/components/PromptPair';
+import { ArrowRight, Check, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer,
@@ -91,9 +90,11 @@ export default function Play() {
       setUserAnswers(prev => ({ ...prev, [promptId]: answer }));
       markPromptCompleted(promptId);
 
-      const nextIdx = prompts.findIndex((p, i) => i > prompts.findIndex(pp => pp.id === promptId) && !submitted[p.id] && p.id !== promptId);
+      const currentIdx = prompts.findIndex(pp => pp.id === promptId);
+      const nextIdx = prompts.findIndex((p, i) => i > currentIdx && !submitted[p.id] && p.id !== promptId);
       if (nextIdx >= 0) {
         setActiveIdx(nextIdx);
+        setTimeout(() => inputRefs.current[prompts[nextIdx].id]?.focus(), 100);
       }
     } catch (err: any) {
       setInputErrors(prev => ({ ...prev, [promptId]: err?.message || 'Something went wrong' }));
@@ -142,14 +143,21 @@ export default function Play() {
 
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      {/* Title area */}
-      <div className="text-center pt-6 pb-4 px-5">
-        <h1 className="text-xl font-bold text-foreground tracking-tight mb-0.5">Today's prompts</h1>
-        <p className="text-[12px] text-muted-foreground/60">What word will most people say?</p>
+      {/* Title area — matches v8 play-hdr */}
+      <div className="max-w-md mx-auto w-full px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
+            <p className="text-[11px] text-muted-foreground mt-0.5">What will most people say?</p>
+          </div>
+          <span className="text-[10px] font-semibold text-[hsl(var(--warning-foreground))] bg-primary/15 px-[9px] py-1 rounded-full whitespace-nowrap">
+            Match the crowd
+          </span>
+        </div>
       </div>
 
-      {/* Prompt cards */}
-      <div className="flex-1 px-5 pb-6 max-w-md mx-auto w-full space-y-3">
+      {/* Prompt cards — v8 style */}
+      <div className="flex-1 px-4 pb-6 max-w-md mx-auto w-full space-y-[9px]">
         {prompts.map((p, i) => {
           const isDone = submitted[p.id];
           const isActive = i === activeIdx && !isDone;
@@ -161,90 +169,99 @@ export default function Play() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className={`rounded-xl transition-all ${
-                isDone
-                  ? 'bg-card border border-[hsl(var(--success))]/15 p-4'
-                  : isActive
-                    ? 'game-card-elevated p-5'
-                    : 'bg-card border border-border/30 p-4 opacity-50'
+              className={`bg-card rounded-[14px] border transition-all ${
+                isActive
+                  ? 'border-primary bg-[#FFFBF3] p-[15px_16px]'
+                  : isDone
+                    ? 'border-foreground/[0.08] p-[15px_16px] opacity-85'
+                    : 'border-foreground/[0.08] p-[15px_16px] opacity-60'
               }`}
               onClick={() => {
                 if (isInactive) setActiveIdx(i);
               }}
             >
-              {/* Number label */}
-              <p className={`text-[9px] font-display font-bold uppercase tracking-[0.15em] mb-2 ${
-                isDone ? 'text-[hsl(var(--success))]/70' : isActive ? 'text-primary/60' : 'text-muted-foreground/30'
-              }`}>
-                Prompt {i + 1}
-              </p>
-
-              {/* Word pair */}
-              <div className={isDone ? 'mb-2' : 'mb-4'}>
-                <PromptPair
-                  wordA={p.word_a}
-                  wordB={p.word_b}
-                  size={isActive ? 'md' : 'sm'}
-                  className={isDone ? 'opacity-60' : ''}
-                />
+              {/* Number label with rule line */}
+              <div className="flex items-center gap-[6px] mb-2 text-[10px] font-medium text-muted-foreground tracking-[0.05em]">
+                {String(i + 1).padStart(2, '0')}
+                <div className="flex-1 h-px bg-foreground/[0.08]" />
               </div>
 
-              {/* Done state */}
+              {/* Word pair */}
+              <div className="flex items-center mb-[11px]">
+                <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
+                  {p.word_a}
+                </span>
+                {isActive ? (
+                  /* Amber spark connector */
+                  <div className="flex items-center mx-[10px] gap-[2px]">
+                    <div className="w-[10px] h-px bg-primary" />
+                    <div className="w-[6px] h-[6px] rounded-full bg-primary shadow-[0_0_0_2px_hsl(var(--warning-foreground)/0.15)]" />
+                    <div className="w-[10px] h-px bg-primary" />
+                  </div>
+                ) : (
+                  <span className="text-[14px] text-border mx-[9px]">+</span>
+                )}
+                <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
+                  {p.word_b}
+                </span>
+              </div>
+
+              {/* Done state — green answer with check */}
               {isDone && userAnswers[p.id] && (
-                <div className="flex items-center justify-center gap-2 py-1">
-                  <Check className="h-3.5 w-3.5 text-[hsl(var(--success))]/70" />
-                  <span className="text-[15px] font-bold text-foreground/80 tracking-tight">
+                <div className="flex items-center justify-between pb-[6px] border-b-[1.5px] border-[hsl(var(--success))]/20">
+                  <span className="text-[18px] font-semibold text-[hsl(var(--success))]">
                     {userAnswers[p.id].raw_answer}
                   </span>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6.5" fill="hsl(var(--success) / 0.08)" />
+                    <path d="M4 7l2 2 4-4" stroke="hsl(var(--success))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
               )}
 
-              {/* Active input */}
+              {/* Active input — inline underline style */}
               {isActive && (
                 <div>
-                  <div className="relative">
-                    <input
-                      ref={(el) => { inputRefs.current[p.id] = el; }}
-                      value={answers[p.id] || ''}
-                      onChange={e => {
-                        setAnswers(prev => ({ ...prev, [p.id]: e.target.value }));
-                        setInputErrors(prev => ({ ...prev, [p.id]: '' }));
-                      }}
-                      onKeyDown={e => e.key === 'Enter' && handleSubmit(p.id)}
-                      placeholder="Type your answer…"
-                      className="w-full rounded-xl text-center font-bold bg-background/80 h-[52px] text-lg border border-border/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/25 transition-colors"
-                      maxLength={80}
-                      disabled={!!submittingId}
-                    />
+                  <div className={`flex items-center justify-between pb-[6px] border-b-2 ${
+                    (answers[p.id] || '').trim() ? 'border-primary' : 'border-primary'
+                  }`}>
+                    <div className="flex items-center">
+                      <input
+                        ref={(el) => { inputRefs.current[p.id] = el; }}
+                        value={answers[p.id] || ''}
+                        onChange={e => {
+                          setAnswers(prev => ({ ...prev, [p.id]: e.target.value }));
+                          setInputErrors(prev => ({ ...prev, [p.id]: '' }));
+                        }}
+                        onKeyDown={e => e.key === 'Enter' && handleSubmit(p.id)}
+                        placeholder="Your answer…"
+                        className="bg-transparent text-[18px] font-semibold text-foreground placeholder:text-[14px] placeholder:text-foreground/20 placeholder:font-normal focus:outline-none w-full"
+                        maxLength={80}
+                        disabled={!!submittingId}
+                        autoFocus={i === activeIdx}
+                      />
+                      {submittingId === p.id && (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0 ml-2" />
+                      )}
+                    </div>
                   </div>
-
-                  {/* Submit button — full width below input */}
-                  <Button
-                    onClick={() => handleSubmit(p.id)}
-                    disabled={!(answers[p.id] || '').trim() || !!submittingId}
-                    className="w-full mt-2.5 rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-sm active:scale-[0.97] transition-transform disabled:opacity-30"
-                  >
-                    {submittingId === p.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>Submit <CornerDownLeft className="h-3.5 w-3.5 ml-1.5 opacity-50" /></>
-                    )}
-                  </Button>
-
-                  {inputErrors[p.id] && (
-                    <p className="text-[11px] text-destructive mt-1.5 text-center">{inputErrors[p.id]}</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground/40 text-center mt-2.5">
+                  <p className="text-[10px] text-muted-foreground mt-[7px] italic">
                     Not the cleverest — the most common.
                   </p>
+                  {inputErrors[p.id] && (
+                    <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
+                  )}
                 </div>
               )}
 
-              {/* Inactive — tap to activate */}
+              {/* Inactive — placeholder line */}
               {isInactive && (
-                <p className="text-[11px] text-muted-foreground/25 text-center cursor-pointer py-1">
-                  Tap to answer
-                </p>
+                <div
+                  className="flex items-center pb-[6px] border-b-[1.5px] border-foreground/10 cursor-pointer"
+                  onClick={() => setActiveIdx(i)}
+                >
+                  <span className="text-[14px] text-foreground/20">Your answer…</span>
+                </div>
               )}
             </motion.div>
           );
@@ -252,14 +269,13 @@ export default function Play() {
 
         {/* See results CTA */}
         {allDone && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="pt-2">
-            <Button
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="pt-1">
+            <button
               onClick={handleSeeResults}
-              size="lg"
-              className="w-full rounded-xl h-[52px] bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-[15px] active:scale-[0.97] transition-transform shadow-sm shadow-primary/20"
+              className="w-full py-[14px] bg-primary text-white border-none rounded-[13px] text-[14px] font-semibold cursor-pointer active:scale-[0.97] transition-transform"
             >
-              See my results <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+              See my results →
+            </button>
           </motion.div>
         )}
       </div>

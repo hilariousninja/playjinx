@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface Props {
   hasNewRoomActivity?: boolean;
   hasGroupActivity?: boolean;
+  rightContent?: React.ReactNode;
 }
 
 const navItems = [
@@ -14,7 +15,7 @@ const navItems = [
   { to: '/archive', label: 'Archive' },
 ];
 
-export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Props) {
+export default function AppHeader({ hasNewRoomActivity, hasGroupActivity, rightContent }: Props) {
   const { pathname } = useLocation();
 
   const isActive = (to: string) => {
@@ -23,10 +24,10 @@ export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Prop
   };
 
   return (
-    <header className="border-b border-border/60 shrink-0 bg-card/50 backdrop-blur-sm">
-      <div className="flex items-center justify-between h-14 max-w-xl mx-auto px-5">
+    <header className="border-b border-foreground/[0.08] shrink-0 bg-background">
+      <div className="flex items-center justify-between h-14 max-w-xl mx-auto px-[18px]">
         <Link to="/" className="shrink-0">
-          <JinxLogo size={26} className="text-foreground" />
+          <JinxLogo size={28} className="text-foreground" />
         </Link>
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-0.5">
@@ -52,7 +53,7 @@ export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Prop
           ))}
         </div>
         <div className="flex items-center shrink-0">
-          <PlayerIdentity />
+          {rightContent || <PlayerIdentity />}
         </div>
       </div>
     </header>
