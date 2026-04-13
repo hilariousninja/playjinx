@@ -22,15 +22,23 @@ export default function BragBlock({
     answeredCount === totalCount
       ? topPicks === totalCount
         ? `You nailed all ${totalCount}.`
-        : `You nailed ${topPicks} of ${totalCount}.`
+        : topPicks >= 2
+          ? `You nailed ${topPicks} of ${totalCount}.`
+          : topPicks === 1
+            ? `Matched once out of ${totalCount}.`
+            : `0 for ${totalCount} today.`
       : `You answered ${answeredCount} of ${totalCount}.`;
 
   const subline =
     topPicks === totalCount
       ? 'Perfect crowd read today.'
       : topPicks >= 2
-        ? `Matched the crowd ${topPicks === 2 ? 'twice' : `${topPicks} times`}.\nOne near miss on prompt ${totalCount}.`
-        : 'See how the crowd compared.';
+        ? `Matched the crowd ${topPicks === 2 ? 'twice' : `${topPicks} times`}.`
+        : topPicks === 1
+          ? 'One hit, the rest went their own way.'
+          : answeredCount > 0
+            ? 'The crowd went a different direction.'
+            : 'See how the crowd compared.';
 
   return (
     <motion.div

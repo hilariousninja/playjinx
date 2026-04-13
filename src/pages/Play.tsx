@@ -146,7 +146,7 @@ export default function Play() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
-            <p className="text-[11px] text-muted-foreground mt-[2px]">What will most people say?</p>
+            <p className="text-[11px] text-muted-foreground mt-[2px]">Two words → one answer. What will most people say?</p>
           </div>
           <span className="text-[10px] font-semibold text-[hsl(var(--warning-foreground))] bg-primary/15 px-[9px] py-[5px] rounded-full whitespace-nowrap">
             Match the crowd
@@ -244,7 +244,7 @@ export default function Play() {
                     </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-[7px] italic">
-                    Not the cleverest — the most common.
+                    One word that connects both — the one most people will think of.
                   </p>
                   {inputErrors[p.id] && (
                     <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
@@ -252,13 +252,14 @@ export default function Play() {
                 </div>
               )}
 
-              {/* Inactive — placeholder line */}
+              {/* Inactive — clearly unanswered */}
               {isInactive && (
                 <div
-                  className="flex items-center pb-[6px] border-b-[1.5px] border-foreground/10 cursor-pointer"
+                  className="flex items-center justify-between pb-[6px] border-b-[1.5px] border-dashed border-foreground/10 cursor-pointer"
                   onClick={() => setActiveIdx(i)}
                 >
-                  <span className="text-[14px] text-foreground/20">Your answer…</span>
+                  <span className="text-[13px] text-foreground/25 italic">Tap to answer…</span>
+                  <span className="text-[9px] text-muted-foreground/30 uppercase tracking-wide">Waiting</span>
                 </div>
               )}
             </motion.div>

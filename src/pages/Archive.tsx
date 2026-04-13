@@ -144,7 +144,7 @@ export default function Archive() {
 
   const getVibeForDay = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
-    if (answered.length === 0) return { text: 'Not played yet', dotCls: 'bg-muted-foreground/40' };
+    if (answered.length === 0) return { text: 'See what the crowd said', dotCls: 'bg-primary/50' };
     if (!day.statsLoaded) return { text: `${answered.length} answered`, dotCls: 'bg-primary' };
     const tops = answered.filter(r => r.rank === 1).length;
     const avgRank = answered.reduce((s, r) => s + r.rank, 0) / answered.length;
@@ -182,8 +182,8 @@ export default function Archive() {
             {day.isToday && allAnswered && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-[hsl(var(--warning-foreground))]">Done</span>
             )}
-            {!day.isToday && !hasPlayed && (
-              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-muted text-muted-foreground">Missed</span>
+           {!day.isToday && !hasPlayed && (
+              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Browse</span>
             )}
           </div>
           <div className="flex items-center gap-[6px]">

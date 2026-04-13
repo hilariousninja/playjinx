@@ -38,10 +38,10 @@ export default function PlayerIdentity() {
         onClick={() => { setDraft(''); setEditing(true); }}
         className="flex items-center gap-[6px] bg-primary/10 border border-primary/20 rounded-full py-[4px] pl-[4px] pr-[10px] cursor-pointer hover:bg-primary/15 transition-colors"
       >
-        <div className="w-[22px] h-[22px] rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-white">
-          ?
+        <div className="w-[22px] h-[22px] rounded-full bg-primary/80 flex items-center justify-center text-[10px] font-bold text-white">
+          ✎
         </div>
-        <span className="text-[11px] font-semibold text-primary">Set name</span>
+        <span className="text-[11px] font-semibold text-primary">Add your name</span>
       </motion.button>
     );
   }
