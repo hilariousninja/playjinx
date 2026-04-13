@@ -143,15 +143,8 @@ export default function Play() {
 
       {/* Title area */}
       <div className="max-w-md mx-auto w-full px-4 pt-3 pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
-            <p className="text-[11px] text-muted-foreground mt-[2px]">Find the linking word · the one most people will say.</p>
-          </div>
-          <span className="text-[10px] font-semibold text-[hsl(var(--warning-foreground))] bg-primary/15 px-[9px] py-[5px] rounded-full whitespace-nowrap">
-            Match the crowd
-          </span>
-        </div>
+        <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
+        <p className="text-[11px] text-muted-foreground mt-[1px]">What word links both?</p>
       </div>
 
       {/* Prompt cards — v8 style */}
@@ -221,7 +214,7 @@ export default function Play() {
                     )}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-[6px] italic">
-                    One word links both — pick the one most people will say.
+                    Pick the one most people will say.
                   </p>
                   {inputErrors[p.id] && (
                     <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
@@ -255,11 +248,10 @@ export default function Play() {
               {/* Inactive — clearly unanswered */}
               {isInactive && (
                 <div
-                  className="flex items-center justify-between pb-[6px] border-b-[1.5px] border-dashed border-foreground/10 cursor-pointer"
+                  className="pb-[6px] border-b-[1.5px] border-dashed border-foreground/10 cursor-pointer"
                   onClick={() => setActiveIdx(i)}
                 >
-                  <span className="text-[13px] text-foreground/25 italic">Tap to answer…</span>
-                  <span className="text-[9px] text-muted-foreground/30 uppercase tracking-wide">Waiting</span>
+                  <span className="text-[12px] text-foreground/20 italic">Tap to answer…</span>
                 </div>
               )}
             </motion.div>
