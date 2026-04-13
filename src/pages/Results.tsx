@@ -91,10 +91,25 @@ export default function Results() {
     ? answered.reduce((best, r) => (r.percentage > best.percentage ? r : best), answered[0])
     : null;
 
+  const maxTotal = Math.max(...answered.map(r => r.total), 0);
+  const lowSample = maxTotal > 0 && maxTotal < 10;
   const avgRank = answered.length > 0 ? answered.reduce((s, r) => s + r.rank, 0) / answered.length : 0;
-  const vibe = avgRank <= 1.5 ? { label: 'Pretty in sync' }
-    : avgRank <= 3 ? { label: 'Solid instincts' }
-    : { label: 'Unique thinker' };
+
+  // Vibe must honestly reflect performance — weak results never get positive labels
+  const getVibe = () => {
+    if (answered.length === 0) return { label: 'No answers yet' };
+    // Check if any top-answer % is below 15% → fragmented crowd
+    const topPcts = answered.map(r => r.stats[0]?.percentage ?? 0);
+    const avgTopPct = topPcts.reduce((a, b) => a + b, 0) / topPcts.length;
+    if (avgTopPct < 15) return { label: 'Split crowd today' };
+    if (topPicks === answered.length) return { label: 'Strong crowd read' };
+    if (avgRank <= 1.5) return { label: 'Pretty in sync' };
+    if (topPicks >= 2) return { label: 'Solid instincts' };
+    if (avgRank <= 3) return { label: 'Decent read' };
+    if (avgRank <= 5) return { label: 'Mixed signals' };
+    return { label: 'Unique thinker' };
+  };
+  const vibe = getVibe();
 
   const handleShare = async () => {
     const prompts = results.map(r => r.prompt);
@@ -154,6 +169,16 @@ export default function Results() {
           bestPct={bestResult?.percentage}
           topPicks={topPicks}
         />
+
+        {/* Low sample warning */}
+        {lowSample && (
+          <div className="flex items-center gap-[6px] bg-primary/8 rounded-[10px] px-3 py-[8px]">
+            <span className="text-[12px]">🌱</span>
+            <span className="text-[11px] text-foreground/60 leading-[1.4]">
+              Early results — only {maxTotal} {maxTotal === 1 ? 'player' : 'players'} so far. Rankings may shift as more people answer.
+            </span>
+          </div>
+        )}
 
         {/* Stats row — v8 ms-row */}
         <div className="flex bg-card rounded-[11px] border border-foreground/[0.08] overflow-hidden">

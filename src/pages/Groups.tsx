@@ -200,9 +200,9 @@ export default function Groups() {
                   <div className="w-[44px] h-[44px] rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <Users className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-[15px] font-bold text-foreground mb-[4px]">Play JINX with your people</p>
+                  <p className="text-[15px] font-bold text-foreground mb-[4px]">Same prompts, same people</p>
                   <p className="text-[12px] text-muted-foreground leading-[1.5] max-w-[260px] mx-auto mb-4">
-                    Create a group, invite friends, and see where your answers match — and where they don't. Same prompts every day, no new links.
+                    Start a group with friends, answer every day, and find out who thinks like you.
                   </p>
                   <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-11 text-[13px] font-bold">
                     <Plus className="h-4 w-4 mr-1.5" /> Start a group
