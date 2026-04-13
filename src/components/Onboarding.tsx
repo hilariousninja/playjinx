@@ -26,7 +26,7 @@ const steps = [
   {
     emoji: '🧠',
     title: 'Predict the crowd',
-    desc: 'Type the one word you think most people will also say.',
+    desc: 'Enter the one word you think most people will say.',
     example: { a: 'DOG', b: 'BEACH', answer: 'SAND' },
   },
 ];
@@ -55,7 +55,7 @@ export default function Onboarding({ onDone }: Props) {
     >
       <button
         onClick={finish}
-        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors p-2"
+        className="absolute top-5 right-5 text-muted-foreground/40 hover:text-foreground transition-colors p-2"
         aria-label="Skip"
       >
         <X className="h-5 w-5" />
@@ -68,20 +68,20 @@ export default function Onboarding({ onDone }: Props) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.25 }}
-          className="text-center max-w-sm w-full"
+          className="text-center max-w-xs w-full"
         >
-          <p className="text-4xl mb-4">{current.emoji}</p>
-          <h2 className="text-xl font-bold text-foreground mb-2">{current.title}</h2>
-          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{current.desc}</p>
+          <p className="text-4xl mb-5">{current.emoji}</p>
+          <h2 className="text-xl font-bold text-foreground tracking-tight mb-2">{current.title}</h2>
+          <p className="text-[13px] text-muted-foreground/70 mb-6 leading-relaxed">{current.desc}</p>
 
           {current.example && (
-            <div className="inline-block px-8 py-5 mb-6 bg-card border border-border rounded-xl shadow-sm">
-              <div className="flex flex-col items-center gap-0.5 font-display">
+            <div className="game-card-elevated inline-block px-8 py-5 mb-6">
+              <div className="flex flex-col items-center gap-1 font-display">
                 <span className="text-lg font-bold text-foreground">{current.example.a}</span>
                 <span className="text-primary text-sm font-bold">+</span>
                 <span className="text-lg font-bold text-foreground">{current.example.b}</span>
-                <span className="text-muted-foreground text-xs mt-2">→</span>
-                <span className="text-primary text-base font-bold mt-1">{current.example.answer}</span>
+                <span className="text-muted-foreground/30 text-xs mt-2">→</span>
+                <span className="text-primary text-lg font-black mt-1">{current.example.answer}</span>
               </div>
             </div>
           )}
@@ -100,13 +100,13 @@ export default function Onboarding({ onDone }: Props) {
 
           <Button
             onClick={next}
-            className="rounded-xl px-8 h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+            className="rounded-xl px-8 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-sm shadow-primary/15"
           >
             {step === steps.length - 1 ? "Got it — let's play" : 'Next'}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
 
-          <button onClick={finish} className="block mx-auto mt-3 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+          <button onClick={finish} className="block mx-auto mt-4 text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
             Skip intro
           </button>
         </motion.div>

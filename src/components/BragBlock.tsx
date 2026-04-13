@@ -30,11 +30,11 @@ export default function BragBlock({
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative bg-[hsl(20_10%_12%)] text-white rounded-2xl p-5 overflow-hidden"
+      className="relative bg-[hsl(20_10%_11%)] text-white rounded-2xl p-6 overflow-hidden"
     >
       {/* Decorative X watermark */}
       <svg
-        className="absolute top-2 right-2 w-24 h-24 opacity-[0.04]"
+        className="absolute top-3 right-3 w-28 h-28 opacity-[0.04]"
         viewBox="0 0 24 24"
         fill="none"
       >
@@ -44,22 +44,22 @@ export default function BragBlock({
 
       <div className="relative z-10">
         {/* Vibe label */}
-        <span className={`inline-block text-[10px] font-display font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-3 ${vibeColor} bg-white/10`}>
+        <span className={`inline-block text-[9px] font-display font-bold uppercase tracking-[0.15em] px-3 py-1 rounded-full mb-4 ${vibeColor} bg-white/10`}>
           {vibeLabel}
         </span>
 
         {/* Headline */}
-        <h2 className="text-2xl font-bold mb-1">{headline}</h2>
-        <p className="text-[13px] text-white/60 mb-3">
+        <h2 className="text-[28px] font-black tracking-tight leading-tight mb-1">{headline}</h2>
+        <p className="text-[13px] text-white/50 mb-4">
           {topPicks === totalCount ? 'Perfect crowd read today.' : 'See how the crowd compared.'}
         </p>
 
         {/* Best hit pill */}
         {bestAnswer && bestPct !== undefined && (
-          <div className="inline-flex items-center gap-2 bg-primary/20 rounded-full px-3 py-1.5">
-            <span className="text-[10px] text-white/60 uppercase tracking-wider font-display">Best hit</span>
-            <span className="text-sm font-bold">{bestAnswer}</span>
-            <span className="text-[11px] text-primary font-bold">{bestPct}%</span>
+          <div className="inline-flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-full px-3.5 py-2">
+            <span className="text-[9px] text-white/40 uppercase tracking-wider font-display">Best</span>
+            <span className="text-sm font-bold tracking-tight">{bestAnswer}</span>
+            <span className="text-[12px] text-primary font-bold">{bestPct}%</span>
           </div>
         )}
       </div>

@@ -74,16 +74,24 @@ export default function Groups() {
 
   const getActivityState = (g: GroupWithActivity) => {
     if (g.memberCount === 1) {
-      return { text: 'More interesting with two.', action: 'Invite someone →', type: 'solo' as const };
+      return { text: 'Just you so far — invite someone to play.', color: 'text-muted-foreground/50', dot: 'bg-muted-foreground/20' };
     }
     if (g.todayAnsweredCount === 0) {
-      return { text: "Nobody's played today", action: 'Nudge them →', type: 'quiet' as const };
+      return { text: "Nobody's played today yet.", color: 'text-muted-foreground/40', dot: 'bg-muted-foreground/25' };
     }
     if (g.todayAnsweredCount < g.memberCount) {
       const waiting = g.memberCount - g.todayAnsweredCount;
-      return { text: `Waiting for ${waiting} more`, action: null, type: 'wait' as const };
+      return {
+        text: `${g.todayAnsweredCount} played · waiting for ${waiting} more`,
+        color: 'text-primary/70',
+        dot: 'bg-primary',
+      };
     }
-    return { text: `${g.todayAnsweredCount} played today`, action: null, type: 'active' as const };
+    return {
+      text: `Everyone played today!`,
+      color: 'text-[hsl(var(--success))]/80',
+      dot: 'bg-[hsl(var(--success))]',
+    };
   };
 
   return (
@@ -91,10 +99,10 @@ export default function Groups() {
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1">
-        <div className="max-w-sm mx-auto px-5 pt-6 pb-10 w-full">
+        <div className="max-w-md mx-auto px-5 pt-6 pb-10 w-full">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-lg font-bold tracking-tight text-foreground mb-0.5">Your Groups</h1>
-            <p className="text-[12px] text-muted-foreground/70 mb-5">Play JINX with the same people each day</p>
+            <h1 className="text-xl font-bold tracking-tight text-foreground mb-0.5">Groups</h1>
+            <p className="text-[12px] text-muted-foreground/60 mb-6">Play JINX with the same people each day.</p>
           </motion.div>
 
           {loading ? (
@@ -102,7 +110,7 @@ export default function Groups() {
               <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {groups.map((g, i) => {
                 const activity = getActivityState(g);
                 const colorClass = GROUP_COLORS[i % GROUP_COLORS.length];
@@ -131,39 +139,28 @@ export default function Groups() {
                       <div className="flex items-center group/card">
                         <Link
                           to={`/g/${g.invite_code}/today`}
-                          className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border/50 bg-card hover:border-primary/20 transition-all group flex-1 min-w-0"
+                          className="flex items-center gap-3.5 px-4 py-4 rounded-xl border border-border/50 bg-card hover:border-primary/20 hover:shadow-sm transition-all group flex-1 min-w-0"
                         >
-                          <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shrink-0`}>
-                            <span className="text-[13px] font-bold text-white">{initial}</span>
+                          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <span className="text-[14px] font-bold text-white">{initial}</span>
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <p className="text-[13px] font-display font-bold text-foreground truncate min-w-0">{g.name}</p>
+                            <p className="text-[14px] font-bold text-foreground tracking-tight truncate mb-0.5">{g.name}</p>
+
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${activity.dot}`} />
+                              <p className={`text-[11px] leading-tight ${activity.color}`}>
+                                {activity.text}
+                              </p>
                             </div>
 
-                            <p className={`text-[11px] leading-tight mt-0.5 ${
-                              activity.type === 'active' ? 'text-[hsl(var(--success))]/80'
-                                : activity.type === 'wait' ? 'text-muted-foreground/50'
-                                : activity.type === 'quiet' ? 'text-muted-foreground/40'
-                                : 'text-muted-foreground/40'
-                            }`}>
-                              {activity.text}
-                            </p>
-
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] text-muted-foreground/40">
-                                {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
-                              </span>
-                              {g.todayAnsweredCount > 0 && (
-                                <span className="text-[10px] text-muted-foreground/40">
-                                  · {g.todayAnsweredCount} played today
-                                </span>
-                              )}
-                            </div>
+                            <span className="text-[10px] text-muted-foreground/35 font-display">
+                              {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
+                            </span>
                           </div>
 
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
+                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors shrink-0" />
                         </Link>
 
                         <button
@@ -180,18 +177,18 @@ export default function Groups() {
               })}
 
               {groups.length === 0 && !showCreate && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                    <Users className="h-6 w-6 text-primary" />
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10 space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Users className="h-7 w-7 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[15px] font-bold text-foreground mb-1">No groups yet</p>
-                    <p className="text-[12px] text-muted-foreground/60 leading-relaxed max-w-[16rem] mx-auto">
-                      Groups let you play JINX with the same people every day — no new links needed.
+                    <p className="text-[16px] font-bold text-foreground mb-1">No groups yet</p>
+                    <p className="text-[12px] text-muted-foreground/50 leading-relaxed max-w-[240px] mx-auto">
+                      Create a group and invite friends. You'll all play the same prompts each day — no new links needed.
                     </p>
                   </div>
-                  <div className="space-y-2 max-w-[16rem] mx-auto pt-2">
-                    <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-10 text-sm font-semibold">
+                  <div className="space-y-2 max-w-[240px] mx-auto pt-1">
+                    <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-11 text-sm font-bold shadow-sm shadow-primary/15">
                       <Plus className="h-4 w-4 mr-1.5" /> Start a group
                     </Button>
                     <button
@@ -202,7 +199,7 @@ export default function Groups() {
                           navigate(`/g/${match ? match[1] : code.trim()}`);
                         }
                       }}
-                      className="w-full text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors py-2 flex items-center justify-center gap-1.5 rounded-lg hover:bg-accent/50"
+                      className="w-full text-[11px] text-muted-foreground/40 hover:text-foreground transition-colors py-2 flex items-center justify-center gap-1.5 rounded-lg hover:bg-accent/50"
                     >
                       <LinkIcon className="h-3 w-3" />
                       Join with an invite link
@@ -227,7 +224,7 @@ export default function Groups() {
                     ) : (
                       <>
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.12em] font-display">New group</p>
+                          <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.15em] font-display font-bold">New group</p>
                           <button onClick={() => setShowCreate(false)} className="text-muted-foreground/30 hover:text-muted-foreground">
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -241,7 +238,7 @@ export default function Groups() {
                           autoFocus
                           onKeyDown={e => e.key === 'Enter' && handleCreate()}
                         />
-                        <Button onClick={handleCreate} disabled={creating} className="w-full rounded-lg h-10 text-sm">
+                        <Button onClick={handleCreate} disabled={creating} className="w-full rounded-xl h-11 text-sm font-bold">
                           {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Create group'}
                         </Button>
                       </>
@@ -254,7 +251,7 @@ export default function Groups() {
                 <Button
                   variant="outline"
                   onClick={() => setShowCreate(true)}
-                  className="w-full rounded-xl h-10 text-xs border-dashed border-border/50 text-muted-foreground hover:text-foreground"
+                  className="w-full rounded-xl h-10 text-xs border-dashed border-border/40 text-muted-foreground/60 hover:text-foreground"
                 >
                   <Plus className="h-3 w-3 mr-1.5" /> Create new group
                 </Button>
