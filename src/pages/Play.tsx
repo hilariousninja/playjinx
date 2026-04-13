@@ -143,14 +143,14 @@ export default function Play() {
 
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      {/* Title area — matches v8 play-hdr */}
-      <div className="max-w-md mx-auto w-full px-4 pt-4 pb-3">
+      {/* Title area */}
+      <div className="max-w-md mx-auto w-full px-4 pt-3 pb-2">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
-            <p className="text-[11px] text-muted-foreground mt-0.5">What will most people say?</p>
+            <p className="text-[11px] text-muted-foreground mt-[2px]">What will most people say?</p>
           </div>
-          <span className="text-[10px] font-semibold text-[hsl(var(--warning-foreground))] bg-primary/15 px-[9px] py-1 rounded-full whitespace-nowrap">
+          <span className="text-[10px] font-semibold text-[hsl(var(--warning-foreground))] bg-primary/15 px-[9px] py-[5px] rounded-full whitespace-nowrap">
             Match the crowd
           </span>
         </div>

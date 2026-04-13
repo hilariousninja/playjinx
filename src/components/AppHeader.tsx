@@ -25,11 +25,10 @@ export default function AppHeader({ hasNewRoomActivity, hasGroupActivity, rightC
 
   return (
     <header className="border-b border-foreground/[0.08] shrink-0 bg-background">
-      <div className="flex items-center justify-between h-14 max-w-xl mx-auto px-[18px]">
+      <div className="flex items-center justify-between h-[52px] max-w-xl mx-auto px-[16px]">
         <Link to="/" className="shrink-0">
-          <JinxLogo size={28} className="text-foreground" />
+          <JinxLogo size={30} className="text-foreground" />
         </Link>
-        {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-0.5">
           {navItems.map(({ to, label }) => (
             <Link
