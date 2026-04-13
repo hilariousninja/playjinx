@@ -30,24 +30,22 @@ export default function PlayerIdentity() {
 
   const initial = name ? name.charAt(0).toUpperCase() : '?';
 
-  // No name set — show inline prompt
   if (!name && !editing) {
     return (
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={() => { setDraft(''); setEditing(true); }}
-        className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors group"
+        className="flex items-center gap-[5px] bg-card border border-foreground/[0.08] rounded-full py-[3px] pl-[3px] pr-[9px] cursor-pointer hover:border-foreground/15 transition-colors"
       >
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/60 to-primary/30 flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[hsl(var(--logo-accent))] to-[hsl(var(--primary))] flex items-center justify-center text-[9px] font-bold text-white">
           ?
         </div>
-        <span className="group-hover:underline">Set name</span>
+        <span className="text-[11px] font-medium text-muted-foreground">Set name</span>
       </motion.button>
     );
   }
 
-  // Editing mode
   if (editing) {
     return (
       <motion.div
@@ -75,7 +73,6 @@ export default function PlayerIdentity() {
     );
   }
 
-  // Name set — gradient avatar pill
   return (
     <AnimatePresence mode="wait">
       <motion.button
@@ -83,14 +80,13 @@ export default function PlayerIdentity() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={() => { setDraft(name || ''); setEditing(true); }}
-        className="flex items-center gap-1.5 text-[11px] text-foreground/70 hover:text-foreground transition-colors group max-w-[120px]"
+        className="flex items-center gap-[5px] bg-card border border-foreground/[0.08] rounded-full py-[3px] pl-[3px] pr-[9px] cursor-pointer hover:border-foreground/15 transition-colors"
         title="Click to edit name"
       >
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
+        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[hsl(var(--logo-accent))] to-[hsl(var(--primary))] flex items-center justify-center text-[9px] font-bold text-white shrink-0">
           {initial}
         </div>
-        <span className="truncate font-medium">{name}</span>
-        <Pencil className="h-2.5 w-2.5 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" />
+        <span className="text-[11px] font-medium text-foreground truncate max-w-[80px]">{name}</span>
       </motion.button>
     </AnimatePresence>
   );

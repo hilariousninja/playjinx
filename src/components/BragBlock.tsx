@@ -14,7 +14,6 @@ export default function BragBlock({
   answeredCount,
   totalCount,
   vibeLabel,
-  vibeColor,
   bestAnswer,
   bestPct,
   topPicks,
@@ -22,44 +21,56 @@ export default function BragBlock({
   const headline =
     answeredCount === totalCount
       ? topPicks === totalCount
-        ? `You nailed all ${totalCount}`
-        : `You nailed ${topPicks} of ${totalCount}`
-      : `You answered ${answeredCount} of ${totalCount}`;
+        ? `You nailed all ${totalCount}.`
+        : `You nailed ${topPicks} of ${totalCount}.`
+      : `You answered ${answeredCount} of ${totalCount}.`;
+
+  const subline =
+    topPicks === totalCount
+      ? 'Perfect crowd read today.'
+      : topPicks >= 2
+        ? `Matched the crowd ${topPicks === 2 ? 'twice' : `${topPicks} times`}.\nOne near miss on prompt ${totalCount}.`
+        : 'See how the crowd compared.';
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative bg-[hsl(20_10%_11%)] text-white rounded-2xl p-6 overflow-hidden"
+      className="relative bg-foreground text-white rounded-2xl p-[18px] overflow-hidden"
     >
-      {/* Decorative X watermark */}
+      {/* Decorative X watermark — v8 over-under style */}
       <svg
-        className="absolute top-3 right-3 w-28 h-28 opacity-[0.04]"
-        viewBox="0 0 24 24"
-        fill="none"
+        className="absolute right-[-8px] top-1/2 -translate-y-1/2 opacity-[0.05] pointer-events-none"
+        width="80" height="80" viewBox="0 0 80 80" fill="none"
       >
-        <line x1="4" y1="4" x2="20" y2="20" stroke="white" strokeWidth="3" strokeLinecap="round" />
-        <line x1="20" y1="4" x2="4" y2="20" stroke="white" strokeWidth="3" strokeLinecap="round" />
+        <line x1="4" y1="4" x2="36" y2="36" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        <line x1="44" y1="44" x2="76" y2="76" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        <line x1="76" y1="4" x2="4" y2="76" stroke="white" strokeWidth="2" strokeLinecap="round" />
       </svg>
 
       <div className="relative z-10">
         {/* Vibe label */}
-        <span className={`inline-block text-[9px] font-display font-bold uppercase tracking-[0.15em] px-3 py-1 rounded-full mb-4 ${vibeColor} bg-white/10`}>
+        <p className="text-[10px] font-semibold text-primary/55 uppercase tracking-[0.08em] mb-[5px]">
           {vibeLabel}
-        </span>
+        </p>
 
         {/* Headline */}
-        <h2 className="text-[28px] font-black tracking-tight leading-tight mb-1">{headline}</h2>
-        <p className="text-[13px] text-white/50 mb-4">
-          {topPicks === totalCount ? 'Perfect crowd read today.' : 'See how the crowd compared.'}
+        <h2 className="text-[20px] font-bold tracking-[-0.02em] leading-tight mb-[3px]" style={{ color: '#FEF3C7' }}>
+          {headline}
+        </h2>
+        <p className="text-[11px] leading-[1.4] mb-[13px] whitespace-pre-line" style={{ color: 'rgba(254,243,199,0.4)' }}>
+          {subline}
         </p>
 
         {/* Best hit pill */}
         {bestAnswer && bestPct !== undefined && (
-          <div className="inline-flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-full px-3.5 py-2">
-            <span className="text-[9px] text-white/40 uppercase tracking-wider font-display">Best</span>
-            <span className="text-sm font-bold tracking-tight">{bestAnswer}</span>
-            <span className="text-[12px] text-primary font-bold">{bestPct}%</span>
+          <div className="inline-flex flex-col bg-primary/20 border border-primary/35 rounded-[9px] px-[14px] py-[7px]">
+            <span className="text-[9px] uppercase tracking-[0.05em] mb-[2px]" style={{ color: 'rgba(253,211,77,0.6)' }}>
+              Best hit
+            </span>
+            <span className="text-[15px] font-bold" style={{ color: '#FCD34D' }}>
+              {bestAnswer.toUpperCase()} · {bestPct}%
+            </span>
           </div>
         )}
       </div>

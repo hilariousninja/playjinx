@@ -22,7 +22,7 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity }
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm md:hidden pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => {
           const active = isActive(to);
