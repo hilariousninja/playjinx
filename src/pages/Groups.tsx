@@ -85,8 +85,8 @@ export default function Groups() {
 
       <div className="flex-1 max-w-md mx-auto px-4 pt-4 pb-10 w-full">
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-[18px] font-bold text-foreground mb-[3px]">Your groups</h1>
-          <p className="text-[12px] text-muted-foreground mb-[14px]">Compare answers with the same people every day.</p>
+          <h1 className="text-[18px] font-bold text-foreground mb-[2px]">Your groups</h1>
+          <p className="text-[12px] text-muted-foreground mb-[10px]">Same prompts, same people, every day.</p>
         </motion.div>
 
         {loading ? (
@@ -94,7 +94,7 @@ export default function Groups() {
             <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
           </div>
         ) : (
-          <div className="space-y-[10px]">
+          <div className="space-y-[8px]">
             {groups.map((g, i) => {
               const activity = getActivityContent(g);
               const colorSet = AVATAR_COLORS[i % AVATAR_COLORS.length];
@@ -200,9 +200,9 @@ export default function Groups() {
                   <div className="w-[44px] h-[44px] rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <Users className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-[15px] font-bold text-foreground mb-[4px]">Same prompts, same people</p>
-                  <p className="text-[12px] text-muted-foreground leading-[1.5] max-w-[260px] mx-auto mb-4">
-                    Start a group with friends, answer every day, and find out who thinks like you.
+                   <p className="text-[15px] font-bold text-foreground mb-[3px]">Play JINX with your people</p>
+                  <p className="text-[12px] text-muted-foreground leading-[1.5] max-w-[260px] mx-auto mb-3">
+                    Create a group, answer every day, and see who thinks like you.
                   </p>
                   <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-11 text-[13px] font-bold">
                     <Plus className="h-4 w-4 mr-1.5" /> Start a group

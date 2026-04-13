@@ -146,7 +146,7 @@ export default function Play() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
-            <p className="text-[11px] text-muted-foreground mt-[2px]">Two words → one answer. What will most people say?</p>
+            <p className="text-[11px] text-muted-foreground mt-[2px]">Find the linking word · the one most people will say.</p>
           </div>
           <span className="text-[10px] font-semibold text-[hsl(var(--warning-foreground))] bg-primary/15 px-[9px] py-[5px] rounded-full whitespace-nowrap">
             Match the crowd
@@ -244,7 +244,7 @@ export default function Play() {
                     </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-[7px] italic">
-                    One word that connects both — the one most people will think of.
+                    What one word links both? Pick the one most people will say.
                   </p>
                   {inputErrors[p.id] && (
                     <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
