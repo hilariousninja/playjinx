@@ -46,24 +46,14 @@ export default function Landing() {
           <h1 className="text-[46px] font-bold tracking-[-0.03em] text-foreground leading-none mb-[8px]">
             JINX
           </h1>
-          <p className="text-[15px] font-medium text-primary mb-[4px]">
+          <p className="text-[15px] font-medium text-primary mb-[12px]">
             Think the same. Rank higher.
           </p>
-          <p className="text-[13px] text-muted-foreground leading-[1.5] mb-[10px]">
-            Find the linking word most people will say.
-          </p>
-
-          {/* Amber callout */}
-          <div className="bg-primary/12 rounded-lg px-[14px] py-[6px] mb-5 inline-block">
-            <p className="text-[12px] font-semibold text-[hsl(var(--warning-foreground))]">
-              Not the cleverest answer. The most common one.
-            </p>
-          </div>
 
           {/* Example card — teaches the linking mechanic */}
-          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-5">
+          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-[14px]">
             <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[8px] text-left">
-              Example
+              How it works
             </p>
             <div className="flex items-center justify-center gap-[6px] mb-[6px]">
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">COW</span>
@@ -74,33 +64,32 @@ export default function Landing() {
               <div className="w-[6px] h-px bg-foreground/20" />
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">SNOW</span>
             </div>
-            <p className="text-[11px] text-muted-foreground text-center leading-[1.5]">
-              One word links both · <span className="font-semibold text-primary">71% of players said this</span>
+            <p className="text-[11px] text-muted-foreground text-center leading-[1.5] mb-[2px]">
+              One word links both — find the one most people will say.
+            </p>
+            <p className="text-[10px] text-primary/70 text-center font-medium">
+              71% of players said "Milk"
             </p>
           </div>
 
           {/* CTA */}
           <Link
             to={allDone ? '/results' : '/play'}
-            className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[18px] active:scale-[0.97] transition-transform"
+            className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[16px] active:scale-[0.97] transition-transform"
           >
             {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's prompts →"}
           </Link>
 
-          {/* How it works */}
-          <p className="text-[10px] tracking-[0.08em] text-muted-foreground uppercase text-center mb-[9px]">
-            How it works
-          </p>
-          <div className="grid grid-cols-2 gap-[6px] mb-[14px]">
+          {/* Steps */}
+          <div className="grid grid-cols-3 gap-[6px] mb-[14px]">
             {[
-              { num: '1', title: 'See two words', desc: 'Find the linking word that connects them.' },
-              { num: '2', title: 'Answer all three', desc: 'Pick the word most people will say.' },
-              { num: '3', title: 'Watch the patterns', desc: 'See every answer ranked by the crowd.' },
-              { num: '4', title: 'See how close', desc: 'Spot the strongest match.' },
+              { num: '1', title: 'See two words', desc: 'They share a linking word.' },
+              { num: '2', title: 'Type your answer', desc: 'The word most people will say.' },
+              { num: '3', title: 'See the crowd', desc: 'Every answer, ranked.' },
             ].map(s => (
-              <div key={s.num} className="bg-card rounded-[11px] border border-foreground/[0.08] p-[10px] text-left">
-                <p className="text-[11px] font-semibold text-primary mb-[3px]">{s.num}</p>
-                <p className="text-[11px] font-semibold text-foreground mb-[2px] leading-[1.3]">{s.title}</p>
+              <div key={s.num} className="bg-card rounded-[11px] border border-foreground/[0.08] p-[9px] text-left">
+                <p className="text-[11px] font-semibold text-primary mb-[2px]">{s.num}</p>
+                <p className="text-[11px] font-semibold text-foreground mb-[1px] leading-[1.3]">{s.title}</p>
                 <p className="text-[10px] text-muted-foreground leading-[1.4]">{s.desc}</p>
               </div>
             ))}
