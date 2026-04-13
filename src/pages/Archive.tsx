@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, ChevronRight, Trophy, Target, TrendingUp, Sparkles, Minus, ArrowRight } from 'lucide-react';
+import { Users, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import SlidePanel from '@/components/SlidePanel';
 import AnswerDrawer from '@/components/AnswerDrawer';
 import Countdown from '@/components/Countdown';
+import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import {
   getArchivePrompts, ensureDailyPrompts,
   getStats, getUserAnswer, getCanonicalAnswer, getTotalSubmissions,
@@ -38,6 +40,8 @@ export default function Archive() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [drawerPrompt, setDrawerPrompt] = useState<PromptSummary | null>(null);
+  const hasNewRoomActivity = useRoomHasNewActivity();
+  const hasGroupActivity = useGroupHasActivity();
 
   const now = new Date();
   const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
@@ -53,13 +57,11 @@ export default function Archive() {
       const allIds = allPrompts.map(p => p.id);
       const { submittedMap, answerMap } = await getBatchUserAnswers(allIds);
 
-      // Group by date
       const dateGroups: Record<string, DbPrompt[]> = {};
       for (const p of allPrompts) {
         (dateGroups[p.date] = dateGroups[p.date] || []).push(p);
       }
 
-      // Build day data
       const dayList: DayData[] = await Promise.all(
         Object.entries(dateGroups).map(async ([date, prompts]) => {
           const summaries: PromptSummary[] = await Promise.all(
@@ -143,7 +145,7 @@ export default function Archive() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
-      <AppHeader />
+      <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-8">
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -155,7 +157,6 @@ export default function Archive() {
           {days.map((day, di) => {
             const vibe = getVibeForDay(day);
             const status = getStatusPill(day);
-            const isFirst = di === 0;
 
             return (
               <motion.button
@@ -166,7 +167,6 @@ export default function Archive() {
                 onClick={() => setSelectedDay(day)}
                 className="w-full text-left bg-card border border-border/60 rounded-xl px-4 py-3.5 hover:border-primary/20 hover:shadow-sm transition-all group"
               >
-                {/* Day header row */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[13px] font-bold text-foreground">
@@ -185,13 +185,11 @@ export default function Archive() {
                   </div>
                 </div>
 
-                {/* Vibe line */}
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${vibe.dot}`} />
                   <span className="text-[10px] text-muted-foreground/60">{vibe.text}</span>
                 </div>
 
-                {/* Prompt preview rows */}
                 <div className="space-y-1">
                   {day.prompts.map(s => {
                     const badge = s.answer ? getTierBadge(s.rank, s.matchCount) : null;
@@ -250,7 +248,6 @@ export default function Archive() {
       >
         {selectedDay && (
           <div className="px-5 py-4 space-y-4">
-            {/* Vibe */}
             {(() => {
               const vibe = getVibeForDay(selectedDay);
               return (
@@ -261,7 +258,6 @@ export default function Archive() {
               );
             })()}
 
-            {/* Per-prompt cards */}
             {selectedDay.prompts.map((s, i) => {
               const badge = s.answer ? getTierBadge(s.rank, s.matchCount) : null;
               const barWidth = s.total > 0 && s.matchCount > 0
@@ -327,17 +323,13 @@ export default function Archive() {
         )}
       </SlidePanel>
 
-      {/* Nested answer drawer */}
       <AnswerDrawer
         open={!!drawerPrompt}
         onClose={() => setDrawerPrompt(null)}
         promptResult={drawerPrompt}
       />
 
-      <footer className="border-t border-border py-3 pb-20 md:pb-3 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
-      </footer>
-      <MobileBottomNav />
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
     </div>
   );
 }

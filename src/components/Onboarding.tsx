@@ -75,7 +75,7 @@ export default function Onboarding({ onDone }: Props) {
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{current.desc}</p>
 
           {current.example && (
-            <div className="game-card inline-block px-8 py-5 mb-6">
+            <div className="inline-block px-8 py-5 mb-6 bg-card border border-border rounded-xl shadow-sm">
               <div className="flex flex-col items-center gap-0.5 font-display">
                 <span className="text-lg font-bold text-foreground">{current.example.a}</span>
                 <span className="text-primary text-sm font-bold">+</span>
@@ -100,7 +100,7 @@ export default function Onboarding({ onDone }: Props) {
 
           <Button
             onClick={next}
-            className="rounded-lg px-8 h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+            className="rounded-xl px-8 h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
           >
             {step === steps.length - 1 ? "Got it — let's play" : 'Next'}
             <ArrowRight className="h-4 w-4 ml-2" />
