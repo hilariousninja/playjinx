@@ -35,16 +35,12 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity }
               to={to}
               className={cn(
                 'relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors',
-                to === '/play'
-                  ? active
-                    ? 'text-primary'
-                    : 'text-primary/50'
-                  : active
-                    ? 'text-foreground'
-                    : 'text-muted-foreground/60'
+                active
+                  ? 'text-primary'
+                  : 'text-muted-foreground/60'
               )}
             >
-              <Icon className={cn('h-5 w-5', to === '/play' && active && 'fill-primary/20')} strokeWidth={active ? 2.5 : 2} />
+              <Icon className={cn('h-5 w-5', active && 'fill-primary/20')} strokeWidth={active ? 2.5 : 2} />
               <span className={cn('text-[10px] leading-none', active ? 'font-bold' : 'font-medium')}>
                 {label}
               </span>

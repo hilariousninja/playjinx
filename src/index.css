@@ -6,34 +6,34 @@
 
 @layer base {
   :root {
-    /* Light theme for public game */
-    --background: 40 20% 97%;
-    --foreground: 220 15% 15%;
+    /* V8 warm amber + cream palette */
+    --background: 40 33% 96%;
+    --foreground: 20 10% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    --card-foreground: 20 10% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
+    --popover-foreground: 20 10% 12%;
 
-    --primary: 220 72% 45%;
+    --primary: 38 92% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 93%;
-    --secondary-foreground: 220 15% 40%;
+    --secondary: 35 20% 91%;
+    --secondary-foreground: 20 10% 35%;
 
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 35 15% 92%;
+    --muted-foreground: 20 8% 50%;
 
-    --accent: 220 14% 90%;
-    --accent-foreground: 220 15% 15%;
+    --accent: 35 18% 89%;
+    --accent-foreground: 20 10% 12%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 88%;
-    --input: 220 14% 88%;
-    --ring: 220 72% 45%;
+    --border: 35 15% 87%;
+    --input: 35 15% 87%;
+    --ring: 38 92% 50%;
 
     --radius: 0.75rem;
 
@@ -54,24 +54,27 @@
     /* Result match tiers */
     --match-best: 142 72% 40%;
     --match-strong: 173 58% 39%;
-    --match-good: 220 72% 45%;
-    --match-decent: 38 92% 50%;
-    --match-weak: 220 10% 50%;
+    --match-good: 38 92% 50%;
+    --match-decent: 25 80% 55%;
+    --match-weak: 20 8% 50%;
+
+    /* Logo accent — blue kept here only */
+    --logo-accent: 220 72% 50%;
 
     --sidebar-background: 220 14% 6%;
     --sidebar-foreground: 210 15% 75%;
-    --sidebar-primary: 220 72% 45%;
+    --sidebar-primary: 38 92% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 12%;
     --sidebar-accent-foreground: 210 20% 95%;
     --sidebar-border: 220 12% 18%;
-    --sidebar-ring: 220 72% 45%;
+    --sidebar-ring: 38 92% 50%;
 
     --font-display: 'JetBrains Mono', monospace;
     --font-body: 'Space Grotesk', sans-serif;
   }
 
-  /* Dashboard creator theme — light, aligned with game */
+  /* Dashboard creator theme — keep aligned */
   .theme-dashboard {
     --background: 220 20% 97%;
     --foreground: 220 15% 15%;
@@ -126,11 +129,11 @@
 @layer components {
   .game-card {
     @apply bg-card border border-border rounded-2xl p-6;
-    box-shadow: 0 1px 3px 0 hsl(220 15% 15% / 0.04), 0 1px 2px -1px hsl(220 15% 15% / 0.04);
+    box-shadow: 0 1px 3px 0 hsl(20 10% 12% / 0.04), 0 1px 2px -1px hsl(20 10% 12% / 0.04);
   }
   .game-card-elevated {
     @apply rounded-2xl p-6 border border-border bg-card;
-    box-shadow: 0 4px 16px -4px hsl(220 15% 15% / 0.08), 0 2px 4px -2px hsl(220 15% 15% / 0.04);
+    box-shadow: 0 4px 16px -4px hsl(20 10% 12% / 0.08), 0 2px 4px -2px hsl(20 10% 12% / 0.04);
   }
   .stat-pill {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
@@ -155,13 +158,12 @@
     @apply bg-[hsl(var(--unreviewed))] text-foreground;
   }
   .jinx-gradient-text {
-    background: linear-gradient(135deg, hsl(220 72% 45%), hsl(220 72% 55%));
+    background: linear-gradient(135deg, hsl(38 92% 50%), hsl(30 85% 55%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Dashboard uses same gradient as game */
   .theme-dashboard .jinx-gradient-text {
     background: linear-gradient(135deg, hsl(220 72% 45%), hsl(220 72% 55%));
     -webkit-background-clip: text;
