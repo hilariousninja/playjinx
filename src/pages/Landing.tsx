@@ -43,25 +43,25 @@ export default function Landing() {
           <p className="text-[10px] tracking-[0.08em] text-muted-foreground uppercase mb-[10px]">
             Daily Crowd Word Game
           </p>
-          <h1 className="text-[46px] font-bold tracking-[-0.03em] text-foreground leading-none mb-[10px]">
+          <h1 className="text-[46px] font-bold tracking-[-0.03em] text-foreground leading-none mb-[8px]">
             JINX
           </h1>
-          <p className="text-[15px] font-medium text-primary mb-[5px]">
+          <p className="text-[15px] font-medium text-primary mb-[4px]">
             Think the same. Rank higher.
           </p>
-          <p className="text-[12px] text-muted-foreground leading-[1.5] mb-[5px]">
-            Three word pairs each day. Enter the word you think most people will say.
+          <p className="text-[13px] text-muted-foreground leading-[1.5] mb-[10px]">
+            Find the linking word most people will say.
           </p>
 
           {/* Amber callout */}
-          <div className="bg-primary/12 rounded-lg px-[14px] py-[6px] mb-4 inline-block">
+          <div className="bg-primary/12 rounded-lg px-[14px] py-[6px] mb-5 inline-block">
             <p className="text-[12px] font-semibold text-[hsl(var(--warning-foreground))]">
               Not the cleverest answer. The most common one.
             </p>
           </div>
 
           {/* Example card */}
-          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-4 text-left">
+          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-5 text-left">
             <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[7px]">
               Example
             </p>
@@ -73,7 +73,7 @@ export default function Landing() {
               <span className="text-[16px] font-semibold text-primary bg-primary/12 px-[10px] py-[3px] rounded-[6px]">Milk</span>
             </div>
             <p className="text-[11px] text-muted-foreground text-center">
-              Top crowd answer · <span className="font-semibold text-primary">71% of players</span>
+              The linking word · <span className="font-semibold text-primary">71% of players said this</span>
             </p>
           </div>
 
@@ -82,7 +82,7 @@ export default function Landing() {
             to={allDone ? '/results' : '/play'}
             className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[18px] active:scale-[0.97] transition-transform"
           >
-            {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's 3 prompts →"}
+            {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's prompts →"}
           </Link>
 
           {/* How it works */}
@@ -91,10 +91,10 @@ export default function Landing() {
           </p>
           <div className="grid grid-cols-2 gap-[6px] mb-[14px]">
             {[
-              { num: '1', title: 'See two words', desc: 'What word will most people say?' },
-              { num: '2', title: 'Answer all three', desc: 'Match the crowd, not the cleverest.' },
-              { num: '3', title: 'See the full spread', desc: 'All answers ranked. Including the wild ones.' },
-              { num: '4', title: 'Share your score', desc: 'One clear result. Easy to brag about.' },
+              { num: '1', title: 'See two words', desc: 'Find the linking word that connects them.' },
+              { num: '2', title: 'Answer all three', desc: 'Pick the word most people will say.' },
+              { num: '3', title: 'Watch the patterns', desc: 'See every answer ranked by the crowd.' },
+              { num: '4', title: 'See how close', desc: 'Spot the strongest match.' },
             ].map(s => (
               <div key={s.num} className="bg-card rounded-[11px] border border-foreground/[0.08] p-[10px] text-left">
                 <p className="text-[11px] font-semibold text-primary mb-[3px]">{s.num}</p>
