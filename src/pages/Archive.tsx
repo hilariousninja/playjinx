@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar } from 'lucide-react';
@@ -12,7 +12,7 @@ import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import {
   getArchivePrompts, ensureDailyPrompts,
-  getStats, getUserAnswer, getCanonicalAnswer,
+  getStats, getCanonicalAnswer,
   getBatchUserAnswers,
   type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
@@ -33,12 +33,14 @@ interface DayData {
   prompts: PromptSummary[];
   playerCount: number;
   isToday: boolean;
+  statsLoaded: boolean;
 }
 
 export default function Archive() {
   const [days, setDays] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [drawerPrompt, setDrawerPrompt] = useState<PromptSummary | null>(null);
   const hasNewRoomActivity = useRoomHasNewActivity();
   const hasGroupActivity = useGroupHasActivity();
@@ -62,46 +64,76 @@ export default function Archive() {
         (dateGroups[p.date] = dateGroups[p.date] || []).push(p);
       }
 
-      const dayList: DayData[] = await Promise.all(
-        Object.entries(dateGroups).map(async ([date, prompts]) => {
-          const summaries: PromptSummary[] = await Promise.all(
-            prompts.map(async (prompt) => {
-              const answer = answerMap[prompt.id] ?? null;
-              const stats = await getStats(prompt.id);
-              const total = prompt.total_players || stats.reduce((s, a) => s + a.count, 0);
+      // Build day list WITHOUT loading stats - use prompt table data only
+      const dayList: DayData[] = Object.entries(dateGroups).map(([date, prompts]) => {
+        const summaries: PromptSummary[] = prompts.map((prompt) => {
+          const answer = answerMap[prompt.id] ?? null;
+          return {
+            prompt,
+            answer,
+            stats: [],
+            total: prompt.total_players || 0,
+            rank: 0,
+            matchCount: 0,
+            percentage: 0,
+            userCanonical: null,
+          };
+        });
 
-              let rank = 0, matchCount = 0, percentage = 0;
-              let userCanonical: string | null = null;
-
-              if (answer) {
-                const canon = await getCanonicalAnswer(answer.normalized_answer);
-                let userStat = stats.find(s => s.normalized_answer === canon);
-                if (!userStat) {
-                  const { levenshtein } = await import('@/lib/normalize');
-                  userStat = stats.find(s => {
-                    const dist = levenshtein(canon, s.normalized_answer);
-                    return s.normalized_answer.length > 3 && dist <= (s.normalized_answer.length >= 10 ? 2 : 1);
-                  });
-                }
-                userCanonical = userStat?.normalized_answer ?? canon;
-                rank = userStat?.rank ?? 0;
-                matchCount = userStat?.count ?? 0;
-                percentage = userStat?.percentage ?? 0;
-              }
-
-              return { prompt, answer, stats, total, rank, matchCount, percentage, userCanonical };
-            })
-          );
-
-          const playerCount = Math.max(...summaries.map(s => s.total), 0);
-          return { date, prompts: summaries, playerCount, isToday: date === todayStr };
-        })
-      );
+        const playerCount = Math.max(...summaries.map(s => s.total), 0);
+        return { date, prompts: summaries, playerCount, isToday: date === todayStr, statsLoaded: false };
+      });
 
       dayList.sort((a, b) => b.date.localeCompare(a.date));
       setDays(dayList);
       setLoading(false);
     })();
+  }, []);
+
+  // Load stats for a specific day when opened
+  const loadDayStats = useCallback(async (day: DayData) => {
+    if (day.statsLoaded) {
+      setSelectedDay(day);
+      return;
+    }
+
+    setLoadingStats(true);
+    setSelectedDay(day); // Show panel immediately with loading state
+
+    const enrichedSummaries: PromptSummary[] = await Promise.all(
+      day.prompts.map(async (s) => {
+        const stats = await getStats(s.prompt.id);
+        const total = s.prompt.total_players || stats.reduce((a, st) => a + st.count, 0);
+
+        let rank = 0, matchCount = 0, percentage = 0;
+        let userCanonical: string | null = null;
+
+        if (s.answer) {
+          const canon = await getCanonicalAnswer(s.answer.normalized_answer);
+          let userStat = stats.find(st => st.normalized_answer === canon);
+          if (!userStat) {
+            const { levenshtein } = await import('@/lib/normalize');
+            userStat = stats.find(st => {
+              const dist = levenshtein(canon, st.normalized_answer);
+              return st.normalized_answer.length > 3 && dist <= (st.normalized_answer.length >= 10 ? 2 : 1);
+            });
+          }
+          userCanonical = userStat?.normalized_answer ?? canon;
+          rank = userStat?.rank ?? 0;
+          matchCount = userStat?.count ?? 0;
+          percentage = userStat?.percentage ?? 0;
+        }
+
+        return { ...s, stats, total, rank, matchCount, percentage, userCanonical };
+      })
+    );
+
+    const enrichedDay = { ...day, prompts: enrichedSummaries, playerCount: Math.max(...enrichedSummaries.map(s => s.total), 0), statsLoaded: true };
+
+    // Update in days list so reopening is instant
+    setDays(prev => prev.map(d => d.date === day.date ? enrichedDay : d));
+    setSelectedDay(enrichedDay);
+    setLoadingStats(false);
   }, []);
 
   if (loading) return (
@@ -113,6 +145,7 @@ export default function Archive() {
   const getVibeForDay = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
     if (answered.length === 0) return { text: 'Not played yet', dotCls: 'bg-muted-foreground/40' };
+    if (!day.statsLoaded) return { text: `${answered.length} answered`, dotCls: 'bg-primary' };
     const tops = answered.filter(r => r.rank === 1).length;
     const avgRank = answered.reduce((s, r) => s + r.rank, 0) / answered.length;
     if (avgRank <= 1.5) return { text: `Strong consensus · ${tops} top pick${tops > 1 ? 's' : ''}`, dotCls: 'bg-[hsl(var(--success))]' };
@@ -137,7 +170,7 @@ export default function Archive() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: idx * 0.03 }}
         className="bg-card rounded-[14px] border border-foreground/[0.08] overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
-        onClick={() => setSelectedDay(day)}
+        onClick={() => loadDayStats(day)}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-[14px] py-[11px] border-b border-foreground/[0.06]">
@@ -250,51 +283,57 @@ export default function Archive() {
               );
             })()}
 
-            {selectedDay.prompts.map((s) => {
-              const barWidth = s.total > 0 && s.matchCount > 0
-                ? Math.max(Math.round((s.matchCount / s.total) * 100), 4) : 0;
-              const rnkCls = s.rank === 1 ? 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]'
-                : s.rank === 2 ? 'bg-primary/10 text-[hsl(var(--warning-foreground))]'
-                : 'bg-muted text-muted-foreground';
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              selectedDay.prompts.map((s) => {
+                const barWidth = s.total > 0 && s.matchCount > 0
+                  ? Math.max(Math.round((s.matchCount / s.total) * 100), 4) : 0;
+                const rnkCls = s.rank === 1 ? 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]'
+                  : s.rank === 2 ? 'bg-primary/10 text-[hsl(var(--warning-foreground))]'
+                  : 'bg-muted text-muted-foreground';
 
-              return (
-                <div key={s.prompt.id} className="bg-card rounded-[13px] border border-foreground/[0.08] p-[13px]">
-                  <div className="flex items-center justify-between mb-[6px]">
-                    <span className="text-[14px] font-bold text-foreground">
-                      {s.prompt.word_a} <span className="text-primary font-normal mx-1">+</span> {s.prompt.word_b}
-                    </span>
-                    {s.answer && (
-                      <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${rnkCls}`}>
-                        #{s.rank}
+                return (
+                  <div key={s.prompt.id} className="bg-card rounded-[13px] border border-foreground/[0.08] p-[13px]">
+                    <div className="flex items-center justify-between mb-[6px]">
+                      <span className="text-[14px] font-bold text-foreground">
+                        {s.prompt.word_a} <span className="text-primary font-normal mx-1">+</span> {s.prompt.word_b}
                       </span>
-                    )}
-                  </div>
-
-                  {s.answer ? (
-                    <div className="flex items-center gap-[6px] mb-[7px]">
-                      <span className="text-[17px] font-bold text-foreground">{s.answer.raw_answer}</span>
-                      <span className="text-[9px] font-semibold bg-primary text-white px-[5px] py-[2px] rounded">you</span>
-                      <div className="flex-1 bg-muted/40 rounded h-4 overflow-hidden ml-1">
-                        <div className="h-full rounded" style={{ width: `${barWidth}%`, background: s.rank === 1 ? 'hsl(var(--success) / 0.12)' : s.rank === 2 ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--foreground) / 0.06)' }} />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{s.percentage}%</span>
+                      {s.answer && (
+                        <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${rnkCls}`}>
+                          #{s.rank}
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-[12px] text-muted-foreground mb-[7px]">
-                      {selectedDay.isToday ? 'Not answered yet' : 'You missed this one — see what the crowd said'}
-                    </p>
-                  )}
 
-                  <button
-                    onClick={() => setDrawerPrompt(s)}
-                    className="w-full bg-transparent border-none border-t border-foreground/[0.08] pt-[7px] text-[11px] text-primary font-medium cursor-pointer text-left flex items-center justify-between"
-                  >
-                    <span>See all answers</span>
-                    <span>→</span>
-                  </button>
-                </div>
-              );
-            })}
+                    {s.answer ? (
+                      <div className="flex items-center gap-[6px] mb-[7px]">
+                        <span className="text-[17px] font-bold text-foreground">{s.answer.raw_answer}</span>
+                        <span className="text-[9px] font-semibold bg-primary text-white px-[5px] py-[2px] rounded">you</span>
+                        <div className="flex-1 bg-muted/40 rounded h-4 overflow-hidden ml-1">
+                          <div className="h-full rounded" style={{ width: `${barWidth}%`, background: s.rank === 1 ? 'hsl(var(--success) / 0.12)' : s.rank === 2 ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--foreground) / 0.06)' }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{s.percentage}%</span>
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-muted-foreground mb-[7px]">
+                        {selectedDay.isToday ? 'Not answered yet' : 'You missed this one — see what the crowd said'}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={() => setDrawerPrompt(s)}
+                      className="w-full bg-transparent border-none border-t border-foreground/[0.08] pt-[7px] text-[11px] text-primary font-medium cursor-pointer text-left flex items-center justify-between"
+                    >
+                      <span>See all answers</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                );
+              })
+            )}
 
             {selectedDay.isToday && selectedDay.prompts.some(p => !p.answer) && (
               <Button className="w-full rounded-xl h-11" asChild>

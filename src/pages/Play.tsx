@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  ensureDailyPrompts, hasSubmitted, submitAnswer, getUserAnswer,
+  ensureDailyPrompts, submitAnswer, getBatchUserAnswers,
   getTotalSubmissions, getCompletedPrompts, markPromptCompleted,
   type DbPrompt, type DbAnswer,
 } from '@/lib/store';
@@ -45,22 +45,20 @@ export default function Play() {
       setPrompts(ps);
 
       const localCompleted = getCompletedPrompts();
+      const allIds = ps.map(p => p.id);
+      const { submittedMap: serverMap, answerMap: batchAnswers } = await getBatchUserAnswers(allIds);
+
       const subMap: Record<string, boolean> = {};
       const ansMap: Record<string, DbAnswer> = {};
-
-      await Promise.all(ps.map(async (p) => {
-        const serverSubmitted = await hasSubmitted(p.id);
+      for (const p of ps) {
         const localSubmitted = localCompleted.has(p.id);
-        const didSubmit = serverSubmitted || localSubmitted;
+        const didSubmit = serverMap[p.id] || localSubmitted;
         subMap[p.id] = didSubmit;
-        if (didSubmit) {
-          const ua = await getUserAnswer(p.id);
-          if (ua) {
-            ansMap[p.id] = ua;
-            if (!localSubmitted) markPromptCompleted(p.id);
-          }
+        if (didSubmit && batchAnswers[p.id]) {
+          ansMap[p.id] = batchAnswers[p.id];
+          if (!localSubmitted) markPromptCompleted(p.id);
         }
-      }));
+      }
 
       setSubmitted(subMap);
       setUserAnswers(ansMap);
