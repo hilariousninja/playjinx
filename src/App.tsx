@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Landing from "./pages/Landing";
 import Groups from "./pages/Groups";
 import Play from "./pages/Play";
+import Results from "./pages/Results";
 import Archive from "./pages/Archive";
 import AdminLogin from "./pages/AdminLogin";
 import ResetPassword from "./pages/ResetPassword";
@@ -41,8 +42,8 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/play" element={<Play />} />
+          <Route path="/results" element={<Results />} />
           <Route path="/archive" element={<Archive />} />
-          <Route path="/results" element={<Navigate to="/archive" replace />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/c/:token" element={<ChallengeLanding />} />
