@@ -36,17 +36,13 @@ export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Prop
               to={to}
               className={cn(
                 'relative text-sm font-medium px-3 py-1.5 rounded-md transition-colors',
-                to === '/play'
-                  ? isActive(to)
-                    ? 'text-primary-foreground bg-primary shadow-sm'
-                    : 'text-primary hover:bg-primary/10'
-                  : isActive(to)
-                    ? 'text-foreground bg-muted font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                isActive(to)
+                  ? 'text-primary-foreground bg-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               )}
             >
               {label}
-              {to === '/archive' && hasNewRoomActivity && (
+              {to === '/archive' && hasNewRoomActivity && !isActive(to) && (
                 <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
               )}
               {to === '/groups' && hasGroupActivity && !isActive(to) && (

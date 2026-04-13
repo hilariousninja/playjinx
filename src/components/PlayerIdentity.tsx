@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Check, Pencil } from 'lucide-react';
+import { Check, Pencil } from 'lucide-react';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 
 export default function PlayerIdentity() {
@@ -28,6 +28,8 @@ export default function PlayerIdentity() {
     }
   };
 
+  const initial = name ? name.charAt(0).toUpperCase() : '?';
+
   // No name set — show inline prompt
   if (!name && !editing) {
     return (
@@ -37,8 +39,10 @@ export default function PlayerIdentity() {
         onClick={() => { setDraft(''); setEditing(true); }}
         className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors group"
       >
-        <User className="h-3 w-3" />
-        <span className="group-hover:underline">Set your name</span>
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/60 to-primary/30 flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+          ?
+        </div>
+        <span className="group-hover:underline">Set name</span>
       </motion.button>
     );
   }
@@ -71,7 +75,7 @@ export default function PlayerIdentity() {
     );
   }
 
-  // Name set — show compact chip
+  // Name set — gradient avatar pill
   return (
     <AnimatePresence mode="wait">
       <motion.button
@@ -82,7 +86,9 @@ export default function PlayerIdentity() {
         className="flex items-center gap-1.5 text-[11px] text-foreground/70 hover:text-foreground transition-colors group max-w-[120px]"
         title="Click to edit name"
       >
-        <User className="h-3 w-3 shrink-0 text-primary/60" />
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
+          {initial}
+        </div>
         <span className="truncate font-medium">{name}</span>
         <Pencil className="h-2.5 w-2.5 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" />
       </motion.button>

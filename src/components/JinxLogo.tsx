@@ -5,41 +5,40 @@ interface Props {
 }
 
 export default function JinxLogo({ size = 24, className = '', showWordmark = true }: Props) {
-  const w = size;
-  const h = size * 0.6;
-  const r = size * 0.12;
-  const cy = h / 2;
-  const cx1 = size * 0.22;
-  const cx2 = size * 0.78;
+  const s = size;
+  const strokeW = Math.max(2, s * 0.12);
 
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none" aria-hidden="true">
-        {/* Left circle */}
-        <circle cx={cx1} cy={cy} r={r} className="fill-primary" />
-        {/* Right circle */}
-        <circle cx={cx2} cy={cy} r={r} className="fill-primary" />
-        {/* Connecting line */}
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+      {showWordmark && (
+        <span className="font-display font-bold tracking-tighter text-foreground">
+          JIN
+        </span>
+      )}
+      <svg
+        width={s * 0.7}
+        height={s * 0.7}
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        className="inline-block"
+      >
+        {/* Blue stroke: / */}
         <line
-          x1={cx1 + r}
-          y1={cy}
-          x2={cx2 - r}
-          y2={cy}
-          stroke="currentColor"
-          strokeWidth={size * 0.06}
-          opacity="0.25"
+          x1="6" y1="18" x2="18" y2="6"
+          stroke="hsl(var(--logo-accent))"
+          strokeWidth={strokeW}
           strokeLinecap="round"
-        />
-        {/* Center spark */}
-        <polygon
-          points={`${w/2 - r*0.45},${cy - r*0.7} ${w/2 + r*0.1},${cy - r*0.1} ${w/2 - r*0.1},${cy + r*0.1} ${w/2 + r*0.45},${cy + r*0.7}`}
-          className="fill-primary"
           opacity="0.7"
         />
+        {/* Amber stroke: \ */}
+        <line
+          x1="6" y1="6" x2="18" y2="18"
+          stroke="hsl(var(--primary))"
+          strokeWidth={strokeW}
+          strokeLinecap="round"
+        />
       </svg>
-      {showWordmark && (
-        <span className="font-display font-bold tracking-tighter text-foreground">JINX</span>
-      )}
     </span>
   );
 }

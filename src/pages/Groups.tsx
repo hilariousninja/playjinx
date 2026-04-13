@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, X, Loader2, ArrowRight, LogOut, Radio, LinkIcon } from 'lucide-react';
+import { Users, Plus, X, Loader2, ArrowRight, LogOut, LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeader from '@/components/AppHeader';
@@ -10,6 +10,13 @@ import { getMyGroups, createGroup, leaveGroup, type GroupWithActivity } from '@/
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 import DisplayNameInput from '@/components/DisplayNameInput';
 import { toast } from '@/hooks/use-toast';
+
+const GROUP_COLORS = [
+  'from-primary to-primary/60',
+  'from-[hsl(var(--success))] to-[hsl(var(--success))]/60',
+  'from-[hsl(var(--info))] to-[hsl(var(--info))]/60',
+  'from-destructive to-destructive/60',
+];
 
 export default function Groups() {
   const navigate = useNavigate();
@@ -21,7 +28,6 @@ export default function Groups() {
   const [needsName, setNeedsName] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const [joinCode, setJoinCode] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -62,17 +68,22 @@ export default function Groups() {
     setLeaving(false);
   };
 
-  const handleJoinByLink = () => {
-    const trimmed = joinCode.trim();
-    if (!trimmed) return;
-    // Extract invite code from full URL or just code
-    const match = trimmed.match(/\/g\/([^\s/]+)/);
-    const code = match ? match[1] : trimmed;
-    navigate(`/g/${code}`);
+  const getActivityState = (g: GroupWithActivity) => {
+    if (g.memberCount === 1) {
+      return { text: 'More interesting with two.', action: 'Invite someone →', type: 'solo' as const };
+    }
+    if (g.todayAnsweredCount === 0) {
+      return { text: "Nobody's played today", action: 'Nudge them →', type: 'quiet' as const };
+    }
+    if (g.todayAnsweredCount < g.memberCount) {
+      const waiting = g.memberCount - g.todayAnsweredCount;
+      return { text: `Waiting for ${waiting} more`, action: null, type: 'wait' as const };
+    }
+    return { text: `${g.todayAnsweredCount} played today`, action: null, type: 'active' as const };
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       <AppHeader />
 
       <div className="flex-1">
@@ -88,52 +99,85 @@ export default function Groups() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {groups.map((g, i) => (
-                <motion.div
-                  key={g.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                >
-                  {confirmLeave === g.id ? (
-                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-destructive/30 bg-card">
-                      <p className="text-xs text-muted-foreground flex-1 truncate">
-                        Leave <span className="font-semibold text-foreground">{g.name}</span>?
-                      </p>
-                      <Button size="sm" variant="destructive" className="h-7 px-3 text-[11px] rounded-lg" onClick={() => handleLeave(g.id)} disabled={leaving}>
-                        {leaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Leave'}
-                      </Button>
-                      <button onClick={() => setConfirmLeave(null)} className="text-muted-foreground/40 hover:text-muted-foreground">
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <Link
-                      to={`/g/${g.invite_code}/today`}
-                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border/50 bg-card hover:border-primary/20 transition-all group w-full"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Users className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <p className="text-[13px] font-display font-bold text-foreground truncate min-w-0">{g.name}</p>
-                          {g.hasActivityToday && (
-                            <span className="text-[7px] bg-primary text-primary-foreground px-1.5 py-px rounded-full font-display font-bold leading-none flex items-center gap-0.5 shrink-0 whitespace-nowrap">
-                              <Radio className="h-1.5 w-1.5" /> Live
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground/60 leading-tight mt-0.5">
-                          {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
-                          {g.todayAnsweredCount > 0 && ` · ${g.todayAnsweredCount} played today`}
+              {groups.map((g, i) => {
+                const activity = getActivityState(g);
+                const colorClass = GROUP_COLORS[i % GROUP_COLORS.length];
+                const initial = g.name.charAt(0).toUpperCase();
+
+                return (
+                  <motion.div
+                    key={g.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                  >
+                    {confirmLeave === g.id ? (
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-destructive/30 bg-card">
+                        <p className="text-xs text-muted-foreground flex-1 truncate">
+                          Leave <span className="font-semibold text-foreground">{g.name}</span>?
                         </p>
+                        <Button size="sm" variant="destructive" className="h-7 px-3 text-[11px] rounded-lg" onClick={() => handleLeave(g.id)} disabled={leaving}>
+                          {leaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Leave'}
+                        </Button>
+                        <button onClick={() => setConfirmLeave(null)} className="text-muted-foreground/40 hover:text-muted-foreground">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
-                    </Link>
-                  )}
-                </motion.div>
-              ))}
+                    ) : (
+                      <div className="flex items-center group/card">
+                        <Link
+                          to={`/g/${g.invite_code}/today`}
+                          className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border/50 bg-card hover:border-primary/20 transition-all group flex-1 min-w-0"
+                        >
+                          {/* Gradient avatar */}
+                          <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shrink-0`}>
+                            <span className="text-[13px] font-bold text-white">{initial}</span>
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className="text-[13px] font-display font-bold text-foreground truncate min-w-0">{g.name}</p>
+                            </div>
+
+                            {/* Activity state */}
+                            <p className={`text-[11px] leading-tight mt-0.5 ${
+                              activity.type === 'active' ? 'text-[hsl(var(--success))]/80'
+                                : activity.type === 'wait' ? 'text-muted-foreground/50'
+                                : activity.type === 'quiet' ? 'text-muted-foreground/40'
+                                : 'text-muted-foreground/40'
+                            }`}>
+                              {activity.text}
+                            </p>
+
+                            {/* Stats row */}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-muted-foreground/40">
+                                {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
+                              </span>
+                              {g.todayAnsweredCount > 0 && (
+                                <span className="text-[10px] text-muted-foreground/40">
+                                  · {g.todayAnsweredCount} played today
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
+                        </Link>
+
+                        {/* Leave button */}
+                        <button
+                          onClick={() => setConfirmLeave(g.id)}
+                          className="ml-1 p-1.5 rounded-lg text-muted-foreground/0 group-hover/card:text-muted-foreground/30 hover:!text-destructive/60 transition-colors shrink-0"
+                          title="Leave group"
+                        >
+                          <LogOut className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
 
               {/* Empty state */}
               {groups.length === 0 && !showCreate && (
@@ -208,7 +252,7 @@ export default function Groups() {
                 </AnimatePresence>
               )}
 
-              {/* New group button when groups exist */}
+              {/* New group button */}
               {groups.length > 0 && !showCreate && (
                 <Button
                   variant="outline"

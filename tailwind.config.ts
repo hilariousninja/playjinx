@@ -67,6 +67,7 @@ export default {
         review: "hsl(var(--review))",
         cut: "hsl(var(--cut))",
         unreviewed: "hsl(var(--unreviewed))",
+        "logo-accent": "hsl(var(--logo-accent))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
