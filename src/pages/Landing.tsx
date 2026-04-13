@@ -60,20 +60,22 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Example card */}
-          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-5 text-left">
-            <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[7px]">
+          {/* Example card — teaches the linking mechanic */}
+          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-5">
+            <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[8px] text-left">
               Example
             </p>
-            <div className="flex items-center justify-center gap-[6px] mb-1">
+            <div className="flex items-center justify-center gap-[6px] mb-[6px]">
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">COW</span>
-              <span className="text-[13px] text-muted-foreground">+</span>
+              <div className="w-[6px] h-px bg-foreground/20" />
+              <span className="text-[16px] font-semibold text-primary bg-primary/12 px-[10px] py-[3px] rounded-[6px] border border-primary/20">
+                Milk
+              </span>
+              <div className="w-[6px] h-px bg-foreground/20" />
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">SNOW</span>
-              <span className="text-[13px] text-muted-foreground">→</span>
-              <span className="text-[16px] font-semibold text-primary bg-primary/12 px-[10px] py-[3px] rounded-[6px]">Milk</span>
             </div>
-            <p className="text-[11px] text-muted-foreground text-center">
-              The linking word · <span className="font-semibold text-primary">71% of players said this</span>
+            <p className="text-[11px] text-muted-foreground text-center leading-[1.5]">
+              One word links both · <span className="font-semibold text-primary">71% of players said this</span>
             </p>
           </div>
 
