@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, X, Loader2, ArrowRight, LogOut, LinkIcon } from 'lucide-react';
+import { Users, Plus, X, Loader2, LogOut, LinkIcon, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
-import { getMyGroups, createGroup, leaveGroup, type GroupWithActivity } from '@/lib/groups';
+import { getMyGroups, createGroup, leaveGroup, buildGroupInviteText, type GroupWithActivity } from '@/lib/groups';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 import DisplayNameInput from '@/components/DisplayNameInput';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
@@ -14,10 +14,10 @@ import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import { toast } from '@/hooks/use-toast';
 
 const AVATAR_COLORS = [
-  { bg: 'bg-primary/15', text: 'text-primary' },
-  { bg: 'bg-[hsl(var(--info))]/10', text: 'text-[hsl(var(--info))]' },
-  { bg: 'bg-[hsl(var(--success))]/10', text: 'text-[hsl(var(--success))]' },
-  { bg: 'bg-muted', text: 'text-muted-foreground' },
+  { bg: 'bg-primary/15', text: 'text-primary', accent: 'border-primary/20' },
+  { bg: 'bg-[hsl(var(--info))]/12', text: 'text-[hsl(var(--info))]', accent: 'border-[hsl(var(--info))]/20' },
+  { bg: 'bg-[hsl(var(--success))]/12', text: 'text-[hsl(var(--success))]', accent: 'border-[hsl(var(--success))]/20' },
+  { bg: 'bg-muted', text: 'text-muted-foreground', accent: 'border-foreground/10' },
 ];
 
 export default function Groups() {
@@ -72,38 +72,64 @@ export default function Groups() {
     setLeaving(false);
   };
 
-  const getActivityContent = (g: GroupWithActivity) => {
-    if (g.memberCount === 1) return { type: 'solo' as const, text: 'Just you right now' };
-    if (g.todayAnsweredCount === 0) return { type: 'quiet' as const, text: "Nobody's played today" };
-    if (g.todayAnsweredCount < g.memberCount) return { type: 'waiting' as const, text: `${g.todayAnsweredCount} played · waiting for ${g.memberCount - g.todayAnsweredCount} more` };
-    return { type: 'complete' as const, text: 'Everyone played today!' };
+  const handleInvite = async (e: React.MouseEvent, g: GroupWithActivity) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const text = buildGroupInviteText(g as any);
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; } catch {}
+    }
+    await navigator.clipboard.writeText(text);
+    toast({ title: 'Invite link copied!' });
+  };
+
+  const getActivity = (g: GroupWithActivity) => {
+    if (g.memberCount === 1) return { type: 'solo' as const, emoji: '👋', label: 'Just you — invite someone', color: 'text-primary', bg: 'bg-primary/6' };
+    if (g.todayAnsweredCount === 0) return { type: 'quiet' as const, emoji: '💤', label: "Nobody's played yet", color: 'text-muted-foreground', bg: 'bg-muted/60' };
+    if (g.todayAnsweredCount < g.memberCount) {
+      const waiting = g.memberCount - g.todayAnsweredCount;
+      return { type: 'waiting' as const, emoji: '⏳', label: `${g.todayAnsweredCount} played · ${waiting} to go`, color: 'text-foreground/70', bg: 'bg-primary/8' };
+    }
+    return { type: 'complete' as const, emoji: '✓', label: 'Everyone played!', color: 'text-[hsl(var(--success))] font-medium', bg: 'bg-[hsl(var(--success))]/8' };
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      <div className="flex-1 max-w-md mx-auto px-4 pt-4 pb-10 w-full">
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-[18px] font-bold text-foreground mb-[2px]">Your groups</h1>
-          <p className="text-[12px] text-muted-foreground mb-[10px]">Same prompts, same people, every day.</p>
+      <div className="flex-1 max-w-md mx-auto px-4 pt-3 pb-6 w-full">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[8px]">
+          <div>
+            <h1 className="text-[17px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
+            <p className="text-[11px] text-muted-foreground mt-[2px]">Same prompts, same people, every day.</p>
+          </div>
+          {groups.length > 0 && !showCreate && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" /> New
+            </button>
+          )}
         </motion.div>
 
         {loading ? (
-          <div className="py-12 text-center">
+          <div className="py-10 text-center">
             <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
           </div>
         ) : (
-          <div className="space-y-[8px]">
+          <div className="space-y-[6px]">
+            {/* Group cards */}
             {groups.map((g, i) => {
-              const activity = getActivityContent(g);
+              const activity = getActivity(g);
               const colorSet = AVATAR_COLORS[i % AVATAR_COLORS.length];
-              const initial = g.name.substring(0, 2).toUpperCase();
+              const initials = g.name.substring(0, 2).toUpperCase();
 
               if (confirmLeave === g.id) {
                 return (
-                  <div key={g.id} className="flex items-center gap-2 px-4 py-3 rounded-xl border border-destructive/30 bg-card">
-                    <p className="text-xs text-muted-foreground flex-1 truncate">
+                  <div key={g.id} className="flex items-center gap-2 px-3 py-[10px] rounded-[12px] border border-destructive/30 bg-card">
+                    <p className="text-[12px] text-muted-foreground flex-1 truncate">
                       Leave <span className="font-semibold text-foreground">{g.name}</span>?
                     </p>
                     <Button size="sm" variant="destructive" className="h-7 px-3 text-[11px] rounded-lg" onClick={() => handleLeave(g.id)} disabled={leaving}>
@@ -119,71 +145,76 @@ export default function Groups() {
               return (
                 <motion.div
                   key={g.id}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="bg-card rounded-[14px] border border-foreground/[0.08] overflow-hidden group/card"
+                  transition={{ delay: i * 0.03 }}
+                  className="bg-card rounded-[12px] border border-foreground/[0.08] overflow-hidden group/card"
                 >
                   <Link
                     to={`/g/${g.invite_code}/today`}
-                    className="flex items-center gap-[10px] px-[14px] py-[12px] hover:bg-accent/30 transition-colors"
+                    className="block px-[12px] pt-[10px] pb-[8px] hover:bg-accent/30 transition-colors"
                   >
-                    <div className={`w-[36px] h-[36px] rounded-full ${colorSet.bg} flex items-center justify-center shrink-0`}>
-                      <span className={`text-[13px] font-bold ${colorSet.text}`}>{initial}</span>
+                    {/* Top row: avatar + name + members + arrow */}
+                    <div className="flex items-center gap-[9px]">
+                      <div className={`w-[32px] h-[32px] rounded-full ${colorSet.bg} border ${colorSet.accent} flex items-center justify-center shrink-0`}>
+                        <span className={`text-[11px] font-bold ${colorSet.text}`}>{initials}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-[6px]">
+                          <p className="text-[13px] font-bold text-foreground truncate leading-tight">{g.name}</p>
+                          {activity.type === 'complete' && (
+                            <span className="text-[8px] bg-[hsl(var(--success))]/12 text-[hsl(var(--success))] px-[5px] py-[1px] rounded-full font-bold leading-none shrink-0">
+                              All in
+                            </span>
+                          )}
+                          {activity.type === 'waiting' && (
+                            <span className="text-[8px] bg-primary/10 text-primary px-[5px] py-[1px] rounded-full font-bold leading-none shrink-0">
+                              Live
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground leading-tight mt-[1px]">
+                          {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
+                        </p>
+                      </div>
+                      <svg className="h-3 w-3 text-muted-foreground/25 shrink-0" viewBox="0 0 12 12" fill="none">
+                        <path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[14px] font-semibold text-foreground mb-[2px] truncate">{g.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
-                      </p>
+
+                    {/* Activity strip — tight, inline */}
+                    <div className={`mt-[7px] rounded-[8px] px-[9px] py-[6px] flex items-center gap-[6px] ${activity.bg}`}>
+                      <span className="text-[11px] shrink-0 leading-none">{activity.emoji}</span>
+                      <span className={`text-[11px] leading-[1.3] flex-1 ${activity.color}`}>
+                        {activity.label}
+                      </span>
+                      {activity.type === 'solo' && (
+                        <span className="text-[10px] text-primary font-semibold whitespace-nowrap">Invite →</span>
+                      )}
+                      {activity.type === 'quiet' && (
+                        <span className="text-[10px] text-primary/70 font-medium whitespace-nowrap">Nudge →</span>
+                      )}
                     </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/card:text-primary/50 transition-colors shrink-0" />
                   </Link>
 
-                  {/* Activity bar */}
-                  <div className={`mx-[14px] mb-[12px] rounded-[10px] px-[11px] py-[9px] flex items-center gap-[8px] ${
-                    activity.type === 'complete' ? 'bg-[hsl(var(--success))]/8' :
-                    activity.type === 'waiting' ? 'bg-primary/8' :
-                    activity.type === 'quiet' ? 'bg-muted/50' :
-                    'bg-primary/6'
-                  }`}>
-                    <span className="text-[12px] shrink-0">
-                      {activity.type === 'complete' ? '✓' : activity.type === 'waiting' ? '⏳' : activity.type === 'quiet' ? '💤' : '👋'}
-                    </span>
-                    <span className={`text-[11px] leading-[1.4] flex-1 ${
-                      activity.type === 'complete' ? 'text-[hsl(var(--success))] font-medium' :
-                      activity.type === 'waiting' ? 'text-foreground/70' :
-                      'text-muted-foreground'
-                    }`}>
-                      {activity.type === 'solo' ? 'Invite someone to compare answers' : activity.text}
-                    </span>
-                    {activity.type === 'solo' && (
-                      <Link to={`/g/${g.invite_code}/today`} className="text-[11px] text-primary font-semibold whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                        Invite →
-                      </Link>
+                  {/* Bottom bar: stats + actions */}
+                  <div className="flex items-center px-[12px] py-[6px] border-t border-foreground/[0.04]">
+                    {g.memberCount > 1 && (
+                      <span className="text-[10px] text-muted-foreground/50">
+                        <span className="font-bold text-foreground/60">{g.todayAnsweredCount}/{g.memberCount}</span> today
+                      </span>
                     )}
-                    {activity.type === 'quiet' && (
-                      <Link to={`/g/${g.invite_code}/today`} className="text-[11px] text-primary font-medium whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                        Nudge →
-                      </Link>
-                    )}
-                  </div>
-
-                  {/* Stats row for active groups */}
-                  {g.memberCount > 1 && activity.type !== 'solo' && (
-                    <div className="border-t border-foreground/[0.06] flex">
-                      <div className="flex-1 text-center py-[8px]">
-                        <span className="text-[13px] font-bold text-primary block">{g.todayAnsweredCount}/{g.memberCount}</span>
-                        <span className="text-[9px] text-muted-foreground uppercase tracking-wide">Played</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Leave — hidden until hover */}
-                  <div className="px-3 pb-2 flex justify-end">
+                    <div className="flex-1" />
+                    <button
+                      onClick={(e) => handleInvite(e, g)}
+                      className="p-[4px] rounded-md text-muted-foreground/25 hover:text-primary hover:bg-primary/5 transition-colors"
+                      title="Invite"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                    </button>
                     <button
                       onClick={() => setConfirmLeave(g.id)}
-                      className="text-muted-foreground/0 group-hover/card:text-muted-foreground/30 hover:!text-destructive/60 transition-colors p-1"
+                      className="p-[4px] rounded-md text-muted-foreground/0 group-hover/card:text-muted-foreground/20 hover:!text-destructive/50 transition-colors ml-[2px]"
                       title="Leave group"
                     >
                       <LogOut className="h-3 w-3" />
@@ -193,19 +224,19 @@ export default function Groups() {
               );
             })}
 
-            {/* Empty state — redesigned to match v8 card language */}
+            {/* Empty state */}
             {groups.length === 0 && !showCreate && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-                <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-5 text-center">
-                  <div className="w-[44px] h-[44px] rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Users className="h-5 w-5 text-primary" />
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="bg-card rounded-[12px] border border-foreground/[0.08] p-[16px] text-center">
+                  <div className="w-[38px] h-[38px] rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-[10px]">
+                    <Users className="h-[18px] w-[18px] text-primary" />
                   </div>
-                   <p className="text-[15px] font-bold text-foreground mb-[3px]">Play JINX with your people</p>
-                  <p className="text-[12px] text-muted-foreground leading-[1.5] max-w-[260px] mx-auto mb-3">
-                    Create a group, answer every day, and see who thinks like you.
+                  <p className="text-[14px] font-bold text-foreground mb-[2px]">Play JINX with your people</p>
+                  <p className="text-[11px] text-muted-foreground leading-[1.5] max-w-[240px] mx-auto mb-[12px]">
+                    Same prompts every day. See who thinks like you.
                   </p>
-                  <Button onClick={() => setShowCreate(true)} className="w-full rounded-xl h-11 text-[13px] font-bold">
-                    <Plus className="h-4 w-4 mr-1.5" /> Start a group
+                  <Button onClick={() => setShowCreate(true)} className="w-full rounded-[10px] h-[40px] text-[13px] font-bold">
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a group
                   </Button>
                 </div>
 
@@ -217,21 +248,22 @@ export default function Groups() {
                       navigate(`/g/${match ? match[1] : code.trim()}`);
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-[6px] py-[10px] text-[12px] text-muted-foreground hover:text-foreground rounded-[12px] border border-dashed border-foreground/10 hover:border-foreground/20 transition-colors"
+                  className="w-full flex items-center justify-center gap-[5px] mt-[6px] py-[8px] text-[11px] text-muted-foreground hover:text-foreground rounded-[10px] border border-dashed border-foreground/10 hover:border-foreground/20 transition-colors"
                 >
-                  <LinkIcon className="h-3.5 w-3.5" />
-                  Join with an invite link
+                  <LinkIcon className="h-3 w-3" />
+                  Join with invite link
                 </button>
               </motion.div>
             )}
 
+            {/* Create form */}
             {showCreate && (
               <AnimatePresence>
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="rounded-[14px] border border-foreground/[0.08] bg-card p-4 space-y-3"
+                  className="rounded-[12px] border border-foreground/[0.08] bg-card p-[12px] space-y-[8px]"
                 >
                   {needsName ? (
                     <div>
@@ -250,12 +282,12 @@ export default function Groups() {
                         value={groupName}
                         onChange={e => setGroupName(e.target.value)}
                         placeholder="e.g. Work, Family, Film friends"
-                        className="rounded-lg h-10 text-sm border-foreground/[0.08]"
+                        className="rounded-[8px] h-[38px] text-[13px] border-foreground/[0.08]"
                         maxLength={40}
                         autoFocus
                         onKeyDown={e => e.key === 'Enter' && handleCreate()}
                       />
-                      <Button onClick={handleCreate} disabled={creating} className="w-full rounded-xl h-11 text-sm font-bold">
+                      <Button onClick={handleCreate} disabled={creating} className="w-full rounded-[10px] h-[40px] text-[13px] font-bold">
                         {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Create group'}
                       </Button>
                     </>
@@ -264,12 +296,20 @@ export default function Groups() {
               </AnimatePresence>
             )}
 
+            {/* Add group button when groups exist */}
             {groups.length > 0 && !showCreate && (
               <button
-                onClick={() => setShowCreate(true)}
-                className="flex items-center justify-center gap-[6px] w-full py-3 bg-transparent border border-dashed border-foreground/10 rounded-[13px] text-[12px] text-muted-foreground cursor-pointer hover:border-foreground/20 transition-colors"
+                onClick={() => {
+                  const code = prompt('Paste an invite link or code:');
+                  if (code) {
+                    const match = code.match(/\/g\/([^\s/]+)/);
+                    navigate(`/g/${match ? match[1] : code.trim()}`);
+                  }
+                }}
+                className="flex items-center justify-center gap-[5px] w-full py-[8px] text-[11px] text-muted-foreground/50 hover:text-muted-foreground rounded-[10px] border border-dashed border-foreground/[0.06] hover:border-foreground/15 transition-colors"
               >
-                + Create new group
+                <LinkIcon className="h-3 w-3" />
+                Join with invite link
               </button>
             )}
           </div>
