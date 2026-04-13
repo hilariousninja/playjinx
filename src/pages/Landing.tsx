@@ -1,25 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2, Eye, Zap, Users } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import PromptPair from '@/components/PromptPair';
 import { Button } from '@/components/ui/button';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
-import GroupsList from '@/components/GroupsList';
-import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
-import { getMyGroups, buildGroupInviteText, createGroup, type GroupWithActivity } from '@/lib/groups';
-import { toast } from '@/hooks/use-toast';
 
 export default function Landing() {
   const [prompts, setPrompts] = useState<DbPrompt[]>([]);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
-  const [myGroups, setMyGroups] = useState<GroupWithActivity[]>([]);
+  const [someStarted, setSomeStarted] = useState(false);
+  const [allDone, setAllDone] = useState(false);
   const navigate = useNavigate();
   const hasNewRoomActivity = useRoomHasNewActivity();
   const hasGroupActivity = useGroupHasActivity();
@@ -29,24 +25,12 @@ export default function Landing() {
       const ps = await ensureDailyPrompts();
       setPrompts(ps);
       const statusMap = await syncCompletionStatus(ps);
-      const completed = new Set(Object.entries(statusMap).filter(([, v]) => v).map(([k]) => k));
-      setCompletedIds(completed);
+      const completedCount = Object.values(statusMap).filter(Boolean).length;
+      setSomeStarted(completedCount > 0);
+      setAllDone(ps.length > 0 && completedCount === ps.length);
       setLoaded(true);
-
-      const allDone = ps.length > 0 && ps.every(p => statusMap[p.id]);
-      if (allDone) {
-        navigate('/archive', { replace: true });
-      }
-
-      // Load groups
-      const gs = await getMyGroups();
-      setMyGroups(gs);
     })();
   }, [navigate]);
-
-  const allDone = loaded && prompts.length > 0 && prompts.every(p => completedIds.has(p.id));
-  const someStarted = loaded && prompts.some(p => completedIds.has(p.id));
-  const hasGroups = myGroups.length > 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -59,85 +43,72 @@ export default function Landing() {
           transition={{ duration: 0.5 }}
           className="text-center w-full max-w-md"
         >
-          <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">Daily Crowd Word Game</p>
-          <h1 className="text-6xl font-black tracking-tighter text-foreground mb-3 md:text-8xl">JINX</h1>
-          <p className="text-[15px] text-primary font-semibold mb-2 py-[3px] my-0">Think the same. Spot the patterns.</p>
-          <p className="text-[13px] text-muted-foreground mx-auto mb-6 leading-relaxed py-[3px]">
-            See two words. Predict the bridge word the crowd will pick.
+          <p className="text-[10px] font-display tracking-[0.3em] text-muted-foreground uppercase mb-3">
+            Daily Crowd Word Game
+          </p>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground mb-3 md:text-8xl">
+            JINX
+          </h1>
+          <p className="text-[15px] text-primary font-semibold mb-1">
+            Think the same. Rank higher.
+          </p>
+          <p className="text-[13px] text-muted-foreground mx-auto mb-4 leading-relaxed max-w-xs">
+            Three word pairs each day. Find the bridge word the crowd will pick.
           </p>
 
-          {allDone ? (
-            <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="game-card-elevated inline-block px-8 py-5 w-full max-w-xs">
-              <CheckCircle2 className="h-5 w-5 text-primary mx-auto mb-1.5" />
-              <p className="font-semibold text-[15px] mb-0.5 text-foreground">Today's JINX complete</p>
-              <p className="text-[11px] text-muted-foreground mb-3">Results update live — check back for rank changes.</p>
-              <div className="flex flex-col gap-2 w-full">
-                <Button size="lg" className="rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm w-full active:scale-[0.97] transition-transform"
-                  onClick={async () => {
-                    try {
-                      const ch = await createChallenge(prompts);
-                      const text = buildChallengeShareText(prompts, ch.token);
-                      if (navigator.share) {
-                        try { await navigator.share({ text }); return; } catch {}
-                      }
-                      await navigator.clipboard.writeText(text);
-                      toast({ title: 'Challenge copied!', description: 'Send it to a friend' });
-                    } catch {
-                      toast({ title: 'Could not create challenge', variant: 'destructive' });
-                    }
-                  }}
-                >
-                  <Zap className="h-4 w-4 mr-2" /> Challenge a friend
-                </Button>
-                <Button size="lg" variant="outline" className="rounded-xl h-11 font-semibold text-sm w-full" asChild>
-                  <Link to="/archive"><Eye className="h-4 w-4 mr-2" /> View results</Link>
-                </Button>
-              </div>
-              {/* Room card removed — groups are the main social path */}
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="game-card-elevated inline-block w-full max-w-sm px-7 pt-3.5 pb-4 rounded-xl"
-            >
-              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-display mb-2.5 text-left">Example prompt</p>
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <PromptPair wordA="COW" wordB="SNOW" size="sm" />
-                <span className="text-foreground/30 text-sm font-bold">→</span>
-                <span className="text-primary text-lg font-display font-black tracking-tight">Milk</span>
-              </div>
-              <Button size="lg" className="rounded-lg w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px]" asChild>
-                <Link to="/play">
-                  {someStarted ? 'Continue playing' : 'Play today'} <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              {someStarted && (
-                <Button size="default" variant="ghost" className="w-full mt-1.5 text-muted-foreground text-sm" asChild>
-                  <Link to="/archive">View results</Link>
-                </Button>
-              )}
-            </motion.div>
-          )}
+          {/* Amber callout */}
+          <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 mb-5 max-w-sm mx-auto">
+            <p className="text-[12px] text-primary font-semibold">
+              Not the cleverest answer. The most common one.
+            </p>
+          </div>
 
-          {loaded && hasGroups && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mt-6 w-full max-w-xs mx-auto text-left"
-            >
-              <p className="text-[9px] uppercase tracking-[0.15em] font-display text-muted-foreground/40 mb-2 flex items-center justify-center gap-1.5"><Users className="h-2.5 w-2.5" /> Your groups</p>
-              <GroupsList />
-            </motion.div>
+          {/* Example card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="game-card-elevated inline-block w-full max-w-sm px-7 pt-3.5 pb-4 rounded-xl mb-5"
+          >
+            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-display mb-2.5 text-left">
+              Example prompt
+            </p>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <PromptPair wordA="COW" wordB="SNOW" size="sm" />
+              <span className="text-foreground/30 text-sm font-bold">→</span>
+              <span className="text-primary text-lg font-display font-black tracking-tight">Milk</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground/60">
+              Top crowd answer · 71% of players
+            </p>
+          </motion.div>
+
+          {/* Primary CTA */}
+          <Button
+            size="lg"
+            className="rounded-xl w-full max-w-sm h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px] active:scale-[0.97] transition-transform"
+            asChild
+          >
+            <Link to={allDone ? '/results' : '/play'}>
+              {allDone ? 'See my results' : someStarted ? 'Continue playing' : "Play today's 3 prompts"}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+
+          {someStarted && !allDone && (
+            <Button size="default" variant="ghost" className="w-full max-w-sm mt-1.5 text-muted-foreground text-sm" asChild>
+              <Link to="/archive">View results</Link>
+            </Button>
           )}
         </motion.div>
       </main>
 
+      {/* How to play */}
       <section className="border-t border-border py-5 px-5">
         <div className="max-w-md mx-auto">
-          <h2 className="font-bold text-center mb-4 text-base uppercase tracking-[0.15em] font-display text-foreground/80">How to play</h2>
+          <h2 className="font-bold text-center mb-4 text-base uppercase tracking-[0.15em] font-display text-foreground/80">
+            How it works
+          </h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {[
               { num: '1', title: 'See two words', desc: 'Find the bridge word that connects them.' },
