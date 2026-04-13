@@ -187,43 +187,44 @@ export default function Play() {
               {/* Word pair + answer as inline relationship */}
               {isActive ? (
                 <div>
-                  {/* Linking layout: WORD_A — [input] — WORD_B */}
-                  <div className="flex items-center gap-[6px] mb-[6px]">
-                    <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground leading-none shrink-0">
+                  {/* Word pair */}
+                  <div className="flex items-center gap-[9px] mb-[10px]">
+                    <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
                       {p.word_a}
                     </span>
-                    <div className="w-[8px] h-px bg-primary/40 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="border-b-2 border-primary pb-[4px] flex items-center">
-                        <input
-                          ref={(el) => { inputRefs.current[p.id] = el; }}
-                          value={answers[p.id] || ''}
-                          onChange={e => {
-                            setAnswers(prev => ({ ...prev, [p.id]: e.target.value }));
-                            setInputErrors(prev => ({ ...prev, [p.id]: '' }));
-                          }}
-                          onKeyDown={e => e.key === 'Enter' && handleSubmit(p.id)}
-                          placeholder="?"
-                          className="bg-transparent text-[18px] font-semibold text-primary placeholder:text-primary/30 placeholder:font-bold focus:outline-none w-full text-center"
-                          maxLength={80}
-                          disabled={!!submittingId}
-                          autoFocus={i === activeIdx}
-                        />
-                        {submittingId === p.id && (
-                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="w-[8px] h-px bg-primary/40 shrink-0" />
-                    <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground leading-none shrink-0">
+                    <span className="text-[14px] text-primary/50">+</span>
+                    <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
                       {p.word_b}
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-[7px] italic text-center">
-                    Find the linking word — the one most people will say.
+
+                  {/* Answer input */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 border-b-[1.5px] border-primary/60 pb-[3px]">
+                      <input
+                        ref={(el) => { inputRefs.current[p.id] = el; }}
+                        value={answers[p.id] || ''}
+                        onChange={e => {
+                          setAnswers(prev => ({ ...prev, [p.id]: e.target.value }));
+                          setInputErrors(prev => ({ ...prev, [p.id]: '' }));
+                        }}
+                        onKeyDown={e => e.key === 'Enter' && handleSubmit(p.id)}
+                        placeholder="Your linking word"
+                        className="bg-transparent text-[17px] font-semibold text-primary placeholder:text-primary/25 placeholder:font-normal focus:outline-none w-full"
+                        maxLength={80}
+                        disabled={!!submittingId}
+                        autoFocus={i === activeIdx}
+                      />
+                    </div>
+                    {submittingId === p.id && (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-[6px] italic">
+                    One word links both — pick the one most people will say.
                   </p>
                   {inputErrors[p.id] && (
-                    <p className="text-[11px] text-destructive mt-1 text-center">{inputErrors[p.id]}</p>
+                    <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
                   )}
                 </div>
               ) : (
