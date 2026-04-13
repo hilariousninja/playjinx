@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, ChevronRight, ArrowRight, Calendar } from 'lucide-react';
+import { ArrowRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -12,8 +12,8 @@ import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import {
   getArchivePrompts, ensureDailyPrompts,
-  getStats, getUserAnswer, getCanonicalAnswer, getTotalSubmissions,
-  getBatchUserAnswers, getBatchDailyUniquePlayers,
+  getStats, getUserAnswer, getCanonicalAnswer,
+  getBatchUserAnswers,
   type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 
@@ -112,7 +112,7 @@ export default function Archive() {
 
   const getVibeForDay = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
-    if (answered.length === 0) return { text: 'Not played yet', dotCls: 'bg-muted-foreground/30' };
+    if (answered.length === 0) return { text: 'Not played yet', dotCls: 'bg-muted-foreground/40' };
     const tops = answered.filter(r => r.rank === 1).length;
     const avgRank = answered.reduce((s, r) => s + r.rank, 0) / answered.length;
     if (avgRank <= 1.5) return { text: `Strong consensus · ${tops} top pick${tops > 1 ? 's' : ''}`, dotCls: 'bg-[hsl(var(--success))]' };
@@ -125,27 +125,76 @@ export default function Archive() {
     return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
-  const getStatusPills = (day: DayData) => {
-    const pills: { label: string; cls: string }[] = [];
-    if (day.isToday) {
-      pills.push({ label: 'Live', cls: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]' });
-      if (day.prompts.every(p => p.answer)) {
-        pills.push({ label: 'Done', cls: 'bg-primary/12 text-[hsl(var(--warning-foreground))]' });
-      }
-    } else {
-      const any = day.prompts.some(p => p.answer);
-      if (!any) pills.push({ label: 'Missed', cls: 'bg-muted text-muted-foreground' });
-    }
-    return pills;
-  };
+  const renderDayCard = (day: DayData, idx: number) => {
+    const vibe = getVibeForDay(day);
+    const hasPlayed = day.prompts.some(p => p.answer);
+    const allAnswered = day.prompts.every(p => p.answer);
 
-  const getRankBadge = (rank: number, hasAnswer: boolean, isToday: boolean) => {
-    if (!hasAnswer && !isToday) return { label: 'Explore →', cls: 'bg-primary/12 text-primary' };
-    if (!hasAnswer) return null;
-    if (rank === 1) return { label: '#1', cls: 'bg-[hsl(var(--success))]/12 text-[hsl(142_72%_30%)]' };
-    if (rank === 2) return { label: '#2', cls: 'bg-primary/12 text-[hsl(var(--warning-foreground))]' };
-    if (rank <= 4) return { label: `#${rank}`, cls: 'bg-muted text-muted-foreground' };
-    return null;
+    return (
+      <motion.div
+        key={day.date}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: idx * 0.03 }}
+        className="bg-card rounded-[14px] border border-foreground/[0.08] overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
+        onClick={() => setSelectedDay(day)}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-[14px] py-[11px] border-b border-foreground/[0.06]">
+          <div className="flex items-center gap-[7px]">
+            <span className="text-[13px] font-semibold text-foreground">{day.isToday ? 'Today' : formatDate(day.date)}</span>
+            {day.isToday && (
+              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-[hsl(var(--success))]/12 text-[hsl(var(--success))]">Live</span>
+            )}
+            {day.isToday && allAnswered && (
+              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-[hsl(var(--warning-foreground))]">Done</span>
+            )}
+            {!day.isToday && !hasPlayed && (
+              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-muted text-muted-foreground">Missed</span>
+            )}
+          </div>
+          <div className="flex items-center gap-[6px]">
+            <span className="text-[10px] text-muted-foreground">👥 {day.playerCount}</span>
+            <span className="text-muted-foreground/40">›</span>
+          </div>
+        </div>
+
+        {/* Vibe */}
+        <div className="flex items-center gap-[6px] px-[14px] py-[8px]">
+          <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
+          <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
+        </div>
+
+        {/* Prompt rows */}
+        <div className="flex flex-col gap-[5px] px-[14px] pb-[12px]">
+          {day.prompts.map(s => (
+            <div key={s.prompt.id} className="flex items-center gap-[8px]">
+              <span className="text-[12px] font-semibold text-foreground flex-1 truncate">
+                {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
+              </span>
+              {s.answer ? (
+                <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap">
+                  → {s.answer.raw_answer}
+                </span>
+              ) : !day.isToday ? (
+                <span className="text-[11px] text-primary font-medium whitespace-nowrap">Explore →</span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap">—</span>
+              )}
+              {s.answer && s.rank > 0 && (
+                <span className={`text-[9px] font-semibold px-[6px] py-[2px] rounded-[5px] whitespace-nowrap shrink-0 ${
+                  s.rank === 1 ? 'bg-[hsl(var(--success))]/12 text-[hsl(142_72%_30%)]' :
+                  s.rank === 2 ? 'bg-primary/12 text-[hsl(var(--warning-foreground))]' :
+                  'bg-muted text-muted-foreground'
+                }`}>
+                  #{s.rank}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    );
   };
 
   const todayDays = days.filter(d => d.isToday);
@@ -157,131 +206,15 @@ export default function Archive() {
 
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-4 pb-8">
         <div className="space-y-[10px]">
-          {/* Today cards */}
-          {todayDays.map((day, di) => {
-            const vibe = getVibeForDay(day);
-            const pills = getStatusPills(day);
-            return (
-              <motion.div
-                key={day.date}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card rounded-[14px] border border-foreground/[0.08] overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
-                onClick={() => setSelectedDay(day)}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-[14px] py-[11px] border-b border-foreground/[0.08]">
-                  <div className="flex items-center gap-[7px]">
-                    <span className="text-[13px] font-semibold text-foreground">Today</span>
-                    {pills.map(p => (
-                      <span key={p.label} className={`text-[10px] font-medium px-[7px] py-[2px] rounded-[10px] ${p.cls}`}>{p.label}</span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-[6px]">
-                    <span className="text-[10px] text-muted-foreground">👥 {day.playerCount}</span>
-                    <span className="text-[12px] text-muted-foreground">›</span>
-                  </div>
-                </div>
+          {todayDays.map((day, i) => renderDayCard(day, i))}
 
-                {/* Vibe line */}
-                <div className="flex items-center gap-[6px] px-[14px] py-[7px]">
-                  <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
-                  <span className="text-[11px] text-muted-foreground">{vibe.text}</span>
-                </div>
-
-                {/* Prompt rows */}
-                <div className="flex flex-col gap-[6px] px-[14px] pb-[12px]">
-                  {day.prompts.map(s => {
-                    const badge = getRankBadge(s.rank, !!s.answer, day.isToday);
-                    return (
-                      <div key={s.prompt.id} className="flex items-center gap-[8px]">
-                        <span className="text-[12px] font-semibold text-foreground flex-1 truncate">
-                          {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
-                        </span>
-                        {s.answer ? (
-                          <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap">
-                            → {s.answer.raw_answer}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground italic whitespace-nowrap">—</span>
-                        )}
-                        {badge && (
-                          <span className={`text-[9px] font-semibold px-[6px] py-[2px] rounded-[5px] whitespace-nowrap shrink-0 ${badge.cls}`}>
-                            {badge.label}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* Past days section */}
           {pastDays.length > 0 && (
             <p className="text-[10px] uppercase tracking-[0.07em] text-muted-foreground mt-2 mb-1">
               Past days
             </p>
           )}
 
-          {pastDays.map((day, di) => {
-            const vibe = getVibeForDay(day);
-            const pills = getStatusPills(day);
-            return (
-              <motion.div
-                key={day.date}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: di * 0.03 }}
-                className="bg-card rounded-[14px] border border-foreground/[0.08] overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
-                onClick={() => setSelectedDay(day)}
-              >
-                <div className="flex items-center justify-between px-[14px] py-[11px] border-b border-foreground/[0.08]">
-                  <div className="flex items-center gap-[7px]">
-                    <span className="text-[13px] font-semibold text-foreground">{formatDate(day.date)}</span>
-                    {pills.map(p => (
-                      <span key={p.label} className={`text-[10px] font-medium px-[7px] py-[2px] rounded-[10px] ${p.cls}`}>{p.label}</span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-[6px]">
-                    <span className="text-[10px] text-muted-foreground">👥 {day.playerCount}</span>
-                    <span className="text-[12px] text-muted-foreground">›</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-[6px] px-[14px] py-[7px]">
-                  <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
-                  <span className="text-[11px] text-muted-foreground">{vibe.text}</span>
-                </div>
-
-                <div className="flex flex-col gap-[6px] px-[14px] pb-[12px]">
-                  {day.prompts.map(s => {
-                    const badge = getRankBadge(s.rank, !!s.answer, day.isToday);
-                    return (
-                      <div key={s.prompt.id} className="flex items-center gap-[8px]">
-                        <span className="text-[12px] font-semibold text-foreground flex-1 truncate">
-                          {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
-                        </span>
-                        {s.answer ? (
-                          <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap">
-                            → {s.answer.raw_answer}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground italic whitespace-nowrap">Missed</span>
-                        )}
-                        {badge && (
-                          <span className={`text-[9px] font-semibold px-[6px] py-[2px] rounded-[5px] whitespace-nowrap shrink-0 ${badge.cls}`}>
-                            {badge.label}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            );
-          })}
+          {pastDays.map((day, i) => renderDayCard(day, i))}
         </div>
 
         {days.length === 0 && (
@@ -299,7 +232,6 @@ export default function Archive() {
         </div>
       </div>
 
-      {/* Day detail panel */}
       <SlidePanel
         open={!!selectedDay}
         onClose={() => setSelectedDay(null)}
@@ -327,7 +259,6 @@ export default function Archive() {
 
               return (
                 <div key={s.prompt.id} className="bg-card rounded-[13px] border border-foreground/[0.08] p-[13px]">
-                  {/* Prompt header */}
                   <div className="flex items-center justify-between mb-[6px]">
                     <span className="text-[14px] font-bold text-foreground">
                       {s.prompt.word_a} <span className="text-primary font-normal mx-1">+</span> {s.prompt.word_b}
@@ -340,19 +271,17 @@ export default function Archive() {
                   </div>
 
                   {s.answer ? (
-                    <>
-                      <div className="flex items-center gap-[6px] mb-[7px]">
-                        <span className="text-[17px] font-bold text-foreground">{s.answer.raw_answer}</span>
-                        <span className="text-[9px] font-semibold bg-primary text-white px-[5px] py-[2px] rounded">you</span>
-                        <div className="flex-1 bg-muted/40 rounded h-4 overflow-hidden ml-1">
-                          <div className="h-full rounded" style={{ width: `${barWidth}%`, background: s.rank === 1 ? 'hsl(var(--success) / 0.12)' : s.rank === 2 ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--foreground) / 0.06)' }} />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{s.percentage}%</span>
+                    <div className="flex items-center gap-[6px] mb-[7px]">
+                      <span className="text-[17px] font-bold text-foreground">{s.answer.raw_answer}</span>
+                      <span className="text-[9px] font-semibold bg-primary text-white px-[5px] py-[2px] rounded">you</span>
+                      <div className="flex-1 bg-muted/40 rounded h-4 overflow-hidden ml-1">
+                        <div className="h-full rounded" style={{ width: `${barWidth}%`, background: s.rank === 1 ? 'hsl(var(--success) / 0.12)' : s.rank === 2 ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--foreground) / 0.06)' }} />
                       </div>
-                    </>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{s.percentage}%</span>
+                    </div>
                   ) : (
-                    <p className="text-[12px] text-muted-foreground italic mb-[7px]">
-                      {selectedDay.isToday ? 'Not answered yet' : 'Missed · see what the crowd said'}
+                    <p className="text-[12px] text-muted-foreground mb-[7px]">
+                      {selectedDay.isToday ? 'Not answered yet' : 'You missed this one — see what the crowd said'}
                     </p>
                   )}
 

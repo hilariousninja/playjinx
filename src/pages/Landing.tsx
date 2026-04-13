@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
 import { ensureDailyPrompts, syncCompletionStatus, type DbPrompt } from '@/lib/store';
 import Countdown from '@/components/Countdown';
 import AppHeader from '@/components/AppHeader';
@@ -31,10 +30,10 @@ export default function Landing() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      <main className="flex justify-center px-4 pt-6 pb-4">
+      <main className="flex-1 overflow-y-auto flex justify-center px-4 pt-6 pb-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -54,14 +53,14 @@ export default function Landing() {
             Three word pairs each day. Enter the word you think most people will say.
           </p>
 
-          {/* Amber callout — v8 hero-cor */}
+          {/* Amber callout */}
           <div className="bg-primary/12 rounded-lg px-[14px] py-[6px] mb-4 inline-block">
             <p className="text-[12px] font-semibold text-[hsl(var(--warning-foreground))]">
               Not the cleverest answer. The most common one.
             </p>
           </div>
 
-          {/* Example card — v8 ex-card */}
+          {/* Example card */}
           <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-4 text-left">
             <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[7px]">
               Example
@@ -78,7 +77,7 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* CTA — v8 cta */}
+          {/* CTA */}
           <Link
             to={allDone ? '/results' : '/play'}
             className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[18px] active:scale-[0.97] transition-transform"
@@ -86,7 +85,7 @@ export default function Landing() {
             {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's 3 prompts →"}
           </Link>
 
-          {/* How it works — v8 steps grid */}
+          {/* How it works */}
           <p className="text-[10px] tracking-[0.08em] text-muted-foreground uppercase text-center mb-[9px]">
             How it works
           </p>
