@@ -23,22 +23,22 @@ export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Prop
   };
 
   return (
-    <header className="border-b border-border shrink-0">
+    <header className="border-b border-border/60 shrink-0 bg-card/50 backdrop-blur-sm">
       <div className="flex items-center justify-between h-14 max-w-xl mx-auto px-5">
-        <Link to="/">
-          <JinxLogo size={22} className="text-foreground text-lg" />
+        <Link to="/" className="shrink-0">
+          <JinxLogo size={26} className="text-foreground" />
         </Link>
-        {/* Desktop nav — hidden on mobile (bottom nav used instead) */}
-        <div className="hidden md:flex items-center gap-1">
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-0.5">
           {navItems.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
               className={cn(
-                'relative text-sm font-medium px-3 py-1.5 rounded-md transition-colors',
+                'relative text-[13px] font-semibold px-3.5 py-1.5 rounded-lg transition-colors',
                 isActive(to)
                   ? 'text-primary-foreground bg-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/60'
               )}
             >
               {label}
@@ -51,7 +51,7 @@ export default function AppHeader({ hasNewRoomActivity, hasGroupActivity }: Prop
             </Link>
           ))}
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center shrink-0">
           <PlayerIdentity />
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, ChevronRight, ArrowRight } from 'lucide-react';
+import { Users, ChevronRight, ArrowRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -112,7 +112,7 @@ export default function Archive() {
 
   const getTierBadge = (rank: number, matchCount: number) => {
     if (rank === 1) return { label: '#1', cls: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]' };
-    if (rank === 2) return { label: '#2', cls: 'bg-primary/15 text-primary' };
+    if (rank === 2) return { label: '#2', cls: 'bg-primary/12 text-primary' };
     if (rank <= 4) return { label: `#${rank}`, cls: 'bg-muted text-muted-foreground' };
     return null;
   };
@@ -139,7 +139,7 @@ export default function Archive() {
         : { label: 'Live', cls: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]' };
     }
     const any = day.prompts.some(p => p.answer);
-    if (!any) return { label: 'Missed', cls: 'bg-destructive/10 text-destructive' };
+    if (!any) return { label: 'Missed', cls: 'bg-destructive/10 text-destructive/70' };
     return { label: 'Done', cls: 'bg-muted text-muted-foreground' };
   };
 
@@ -149,14 +149,15 @@ export default function Archive() {
 
       <div className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-8">
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-lg font-bold tracking-tight text-foreground mb-0.5">Archive</h1>
-          <p className="text-[12px] text-muted-foreground/70 mb-5">Your daily JINX history</p>
+          <h1 className="text-xl font-bold tracking-tight text-foreground mb-0.5">Archive</h1>
+          <p className="text-[12px] text-muted-foreground/60 mb-6">Every day you've played — tap to explore.</p>
         </motion.div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {days.map((day, di) => {
             const vibe = getVibeForDay(day);
             const status = getStatusPill(day);
+            const answeredCount = day.prompts.filter(p => p.answer).length;
 
             return (
               <motion.button
@@ -165,29 +166,32 @@ export default function Archive() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: di * 0.03 }}
                 onClick={() => setSelectedDay(day)}
-                className="w-full text-left bg-card border border-border/60 rounded-xl px-4 py-3.5 hover:border-primary/20 hover:shadow-sm transition-all group"
+                className="w-full text-left bg-card border border-border/50 rounded-xl px-4 py-4 hover:border-primary/20 hover:shadow-sm transition-all group"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2">
-                    <p className="text-[13px] font-bold text-foreground">
+                    <p className="text-[14px] font-bold text-foreground tracking-tight">
                       {day.isToday ? 'Today' : formatDate(day.date)}
                     </p>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${status.cls}`}>
+                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${status.cls}`}>
                       {status.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground/40 flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground/35 flex items-center gap-1">
                       <Users className="h-2.5 w-2.5" />
                       {day.playerCount}
                     </span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-primary/40 transition-colors" />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 mb-2.5">
+                <div className="flex items-center gap-2 mb-3">
                   <span className={`w-1.5 h-1.5 rounded-full ${vibe.dot}`} />
-                  <span className="text-[10px] text-muted-foreground/60">{vibe.text}</span>
+                  <span className="text-[10px] text-muted-foreground/50">{vibe.text}</span>
+                  {answeredCount > 0 && (
+                    <span className="text-[10px] text-muted-foreground/30">· {answeredCount}/{day.prompts.length} answered</span>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -195,15 +199,13 @@ export default function Archive() {
                     const badge = s.answer ? getTierBadge(s.rank, s.matchCount) : null;
                     return (
                       <div key={s.prompt.id} className="flex items-center justify-between text-[12px]">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <span className="font-display font-semibold text-foreground/70 truncate">
-                            {s.prompt.word_a} + {s.prompt.word_b}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <span className="font-display font-semibold text-foreground/60 truncate">
+                          {s.prompt.word_a} + {s.prompt.word_b}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-3">
                           {s.answer ? (
                             <>
-                              <span className="text-muted-foreground/50 truncate max-w-[60px]">
+                              <span className="text-foreground/40 truncate max-w-[70px]">
                                 {s.answer.raw_answer}
                               </span>
                               {badge && (
@@ -213,10 +215,8 @@ export default function Archive() {
                               )}
                             </>
                           ) : (
-                            <span className="text-muted-foreground/30 text-[11px]">
-                              {day.isToday ? (
-                                <span className="text-primary/60">Explore →</span>
-                              ) : 'Missed'}
+                            <span className="text-muted-foreground/25 text-[11px]">
+                              {day.isToday ? '—' : 'Missed'}
                             </span>
                           )}
                         </div>
@@ -230,9 +230,10 @@ export default function Archive() {
         </div>
 
         {days.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">No archive yet. Play today's prompts to get started.</p>
-            <Button className="mt-3 rounded-xl" asChild>
+          <div className="text-center py-16">
+            <Calendar className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground/60 mb-3">No archive yet. Play today's prompts to get started.</p>
+            <Button className="rounded-xl" asChild>
               <Link to="/play">Play now <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
             </Button>
           </div>
@@ -247,13 +248,13 @@ export default function Archive() {
         subtitle={selectedDay ? `${selectedDay.playerCount} players` : ''}
       >
         {selectedDay && (
-          <div className="px-5 py-4 space-y-4">
+          <div className="px-5 py-5 space-y-4">
             {(() => {
               const vibe = getVibeForDay(selectedDay);
               return (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${vibe.dot}`} />
-                  <span className="text-[12px] text-muted-foreground">{vibe.text}</span>
+                  <span className="text-[12px] text-muted-foreground/70 font-medium">{vibe.text}</span>
                 </div>
               );
             })()}
@@ -264,19 +265,19 @@ export default function Archive() {
                 ? Math.max(Math.round((s.matchCount / s.total) * 100), 4) : 0;
 
               return (
-                <div key={s.prompt.id} className="bg-card border border-border rounded-xl p-4">
-                  <p className="text-[10px] font-display text-muted-foreground/50 mb-2">
+                <div key={s.prompt.id} className="bg-card border border-border/60 rounded-xl p-4">
+                  <p className="text-[9px] font-display text-muted-foreground/40 uppercase tracking-wider mb-2.5">
                     {s.prompt.word_a} + {s.prompt.word_b}
                   </p>
 
                   {s.answer ? (
                     <>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-2.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-base font-display font-bold text-foreground">
+                          <span className="text-lg font-black text-foreground tracking-tight">
                             {s.answer.raw_answer}
                           </span>
-                          <span className="text-[9px] text-primary font-bold uppercase">You</span>
+                          <span className="text-[8px] text-primary font-bold uppercase tracking-wider bg-primary/8 px-1.5 py-0.5 rounded">You</span>
                         </div>
                         {badge && (
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
@@ -284,25 +285,25 @@ export default function Archive() {
                           </span>
                         )}
                       </div>
-                      <div className="relative h-5 rounded-lg bg-muted/50 overflow-hidden mb-2">
+                      <div className="relative h-6 rounded-lg bg-muted/40 overflow-hidden mb-2.5">
                         <div
                           className="absolute inset-y-0 left-0 rounded-lg bg-primary/25"
                           style={{ width: `${barWidth}%` }}
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-display font-bold text-foreground/50">
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-display font-bold text-foreground/45">
                           {s.percentage}%
                         </span>
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground/40 mb-2">
+                    <p className="text-sm text-muted-foreground/35 mb-2.5 font-medium">
                       {selectedDay.isToday ? 'Not answered yet' : 'Missed'}
                     </p>
                   )}
 
                   <button
                     onClick={() => setDrawerPrompt(s)}
-                    className="flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
+                    className="flex items-center gap-1 text-[11px] text-primary font-bold hover:underline"
                   >
                     See all {s.stats.length} answers <ChevronRight className="h-3 w-3" />
                   </button>
@@ -311,7 +312,7 @@ export default function Archive() {
             })}
 
             {selectedDay.isToday && selectedDay.prompts.some(p => !p.answer) && (
-              <Button className="w-full rounded-xl h-10" asChild>
+              <Button className="w-full rounded-xl h-11" asChild>
                 <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
               </Button>
             )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Share2, ChevronRight, Users, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
+import { Share2, ChevronRight, Trophy, Target, TrendingUp, Sparkles, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ensureDailyPrompts, getUserAnswer, getStats, getCanonicalAnswer,
@@ -70,7 +70,6 @@ export default function Results() {
         })
       );
 
-      // If no answers at all, redirect to play
       if (res.every(r => !r.answer)) {
         navigate('/play', { replace: true });
         return;
@@ -93,7 +92,6 @@ export default function Results() {
     ? answered.reduce((best, r) => (r.percentage > best.percentage ? r : best), answered[0])
     : null;
 
-  // Compute vibe
   const avgRank = answered.length > 0 ? answered.reduce((s, r) => s + r.rank, 0) / answered.length : 0;
   const vibe = avgRank <= 1.5 ? { label: 'Strong crowd read', color: 'text-[hsl(var(--success))]', bg: 'bg-[hsl(var(--success))]/10' }
     : avgRank <= 3 ? { label: 'Solid instincts', color: 'text-primary', bg: 'bg-primary/10' }
@@ -130,8 +128,8 @@ export default function Results() {
   };
 
   const getTierInfo = (rank: number, matchCount: number) => {
-    if (rank === 1) return { label: '#1', color: 'bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]', icon: Trophy };
-    if (rank === 2) return { label: '#2', color: 'bg-primary/15 text-primary', icon: Target };
+    if (rank === 1) return { label: '#1', color: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]', icon: Trophy };
+    if (rank === 2) return { label: '#2', color: 'bg-primary/12 text-primary', icon: Target };
     if (rank <= 4) return { label: `#${rank}`, color: 'bg-muted text-muted-foreground', icon: TrendingUp };
     if (matchCount > 1) return { label: `#${rank}`, color: 'bg-muted text-muted-foreground', icon: Sparkles };
     return { label: 'Unique', color: 'bg-muted text-muted-foreground', icon: Minus };
@@ -141,7 +139,7 @@ export default function Results() {
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      <div className="flex-1 max-w-md mx-auto w-full px-5 pt-5 pb-8 space-y-5">
+      <div className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-8 space-y-4">
         {/* Brag block */}
         <BragBlock
           answeredCount={answered.length}
@@ -154,23 +152,17 @@ export default function Results() {
         />
 
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div className="bg-card border border-border rounded-xl py-3 px-2">
-            <p className="text-lg font-bold text-foreground">{topPicks}</p>
-            <p className="text-[10px] text-muted-foreground">top picks</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl py-3 px-2">
-            <p className="text-lg font-bold text-foreground">
-              {answered.length > 0 ? Math.max(...answered.map(r => r.total)) : 0}
-            </p>
-            <p className="text-[10px] text-muted-foreground">players</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl py-3 px-2">
-            <p className="text-lg font-bold text-foreground">
-              {answered.length > 0 ? answered.reduce((s, r) => s + r.stats.length, 0) : 0}
-            </p>
-            <p className="text-[10px] text-muted-foreground">unique answers</p>
-          </div>
+        <div className="grid grid-cols-3 gap-2.5 text-center">
+          {[
+            { value: topPicks, label: 'top picks' },
+            { value: answered.length > 0 ? Math.max(...answered.map(r => r.total)) : 0, label: 'players today' },
+            { value: answered.length > 0 ? answered.reduce((s, r) => s + r.stats.length, 0) : 0, label: 'unique answers' },
+          ].map(s => (
+            <div key={s.label} className="bg-card border border-border/60 rounded-xl py-3">
+              <p className="text-xl font-black text-foreground tracking-tight">{s.value}</p>
+              <p className="text-[9px] text-muted-foreground/60 font-display uppercase tracking-wider mt-0.5">{s.label}</p>
+            </div>
+          ))}
         </div>
 
         {/* Per-prompt cards */}
@@ -187,10 +179,9 @@ export default function Results() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.05 }}
-              className="bg-card border border-border rounded-xl p-4"
+              className="bg-card border border-border/60 rounded-xl p-4"
             >
-              {/* Word pair */}
-              <p className="text-[10px] font-display text-muted-foreground/50 mb-2">
+              <p className="text-[9px] font-display text-muted-foreground/40 uppercase tracking-wider mb-2.5">
                 {r.prompt.word_a} + {r.prompt.word_b}
               </p>
 
@@ -198,37 +189,36 @@ export default function Results() {
                 <>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-display font-bold text-foreground">
+                      <span className="text-lg font-black text-foreground tracking-tight">
                         {r.answer.raw_answer}
                       </span>
-                      <span className="text-[9px] text-primary font-bold uppercase">You</span>
+                      <span className="text-[8px] text-primary font-bold uppercase tracking-wider bg-primary/8 px-1.5 py-0.5 rounded">You</span>
                     </div>
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${tier.color}`}>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${tier.color}`}>
                       <TierIcon className="h-2.5 w-2.5" />
                       {tier.label}
                     </span>
                   </div>
 
-                  {/* Distribution bar */}
-                  <div className="relative h-6 rounded-lg bg-muted/50 overflow-hidden mb-2">
+                  <div className="relative h-7 rounded-lg bg-muted/40 overflow-hidden mb-2.5">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${barWidth}%` }}
                       transition={{ duration: 0.6, delay: 0.2 + i * 0.05 }}
-                      className="absolute inset-y-0 left-0 rounded-lg bg-primary/30"
+                      className="absolute inset-y-0 left-0 rounded-lg bg-primary/25"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-display font-bold text-foreground/60">
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[12px] font-display font-bold text-foreground/50">
                       {r.percentage}%
                     </span>
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground/50 mb-2">Missed</p>
+                <p className="text-sm text-muted-foreground/40 mb-2.5 font-medium">Missed</p>
               )}
 
               <button
                 onClick={() => setDrawerPrompt(r)}
-                className="flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
+                className="flex items-center gap-1 text-[11px] text-primary font-bold hover:underline"
               >
                 See all {r.stats.length} answers <ChevronRight className="h-3 w-3" />
               </button>
@@ -236,30 +226,29 @@ export default function Results() {
           );
         })}
 
-        {/* Bottom CTAs — exact v8 hierarchy */}
-        <div className="space-y-3 pt-2">
+        {/* Bottom CTAs */}
+        <div className="space-y-3 pt-3">
           <Button
             onClick={handleShare}
             size="lg"
-            className="w-full rounded-xl h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[15px] active:scale-[0.97] transition-transform"
+            className="w-full rounded-xl h-[52px] bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-[15px] active:scale-[0.97] transition-transform shadow-sm shadow-primary/20"
           >
             <Share2 className="h-4 w-4 mr-2" /> Share your results
           </Button>
 
           <button
             onClick={handleChallenge}
-            className="w-full text-center text-sm text-primary font-semibold hover:underline py-2"
+            className="w-full text-center text-sm text-primary font-bold hover:underline py-2"
           >
             Challenge a friend →
           </button>
 
-          <div className="pt-2">
+          <div className="pt-1">
             <Countdown />
           </div>
         </div>
       </div>
 
-      {/* Answer drawer */}
       <AnswerDrawer
         open={!!drawerPrompt}
         onClose={() => setDrawerPrompt(null)}

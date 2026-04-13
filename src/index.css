@@ -117,9 +117,12 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-body);
+    letter-spacing: -0.02em;
   }
   .font-display {
     font-family: var(--font-display);
@@ -128,12 +131,12 @@
 
 @layer components {
   .game-card {
-    @apply bg-card border border-border rounded-2xl p-6;
+    @apply bg-card border border-border rounded-2xl;
     box-shadow: 0 1px 3px 0 hsl(20 10% 12% / 0.04), 0 1px 2px -1px hsl(20 10% 12% / 0.04);
   }
   .game-card-elevated {
-    @apply rounded-2xl p-6 border border-border bg-card;
-    box-shadow: 0 4px 16px -4px hsl(20 10% 12% / 0.08), 0 2px 4px -2px hsl(20 10% 12% / 0.04);
+    @apply rounded-2xl border border-border/80 bg-card;
+    box-shadow: 0 4px 20px -4px hsl(20 10% 12% / 0.08), 0 2px 6px -2px hsl(20 10% 12% / 0.05);
   }
   .stat-pill {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
