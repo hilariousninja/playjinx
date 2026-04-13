@@ -9,6 +9,8 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import { getMyGroups, createGroup, leaveGroup, type GroupWithActivity } from '@/lib/groups';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 import DisplayNameInput from '@/components/DisplayNameInput';
+import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import { toast } from '@/hooks/use-toast';
 
 const GROUP_COLORS = [
@@ -28,6 +30,8 @@ export default function Groups() {
   const [needsName, setNeedsName] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const hasNewRoomActivity = useRoomHasNewActivity();
+  const hasGroupActivity = useGroupHasActivity();
 
   useEffect(() => {
     (async () => {
@@ -84,7 +88,7 @@ export default function Groups() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
-      <AppHeader />
+      <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1">
         <div className="max-w-sm mx-auto px-5 pt-6 pb-10 w-full">
@@ -129,7 +133,6 @@ export default function Groups() {
                           to={`/g/${g.invite_code}/today`}
                           className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border/50 bg-card hover:border-primary/20 transition-all group flex-1 min-w-0"
                         >
-                          {/* Gradient avatar */}
                           <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shrink-0`}>
                             <span className="text-[13px] font-bold text-white">{initial}</span>
                           </div>
@@ -139,7 +142,6 @@ export default function Groups() {
                               <p className="text-[13px] font-display font-bold text-foreground truncate min-w-0">{g.name}</p>
                             </div>
 
-                            {/* Activity state */}
                             <p className={`text-[11px] leading-tight mt-0.5 ${
                               activity.type === 'active' ? 'text-[hsl(var(--success))]/80'
                                 : activity.type === 'wait' ? 'text-muted-foreground/50'
@@ -149,7 +151,6 @@ export default function Groups() {
                               {activity.text}
                             </p>
 
-                            {/* Stats row */}
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px] text-muted-foreground/40">
                                 {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
@@ -165,7 +166,6 @@ export default function Groups() {
                           <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors shrink-0" />
                         </Link>
 
-                        {/* Leave button */}
                         <button
                           onClick={() => setConfirmLeave(g.id)}
                           className="ml-1 p-1.5 rounded-lg text-muted-foreground/0 group-hover/card:text-muted-foreground/30 hover:!text-destructive/60 transition-colors shrink-0"
@@ -179,7 +179,6 @@ export default function Groups() {
                 );
               })}
 
-              {/* Empty state */}
               {groups.length === 0 && !showCreate && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8 space-y-3">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -212,7 +211,6 @@ export default function Groups() {
                 </motion.div>
               )}
 
-              {/* Create form */}
               {showCreate && (
                 <AnimatePresence>
                   <motion.div
@@ -252,7 +250,6 @@ export default function Groups() {
                 </AnimatePresence>
               )}
 
-              {/* New group button */}
               {groups.length > 0 && !showCreate && (
                 <Button
                   variant="outline"
@@ -267,10 +264,7 @@ export default function Groups() {
         </div>
       </div>
 
-      <footer className="border-t border-border py-3 pb-20 md:pb-3 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
-      </footer>
-      <MobileBottomNav />
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
     </div>
   );
 }

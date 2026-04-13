@@ -11,11 +11,13 @@ import {
   type DbPrompt, type DbAnswer,
 } from '@/lib/store';
 import { validateInput } from '@/lib/normalize';
-import JinxLogo from '@/components/JinxLogo';
-import PlayerIdentity from '@/components/PlayerIdentity';
+import AppHeader from '@/components/AppHeader';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
 import { getChallengeByToken } from '@/lib/challenge';
 import { recordMatchesForChallenge } from '@/lib/social-memory';
+import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
+import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import { toast } from '@/hooks/use-toast';
 
 export default function Play() {
@@ -32,6 +34,8 @@ export default function Play() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const hasNewRoomActivity = useRoomHasNewActivity();
+  const hasGroupActivity = useGroupHasActivity();
 
   useEffect(() => {
     if (!hasSeenOnboarding()) setShowOnboarding(true);
@@ -63,7 +67,6 @@ export default function Play() {
       setSubmitted(subMap);
       setUserAnswers(ansMap);
 
-      // Set active to first unanswered
       const firstUnanswered = ps.findIndex(p => !subMap[p.id]);
       if (firstUnanswered >= 0) setActiveIdx(firstUnanswered);
       else setActiveIdx(ps.length - 1);
@@ -89,7 +92,6 @@ export default function Play() {
       setUserAnswers(prev => ({ ...prev, [promptId]: answer }));
       markPromptCompleted(promptId);
 
-      // Move to next unanswered
       const nextIdx = prompts.findIndex((p, i) => i > prompts.findIndex(pp => pp.id === promptId) && !submitted[p.id] && p.id !== promptId);
       if (nextIdx >= 0) {
         setActiveIdx(nextIdx);
@@ -136,33 +138,10 @@ export default function Play() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
 
-      {/* Header */}
-      <header className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between h-14 max-w-xl mx-auto px-5">
-          <Link to="/">
-            <JinxLogo size={22} className="text-foreground text-lg" />
-          </Link>
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5">
-              {prompts.map((p, i) => (
-                <div key={p.id}
-                  className={`rounded-full transition-all duration-300 ${
-                    submitted[p.id]
-                      ? 'w-1.5 h-1.5 bg-[hsl(var(--success))]'
-                      : i === activeIdx
-                        ? 'w-5 h-1.5 bg-primary'
-                        : 'w-1.5 h-1.5 bg-border'
-                  }`}
-                />
-              ))}
-            </div>
-            <PlayerIdentity />
-          </div>
-        </div>
-      </header>
+      <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       {/* Title area */}
       <div className="text-center pt-5 pb-3 px-5">
@@ -283,9 +262,7 @@ export default function Play() {
         )}
       </div>
 
-      <footer className="border-t border-border py-3 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
-      </footer>
+      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
     </div>
   );
 }
