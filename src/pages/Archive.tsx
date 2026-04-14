@@ -291,51 +291,22 @@ export default function Archive() {
                 <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
             ) : (
-              selectedDay.prompts.map((s) => {
-                const barWidth = s.total > 0 && s.matchCount > 0
-                  ? Math.max(Math.round((s.matchCount / s.total) * 100), 4) : 0;
-                const rnkCls = s.rank === 1 ? 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]'
-                  : s.rank === 2 ? 'bg-primary/10 text-[hsl(var(--warning-foreground))]'
-                  : 'bg-muted text-muted-foreground';
-
-                return (
-                  <div key={s.prompt.id} className="bg-card rounded-[13px] border border-foreground/[0.08] p-[13px]">
-                    <div className="flex items-center justify-between mb-[6px]">
-                      <span className="text-[14px] font-bold text-foreground">
-                        {s.prompt.word_a} <span className="text-primary font-normal mx-1">+</span> {s.prompt.word_b}
-                      </span>
-                      {s.answer && (
-                        <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${rnkCls}`}>
-                          #{s.rank}
-                        </span>
-                      )}
-                    </div>
-
-                    {s.answer ? (
-                      <div className="flex items-center gap-[6px] mb-[7px]">
-                        <span className="text-[17px] font-bold text-foreground">{s.answer.raw_answer}</span>
-                        <span className="text-[9px] font-semibold bg-primary text-white px-[5px] py-[2px] rounded">you</span>
-                        <div className="flex-1 bg-muted/40 rounded h-4 overflow-hidden ml-1">
-                          <div className="h-full rounded" style={{ width: `${barWidth}%`, background: s.rank === 1 ? 'hsl(var(--success) / 0.12)' : s.rank === 2 ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--foreground) / 0.06)' }} />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{s.percentage}%</span>
-                      </div>
-                    ) : (
-                      <p className="text-[12px] text-muted-foreground mb-[7px]">
-                        {selectedDay.isToday ? 'Not answered yet' : 'You missed this one — see what the crowd said'}
-                      </p>
-                    )}
-
-                    <button
-                      onClick={() => setDrawerPrompt(s)}
-                      className="w-full bg-transparent border-none border-t border-foreground/[0.08] pt-[7px] text-[11px] text-primary font-medium cursor-pointer text-left flex items-center justify-between"
-                    >
-                      <span>See all answers</span>
-                      <span>→</span>
-                    </button>
-                  </div>
-                );
-              })
+              selectedDay.prompts.map((s) => (
+                <ArchivePlayCard
+                  key={s.prompt.id}
+                  summary={s}
+                  isToday={selectedDay.isToday}
+                  onAnswered={(updated) => {
+                    // Update the prompt summary in both selectedDay and days list
+                    const updatePrompts = (prompts: PromptSummary[]) =>
+                      prompts.map(p => p.prompt.id === updated.prompt.id ? updated : p);
+                    const updatedDay = { ...selectedDay, prompts: updatePrompts(selectedDay.prompts) };
+                    setSelectedDay(updatedDay);
+                    setDays(prev => prev.map(d => d.date === selectedDay.date ? { ...d, prompts: updatePrompts(d.prompts) } : d));
+                  }}
+                  onSeeAll={setDrawerPrompt}
+                />
+              ))
             )}
 
             {selectedDay.isToday && selectedDay.prompts.some(p => !p.answer) && (
