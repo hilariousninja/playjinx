@@ -338,6 +338,159 @@ export async function getGroupDayResults(groupId: string, date?: string): Promis
   });
 }
 
+// --- Group History ---
+
+export interface GroupDaySnapshot {
+  date: string;
+  promptCount: number;
+  answeredCount: number;
+  memberCount: number;
+  jinxPairs: { memberA: string; memberB: string; answer: string; word_a: string; word_b: string }[];
+  totalJinxes: number;
+}
+
+export interface GroupMemberStats {
+  session_id: string;
+  display_name: string;
+  totalJinxes: number;
+  daysPlayed: number;
+}
+
+export interface GroupHistoryData {
+  days: GroupDaySnapshot[];
+  memberStats: GroupMemberStats[];
+  totalDaysActive: number;
+  bestPair: { nameA: string; nameB: string; jinxCount: number } | null;
+}
+
+export async function getGroupHistory(groupId: string): Promise<GroupHistoryData> {
+  const members = await getGroupMembers(groupId);
+  if (members.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+
+  const sessionIds = members.map(m => m.session_id);
+  const nameMap = new Map(members.map(m => [m.session_id, m.display_name]));
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Get past 14 days of prompts (excluding today)
+  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const { data: prompts } = await supabase
+    .from('prompts')
+    .select('id, word_a, word_b, date')
+    .in('mode', ['daily', 'archive'])
+    .gte('date', twoWeeksAgo)
+    .lt('date', today)
+    .order('date', { ascending: false });
+
+  if (!prompts || prompts.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+
+  const promptIds = prompts.map(p => p.id);
+
+  // Get answers from group members for these prompts
+  const { data: answers } = await supabase
+    .from('answers')
+    .select('prompt_id, session_id, normalized_answer')
+    .in('prompt_id', promptIds)
+    .in('session_id', sessionIds);
+
+  if (!answers) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+
+  // Group prompts by date
+  const promptsByDate = new Map<string, typeof prompts>();
+  for (const p of prompts) {
+    const list = promptsByDate.get(p.date) ?? [];
+    list.push(p);
+    promptsByDate.set(p.date, list);
+  }
+
+  // Build answer lookup: prompt_id -> session_id -> normalized_answer
+  const answerMap = new Map<string, Map<string, string>>();
+  for (const a of answers) {
+    if (!answerMap.has(a.prompt_id)) answerMap.set(a.prompt_id, new Map());
+    answerMap.get(a.prompt_id)!.set(a.session_id, a.normalized_answer);
+  }
+
+  // Track pair-level jinx counts
+  const pairJinxes = new Map<string, { nameA: string; nameB: string; count: number }>();
+  const memberJinxes = new Map<string, { total: number; daysPlayed: Set<string> }>();
+
+  const days: GroupDaySnapshot[] = [];
+
+  for (const [date, dayPrompts] of promptsByDate) {
+    const jinxPairs: GroupDaySnapshot['jinxPairs'] = [];
+    const answeredSessions = new Set<string>();
+
+    for (const prompt of dayPrompts) {
+      const pa = answerMap.get(prompt.id);
+      if (!pa) continue;
+
+      // Track who answered
+      for (const sid of pa.keys()) answeredSessions.add(sid);
+
+      // Find jinxes (matching answers between members)
+      const entries = Array.from(pa.entries());
+      for (let i = 0; i < entries.length; i++) {
+        for (let j = i + 1; j < entries.length; j++) {
+          if (entries[i][1] === entries[j][1]) {
+            const nameA = nameMap.get(entries[i][0]) ?? 'Unknown';
+            const nameB = nameMap.get(entries[j][0]) ?? 'Unknown';
+            jinxPairs.push({
+              memberA: nameA, memberB: nameB,
+              answer: entries[i][1],
+              word_a: prompt.word_a, word_b: prompt.word_b,
+            });
+
+            // Track pair stats
+            const pairKey = [entries[i][0], entries[j][0]].sort().join(':');
+            const existing = pairJinxes.get(pairKey) ?? { nameA, nameB, count: 0 };
+            existing.count++;
+            pairJinxes.set(pairKey, existing);
+          }
+        }
+      }
+    }
+
+    // Track member stats
+    for (const sid of answeredSessions) {
+      const ms = memberJinxes.get(sid) ?? { total: 0, daysPlayed: new Set() };
+      ms.daysPlayed.add(date);
+      const memberPairJinxes = jinxPairs.filter(j => {
+        const name = nameMap.get(sid);
+        return j.memberA === name || j.memberB === name;
+      }).length;
+      ms.total += memberPairJinxes;
+      memberJinxes.set(sid, ms);
+    }
+
+    if (answeredSessions.size > 0) {
+      days.push({
+        date,
+        promptCount: dayPrompts.length,
+        answeredCount: answeredSessions.size,
+        memberCount: members.length,
+        jinxPairs,
+        totalJinxes: jinxPairs.length,
+      });
+    }
+  }
+
+  const memberStats: GroupMemberStats[] = Array.from(memberJinxes.entries()).map(([sid, ms]) => ({
+    session_id: sid,
+    display_name: nameMap.get(sid) ?? 'Unknown',
+    totalJinxes: ms.total,
+    daysPlayed: ms.daysPlayed.size,
+  })).sort((a, b) => b.totalJinxes - a.totalJinxes);
+
+  const bestPairEntry = Array.from(pairJinxes.values()).sort((a, b) => b.count - a.count)[0] ?? null;
+  const bestPair = bestPairEntry ? { nameA: bestPairEntry.nameA, nameB: bestPairEntry.nameB, jinxCount: bestPairEntry.count } : null;
+
+  return {
+    days,
+    memberStats,
+    totalDaysActive: days.length,
+    bestPair,
+  };
+}
+
 // --- Share ---
 
 export function buildGroupInviteText(group: JinxGroup): string {
