@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import RoomResults from '@/components/RoomResults';
+import GroupHistory from '@/components/GroupHistory';
 import {
   getGroupByInviteCode,
   getGroupMembers,
@@ -21,6 +22,8 @@ import { getPlayerId, ensureDailyPrompts, syncCompletionStatus } from '@/lib/sto
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
+type Tab = 'today' | 'history';
+
 export default function GroupToday() {
   const { inviteCode } = useParams<{ inviteCode: string }>();
   const navigate = useNavigate();
@@ -31,6 +34,7 @@ export default function GroupToday() {
   const [error, setError] = useState<string | null>(null);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [tab, setTab] = useState<Tab>('today');
 
   const myId = getPlayerId();
 
@@ -59,7 +63,6 @@ export default function GroupToday() {
 
         setGroup(g);
 
-        // Check if played today — sync from server for reliability
         const prompts = await ensureDailyPrompts();
         const statusMap = await syncCompletionStatus(prompts);
         setHasPlayed(prompts.length > 0 && prompts.every(p => statusMap[p.id]));
@@ -73,7 +76,7 @@ export default function GroupToday() {
     })();
   }, [inviteCode, navigate, loadData]);
 
-  // Realtime: listen for new members
+  // Realtime
   useEffect(() => {
     if (!group) return;
     const channel = supabase
@@ -126,7 +129,6 @@ export default function GroupToday() {
     ? new Set(results.flatMap(r => r.answers.map(a => a.session_id))).size
     : 0;
 
-  // Convert group results to RoomResults-compatible format
   const roomParticipants = members.map(m => ({
     id: m.id,
     challenge_id: group.id,
@@ -144,148 +146,141 @@ export default function GroupToday() {
   }));
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       <AppHeader />
 
-      <div className="flex-1 flex flex-col items-center pt-[4vh] md:pt-[6vh] pb-8 px-5">
-        <div className="w-full max-w-sm mx-auto">
-          {/* Group header — active/live feel */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center mb-6"
-          >
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/15 mb-3 max-w-[85%]">
-              <Users className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span className="text-[12px] font-display font-bold text-primary tracking-tight truncate">
-                {group.name}
-              </span>
+      <div className="flex-1 max-w-md mx-auto w-full px-4 pt-3 pb-8">
+        {/* Group header — compact */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-[10px]"
+        >
+          <div className="flex items-center gap-[9px]">
+            <div className="w-[30px] h-[30px] rounded-full bg-primary/12 border border-primary/15 flex items-center justify-center shrink-0">
+              <Users className="h-[13px] w-[13px] text-primary" />
             </div>
-
-            <h1 className="font-display font-black text-2xl tracking-tight text-foreground mb-2">
-              Today's JINX
-            </h1>
-
-            <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
-              <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
-              {answeredMembers > 0 && (
-                <>
-                  <span className="w-px h-3 bg-border" />
-                  <span className="flex items-center gap-1">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    {answeredMembers} played today
-                  </span>
-                </>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Play CTA if not played */}
-          {!hasPlayed && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mb-6"
-            >
-              <Button
-                size="lg"
-                className="w-full rounded-xl h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base active:scale-[0.97] transition-transform"
-                asChild
-              >
-                <Link to="/play">
-                  Play today's JINX <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="text-[10px] text-muted-foreground/40 text-center mt-2">
-                Your answers count for all your groups
-              </p>
-            </motion.div>
-          )}
-
-          {/* Waiting state */}
-          {hasPlayed && answeredMembers <= 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-6 space-y-3 mb-2"
-            >
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10">
-                <Radio className="h-3 w-3 text-primary animate-pulse" />
-                <span className="text-[11px] font-display font-semibold text-primary uppercase tracking-[0.08em]">Waiting for others</span>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[15px] font-bold text-foreground truncate leading-tight">{group.name}</h1>
+              <div className="flex items-center gap-[6px] text-[10px] text-muted-foreground mt-[1px]">
+                <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+                {answeredMembers > 0 && (
+                  <>
+                    <span className="text-foreground/10">·</span>
+                    <span className="flex items-center gap-[3px]">
+                      <span className="inline-block w-[5px] h-[5px] rounded-full bg-primary animate-pulse" />
+                      {answeredMembers} played today
+                    </span>
+                  </>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {others.length === 0
-                  ? 'Invite friends to get started'
-                  : `${others.length} ${others.length === 1 ? 'member hasn\'t' : 'members haven\'t'} played yet today`
-                }
-              </p>
-            </motion.div>
-          )}
-
-          {/* Group results */}
-          {hasPlayed && answeredMembers >= 2 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <RoomResults results={roomResults} participants={roomParticipants} />
-            </motion.div>
-          )}
-
-          {/* Single action bar — no duplicates */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="mt-4 space-y-2"
-          >
-            <Button
+            </div>
+            <button
               onClick={handleInvite}
-              variant="outline"
-              className="w-full rounded-xl h-10 text-sm active:scale-[0.97] transition-transform"
+              className="p-[6px] rounded-lg text-muted-foreground/30 hover:text-primary hover:bg-primary/5 transition-colors shrink-0"
             >
-              <Share2 className="h-3.5 w-3.5 mr-2" /> Invite to group
-            </Button>
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </motion.div>
 
-            {hasPlayed && (
-              <Button variant="ghost" className="w-full rounded-xl h-9 text-xs text-muted-foreground" asChild>
-                <Link to="/archive">View crowd results</Link>
-              </Button>
+        {/* Tabs */}
+        <div className="flex gap-0 rounded-[9px] bg-muted/50 p-[3px] mb-[12px]">
+          {(['today', 'history'] as Tab[]).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 py-[6px] rounded-[7px] text-[11px] font-semibold transition-all ${
+                tab === t
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground/50 hover:text-muted-foreground'
+              }`}
+            >
+              {t === 'today' ? 'Today' : 'History'}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        {tab === 'today' ? (
+          <div className="space-y-3">
+            {/* Play CTA */}
+            {!hasPlayed && (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                <Button
+                  size="lg"
+                  className="w-full rounded-[10px] h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[13px] active:scale-[0.97] transition-transform"
+                  asChild
+                >
+                  <Link to="/play">
+                    Play today's JINX <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <p className="text-[10px] text-muted-foreground/35 text-center mt-[6px]">
+                  Your answers count for all your groups
+                </p>
+              </motion.div>
             )}
-          </motion.div>
 
-          {/* Leave group */}
+            {/* Waiting */}
+            {hasPlayed && answeredMembers <= 1 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-5 space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-[5px] rounded-full bg-primary/8">
+                  <Radio className="h-3 w-3 text-primary animate-pulse" />
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.08em]">Waiting for others</span>
+                </div>
+                <p className="text-[12px] text-muted-foreground">
+                  {others.length === 0
+                    ? 'Invite friends to get started'
+                    : `${others.length} ${others.length === 1 ? 'member hasn\'t' : 'members haven\'t'} played yet`
+                  }
+                </p>
+                {others.length === 0 && (
+                  <Button variant="outline" size="sm" onClick={handleInvite} className="rounded-lg text-[11px] h-8 mt-1">
+                    <Share2 className="h-3 w-3 mr-1.5" /> Invite
+                  </Button>
+                )}
+              </motion.div>
+            )}
+
+            {/* Results */}
+            {hasPlayed && answeredMembers >= 2 && (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <RoomResults results={roomResults} participants={roomParticipants} />
+              </motion.div>
+            )}
+          </div>
+        ) : (
+          <GroupHistory groupId={group.id} groupName={group.name} />
+        )}
+
+        {/* Footer actions */}
+        <div className="mt-5 space-y-1">
+          {hasPlayed && tab === 'today' && (
+            <Button variant="ghost" className="w-full rounded-lg h-8 text-[11px] text-muted-foreground" asChild>
+              <Link to="/archive">View crowd results</Link>
+            </Button>
+          )}
+
           {!confirmLeave ? (
             <button
               onClick={() => setConfirmLeave(true)}
-              className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/40 hover:text-destructive/60 transition-colors py-2 mt-2"
+              className="w-full flex items-center justify-center gap-1 text-[10px] text-muted-foreground/25 hover:text-destructive/50 transition-colors py-1.5"
             >
-              <LogOut className="h-3 w-3" />
+              <LogOut className="h-2.5 w-2.5" />
               Leave group
             </button>
           ) : (
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-3 rounded-xl border border-destructive/20 bg-card p-3 flex items-center gap-2"
+              className="rounded-[10px] border border-destructive/20 bg-card p-[10px] flex items-center gap-2"
             >
-              <p className="text-xs text-muted-foreground flex-1">
+              <p className="text-[11px] text-muted-foreground flex-1 truncate">
                 Leave <span className="font-semibold text-foreground">{group.name}</span>?
               </p>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="h-7 px-3 text-[11px] rounded-lg"
-                onClick={handleLeave}
-              >
-                Leave
-              </Button>
-              <button
-                onClick={() => setConfirmLeave(false)}
-                className="text-muted-foreground/40 hover:text-muted-foreground"
-              >
+              <Button size="sm" variant="destructive" className="h-7 px-3 text-[11px] rounded-lg" onClick={handleLeave}>Leave</Button>
+              <button onClick={() => setConfirmLeave(false)} className="text-muted-foreground/30 hover:text-muted-foreground">
                 <span className="text-xs">✕</span>
               </button>
             </motion.div>
@@ -293,9 +288,6 @@ export default function GroupToday() {
         </div>
       </div>
 
-      <footer className="border-t border-border py-3 pb-20 md:pb-3 shrink-0">
-        <p className="text-center text-[10px] text-muted-foreground/30 tracking-wide">JINX — daily crowd word game</p>
-      </footer>
       <MobileBottomNav />
     </div>
   );

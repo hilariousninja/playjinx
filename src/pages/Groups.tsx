@@ -99,17 +99,17 @@ export default function Groups() {
 
       <div className="flex-1 max-w-md mx-auto px-4 pt-3 pb-6 w-full">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[8px]">
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[6px]">
           <div>
-            <h1 className="text-[17px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
-            <p className="text-[11px] text-muted-foreground mt-[2px]">Same prompts, same people, every day.</p>
+            <h1 className="text-[15px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
+            <p className="text-[10px] text-muted-foreground mt-[1px]">Same prompts, same people, every day.</p>
           </div>
           {groups.length > 0 && !showCreate && (
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
             >
-              <Plus className="h-3.5 w-3.5" /> New
+              <Plus className="h-3 w-3" /> New
             </button>
           )}
         </motion.div>
@@ -119,7 +119,7 @@ export default function Groups() {
             <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
           </div>
         ) : (
-          <div className="space-y-[6px]">
+          <div className="space-y-[5px]">
             {/* Group cards */}
             {groups.map((g, i) => {
               const activity = getActivity(g);
