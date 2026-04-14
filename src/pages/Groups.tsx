@@ -226,33 +226,36 @@ export default function Groups() {
 
             {/* Empty state */}
             {groups.length === 0 && !showCreate && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="bg-card rounded-[12px] border border-foreground/[0.08] p-[16px] text-center">
-                  <div className="w-[38px] h-[38px] rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-[10px]">
-                    <Users className="h-[18px] w-[18px] text-primary" />
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[6px]">
+                <div className="bg-card rounded-[12px] border border-foreground/[0.08] p-[14px]">
+                  <div className="flex items-center gap-[10px] mb-[10px]">
+                    <div className="w-[32px] h-[32px] rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="h-[15px] w-[15px] text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-foreground leading-tight">Play JINX with your people</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight mt-[1px]">Same prompts · see who thinks like you</p>
+                    </div>
                   </div>
-                  <p className="text-[14px] font-bold text-foreground mb-[2px]">Play JINX with your people</p>
-                  <p className="text-[11px] text-muted-foreground leading-[1.5] max-w-[240px] mx-auto mb-[12px]">
-                    Same prompts every day. See who thinks like you.
-                  </p>
-                  <Button onClick={() => setShowCreate(true)} className="w-full rounded-[10px] h-[40px] text-[13px] font-bold">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a group
-                  </Button>
+                  <div className="flex gap-[6px]">
+                    <Button onClick={() => setShowCreate(true)} className="flex-1 rounded-[10px] h-[36px] text-[12px] font-bold">
+                      <Plus className="h-3 w-3 mr-1" /> Start a group
+                    </Button>
+                    <button
+                      onClick={() => {
+                        const code = prompt('Paste an invite link or code:');
+                        if (code) {
+                          const match = code.match(/\/g\/([^\s/]+)/);
+                          navigate(`/g/${match ? match[1] : code.trim()}`);
+                        }
+                      }}
+                      className="flex items-center gap-[4px] px-[12px] h-[36px] text-[11px] text-muted-foreground hover:text-foreground rounded-[10px] border border-foreground/[0.08] hover:border-foreground/15 transition-colors shrink-0"
+                    >
+                      <LinkIcon className="h-3 w-3" />
+                      Join
+                    </button>
+                  </div>
                 </div>
-
-                <button
-                  onClick={() => {
-                    const code = prompt('Paste an invite link or code:');
-                    if (code) {
-                      const match = code.match(/\/g\/([^\s/]+)/);
-                      navigate(`/g/${match ? match[1] : code.trim()}`);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-[5px] mt-[6px] py-[8px] text-[11px] text-muted-foreground hover:text-foreground rounded-[10px] border border-dashed border-foreground/10 hover:border-foreground/20 transition-colors"
-                >
-                  <LinkIcon className="h-3 w-3" />
-                  Join with invite link
-                </button>
               </motion.div>
             )}
 

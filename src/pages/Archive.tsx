@@ -144,7 +144,7 @@ export default function Archive() {
 
   const getVibeForDay = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
-    if (answered.length === 0) return { text: 'What did the crowd say?', dotCls: 'bg-primary/50' };
+    if (answered.length === 0) return { text: null, dotCls: 'bg-primary/50' };
     if (!day.statsLoaded) return { text: `${answered.length} answered`, dotCls: 'bg-primary' };
     const tops = answered.filter(r => r.rank === 1).length;
     const avgRank = answered.reduce((s, r) => s + r.rank, 0) / answered.length;
@@ -193,10 +193,12 @@ export default function Archive() {
         </div>
 
         {/* Vibe */}
-        <div className="flex items-center gap-[6px] px-[14px] py-[8px]">
-          <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
-          <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
-        </div>
+        {vibe.text && (
+          <div className="flex items-center gap-[6px] px-[14px] py-[8px]">
+            <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
+            <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
+          </div>
+        )}
 
         {/* Prompt rows */}
         <div className="flex flex-col gap-[5px] px-[14px] pb-[12px]">
