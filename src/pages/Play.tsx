@@ -248,10 +248,10 @@ export default function Play() {
               {/* Inactive — clearly unanswered */}
               {isInactive && (
                 <div
-                  className="pb-[6px] border-b-[1.5px] border-dashed border-foreground/10 cursor-pointer"
+                  className="pb-[6px] border-b-[1.5px] border-dashed border-foreground/10 cursor-pointer group/tap hover:border-primary/20 transition-colors"
                   onClick={() => setActiveIdx(i)}
                 >
-                  <span className="text-[12px] text-foreground/20 italic">Tap to answer…</span>
+                  <span className="text-[12px] text-foreground/20 italic group-hover/tap:text-primary/40 transition-colors">Tap to answer…</span>
                 </div>
               )}
             </motion.div>

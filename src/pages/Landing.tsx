@@ -77,23 +77,13 @@ export default function Landing() {
             to={allDone ? '/results' : '/play'}
             className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[16px] active:scale-[0.97] transition-transform"
           >
-            {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's prompts →"}
+            {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's 3 prompts →"}
           </Link>
 
-          {/* Steps */}
-          <div className="grid grid-cols-3 gap-[6px] mb-[14px]">
-            {[
-              { num: '1', title: 'See two words', desc: 'They share a linking word.' },
-              { num: '2', title: 'Type your answer', desc: 'The word most people will say.' },
-              { num: '3', title: 'See the crowd', desc: 'Every answer, ranked.' },
-            ].map(s => (
-              <div key={s.num} className="bg-card rounded-[11px] border border-foreground/[0.08] p-[9px] text-left">
-                <p className="text-[11px] font-semibold text-primary mb-[2px]">{s.num}</p>
-                <p className="text-[11px] font-semibold text-foreground mb-[1px] leading-[1.3]">{s.title}</p>
-                <p className="text-[10px] text-muted-foreground leading-[1.4]">{s.desc}</p>
-              </div>
-            ))}
-          </div>
+          {/* Minimal steps — single line */}
+          <p className="text-[11px] text-muted-foreground mb-[14px] leading-[1.5]">
+            3 prompts · type your word · see how the crowd answered
+          </p>
 
           <Countdown />
         </motion.div>
