@@ -50,24 +50,24 @@ export default function Landing() {
             Think the same. Rank higher.
           </p>
 
-          {/* Example card — teaches the linking mechanic */}
+          {/* Example card — teaches the linking mechanic as a reveal */}
           <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-[14px]">
             <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[8px] text-left">
               How it works
             </p>
-            <div className="flex items-center justify-center gap-[6px] mb-[6px]">
+            <div className="flex items-center justify-center gap-[8px] mb-[6px]">
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">COW</span>
-              <div className="w-[6px] h-px bg-foreground/20" />
-              <span className="text-[16px] font-semibold text-primary bg-primary/12 px-[10px] py-[3px] rounded-[6px] border border-primary/20">
+              <span className="text-[12px] text-foreground/20">+</span>
+              <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">SNOW</span>
+              <span className="text-[13px] text-foreground/25 mx-[2px]">→</span>
+              <span className="text-[16px] font-semibold text-primary bg-primary/10 px-[10px] py-[3px] rounded-[6px] border border-primary/15">
                 Milk
               </span>
-              <div className="w-[6px] h-px bg-foreground/20" />
-              <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">SNOW</span>
             </div>
             <p className="text-[11px] text-muted-foreground text-center leading-[1.5] mb-[2px]">
-              One word links both — find the one most people will say.
+              Find the linking word most people will say.
             </p>
-            <p className="text-[10px] text-primary/70 text-center font-medium">
+            <p className="text-[10px] text-primary/60 text-center font-medium">
               71% of players said "Milk"
             </p>
           </div>
