@@ -33,8 +33,10 @@ export default function Play() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const hasNewRoomActivity = useRoomHasNewActivity();
   const hasGroupActivity = useGroupHasActivity();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!hasSeenOnboarding()) setShowOnboarding(true);
@@ -93,14 +95,20 @@ export default function Play() {
       const nextIdx = prompts.findIndex((p, i) => i > currentIdx && !submitted[p.id] && p.id !== promptId);
       if (nextIdx >= 0) {
         setActiveIdx(nextIdx);
-        setTimeout(() => inputRefs.current[prompts[nextIdx].id]?.focus(), 100);
+        setTimeout(() => {
+          const nextId = prompts[nextIdx].id;
+          inputRefs.current[nextId]?.focus();
+          if (isMobile && cardRefs.current[nextId]) {
+            cardRefs.current[nextId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 120);
       }
     } catch (err: any) {
       setInputErrors(prev => ({ ...prev, [promptId]: err?.message || 'Something went wrong' }));
     } finally {
       setSubmittingId(null);
     }
-  }, [answers, submitted, submittingId, prompts]);
+  }, [answers, submitted, submittingId, prompts, isMobile]);
 
   const allDone = prompts.length > 0 && prompts.every(p => submitted[p.id]);
 
@@ -158,18 +166,24 @@ export default function Play() {
           return (
             <motion.div
               key={p.id}
+              ref={(el) => { cardRefs.current[p.id] = el; }}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
               className={`bg-card rounded-[14px] border transition-all ${
                 isActive
-                  ? 'border-primary bg-[#FFFBF3] p-[15px_16px]'
+                  ? 'border-primary bg-[#FFFBF3] p-[15px_16px] scroll-mt-3'
                   : isDone
-                    ? 'border-foreground/[0.08] p-[15px_16px] opacity-85'
-                    : 'border-foreground/[0.08] p-[15px_16px] opacity-60'
+                    ? 'border-[hsl(var(--success))]/15 bg-[hsl(var(--success))]/[0.02] p-[12px_16px]'
+                    : 'border-foreground/[0.06] p-[12px_16px] opacity-50'
               }`}
               onClick={() => {
-                if (isInactive) setActiveIdx(i);
+                if (isInactive) {
+                  setActiveIdx(i);
+                  if (isMobile && cardRefs.current[p.id]) {
+                    setTimeout(() => cardRefs.current[p.id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  }
+                }
               }}
             >
               {/* Number label with rule line */}
@@ -221,13 +235,25 @@ export default function Play() {
                     <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
                   )}
                 </div>
-              ) : (
-                <div className="flex items-center mb-[11px]">
-                  <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
+              ) : isDone ? (
+                /* Done: compact word pair, smaller since answer is the focus */
+                <div className="flex items-center gap-[7px] mb-[6px]">
+                  <span className="text-[16px] font-semibold tracking-[-0.01em] text-foreground/50 leading-none">
                     {p.word_a}
                   </span>
-                  <span className="text-[14px] text-border mx-[9px]">+</span>
-                  <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
+                  <span className="text-[11px] text-foreground/20">+</span>
+                  <span className="text-[16px] font-semibold tracking-[-0.01em] text-foreground/50 leading-none">
+                    {p.word_b}
+                  </span>
+                </div>
+              ) : (
+                /* Inactive: normal word pair */
+                <div className="flex items-center mb-[8px]">
+                  <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground/70 leading-none">
+                    {p.word_a}
+                  </span>
+                  <span className="text-[12px] text-foreground/15 mx-[8px]">+</span>
+                  <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground/70 leading-none">
                     {p.word_b}
                   </span>
                 </div>
@@ -235,12 +261,12 @@ export default function Play() {
 
               {/* Done state — green answer with check */}
               {isDone && userAnswers[p.id] && (
-                <div className="flex items-center justify-between pb-[6px] border-b-[1.5px] border-[hsl(var(--success))]/20">
-                  <span className="text-[18px] font-semibold text-[hsl(var(--success))]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[16px] font-semibold text-[hsl(var(--success))]">
                     {userAnswers[p.id].raw_answer}
                   </span>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="6.5" fill="hsl(var(--success) / 0.08)" />
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6.5" fill="hsl(var(--success) / 0.1)" />
                     <path d="M4 7l2 2 4-4" stroke="hsl(var(--success))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
@@ -249,10 +275,10 @@ export default function Play() {
               {/* Inactive — clearly unanswered */}
               {isInactive && (
                 <div
-                  className="pb-[6px] border-b-[1.5px] border-dashed border-foreground/10 cursor-pointer group/tap hover:border-primary/20 transition-colors"
+                  className="pb-[4px] border-b border-dashed border-foreground/[0.06] cursor-pointer group/tap hover:border-primary/20 transition-colors"
                   onClick={() => setActiveIdx(i)}
                 >
-                  <span className="text-[12px] text-foreground/20 italic group-hover/tap:text-primary/40 transition-colors">Tap to answer…</span>
+                  <span className="text-[11px] text-foreground/15 italic group-hover/tap:text-primary/30 transition-colors">Tap to answer…</span>
                 </div>
               )}
             </motion.div>
