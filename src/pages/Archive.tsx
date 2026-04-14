@@ -173,7 +173,7 @@ export default function Archive() {
         onClick={() => loadDayStats(day)}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-[14px] py-[11px] border-b border-foreground/[0.06]">
+        <div className="flex items-center justify-between px-[14px] py-[10px]">
           <div className="flex items-center gap-[7px]">
             <span className="text-[13px] font-semibold text-foreground">{day.isToday ? 'Today' : formatDate(day.date)}</span>
             {day.isToday && (
@@ -194,14 +194,14 @@ export default function Archive() {
 
         {/* Vibe */}
         {vibe.text && (
-          <div className="flex items-center gap-[6px] px-[14px] py-[8px]">
+          <div className="flex items-center gap-[6px] px-[14px] pb-[4px]">
             <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
             <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
           </div>
         )}
 
         {/* Prompt rows */}
-        <div className="flex flex-col gap-[5px] px-[14px] pb-[12px]">
+        <div className="flex flex-col gap-[5px] px-[14px] pt-[2px] pb-[12px]">
           {day.prompts.map(s => (
             <div key={s.prompt.id} className="flex items-center gap-[8px]">
               <span className="text-[12px] font-semibold text-foreground flex-1 truncate">
