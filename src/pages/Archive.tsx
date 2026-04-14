@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import SlidePanel from '@/components/SlidePanel';
 import AnswerDrawer from '@/components/AnswerDrawer';
+import ArchivePlayCard from '@/components/ArchivePlayCard';
 import Countdown from '@/components/Countdown';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
