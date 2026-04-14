@@ -119,7 +119,7 @@ export default function Groups() {
             <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
           </div>
         ) : (
-          <div className="space-y-[6px]">
+          <div className="space-y-[5px]">
             {/* Group cards */}
             {groups.map((g, i) => {
               const activity = getActivity(g);
