@@ -184,7 +184,7 @@ export default function Archive() {
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-[hsl(var(--warning-foreground))]">Done</span>
             )}
            {!day.isToday && !hasPlayed && (
-              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Browse</span>
+              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Play</span>
             )}
           </div>
           <div className="flex items-center gap-[6px]">
@@ -213,7 +213,7 @@ export default function Archive() {
                   → {s.answer.raw_answer}
                 </span>
               ) : !day.isToday ? (
-                <span className="text-[11px] text-primary font-medium whitespace-nowrap">Explore →</span>
+                <span className="text-[11px] text-primary font-medium whitespace-nowrap">Play →</span>
               ) : (
                 <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap">—</span>
               )}
