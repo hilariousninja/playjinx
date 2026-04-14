@@ -173,7 +173,7 @@ export default function Archive() {
         onClick={() => loadDayStats(day)}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-[14px] py-[10px]">
+        <div className="flex items-center justify-between px-[14px] py-[9px] border-b border-foreground/[0.06]">
           <div className="flex items-center gap-[7px]">
             <span className="text-[13px] font-semibold text-foreground">{day.isToday ? 'Today' : formatDate(day.date)}</span>
             {day.isToday && (
