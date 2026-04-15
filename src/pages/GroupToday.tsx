@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Share2, Loader2, AlertCircle, ArrowRight, Zap, LogOut, Radio } from 'lucide-react';
+import { Users, Share2, Loader2, AlertCircle, ArrowRight, LogOut, Clock, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -23,6 +23,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 type Tab = 'today' | 'history';
+
+/* ── Member roster row ── */
+function MemberRow({ member, hasAnswered, isMe }: { member: GroupMember; hasAnswered: boolean; isMe: boolean }) {
+  return (
+    <div className="flex items-center gap-[8px] py-[5px]">
+      {hasAnswered ? (
+        <CheckCircle2 className="h-[14px] w-[14px] text-primary shrink-0" />
+      ) : (
+        <Circle className="h-[14px] w-[14px] text-muted-foreground/20 shrink-0" />
+      )}
+      <span className={`text-[12px] font-display truncate ${isMe ? 'font-bold text-foreground' : hasAnswered ? 'text-foreground/80' : 'text-muted-foreground/40'}`}>
+        {member.display_name}{isMe ? ' (you)' : ''}
+      </span>
+      {hasAnswered && (
+        <span className="text-[9px] text-primary/60 font-semibold ml-auto shrink-0">played</span>
+      )}
+    </div>
+  );
+}
 
 export default function GroupToday() {
   const { inviteCode } = useParams<{ inviteCode: string }>();
@@ -125,9 +144,10 @@ export default function GroupToday() {
   );
 
   const others = members.filter(m => m.session_id !== myId);
-  const answeredMembers = results.length > 0
-    ? new Set(results.flatMap(r => r.answers.map(a => a.session_id))).size
-    : 0;
+  const answeredSessionIds = results.length > 0
+    ? new Set(results.flatMap(r => r.answers.map(a => a.session_id)))
+    : new Set<string>();
+  const answeredMembers = answeredSessionIds.size;
 
   const roomParticipants = members.map(m => ({
     id: m.id,
@@ -145,12 +165,16 @@ export default function GroupToday() {
     clusters: r.clusters,
   }));
 
+  const showResults = hasPlayed && answeredMembers >= 2;
+  const showWaiting = hasPlayed && answeredMembers <= 1;
+  const waitingCount = members.filter(m => !answeredSessionIds.has(m.session_id)).length;
+
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
       <AppHeader />
 
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-3 pb-8">
-        {/* Group header — compact */}
+        {/* Group header */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -162,18 +186,10 @@ export default function GroupToday() {
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-[15px] font-bold text-foreground truncate leading-tight">{group.name}</h1>
-              <div className="flex items-center gap-[6px] text-[10px] text-muted-foreground mt-[1px]">
-                <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
-                {answeredMembers > 0 && (
-                  <>
-                    <span className="text-foreground/10">·</span>
-                    <span className="flex items-center gap-[3px]">
-                      <span className="inline-block w-[5px] h-[5px] rounded-full bg-primary animate-pulse" />
-                      {answeredMembers} played today
-                    </span>
-                  </>
-                )}
-              </div>
+              <p className="text-[10px] text-muted-foreground mt-[1px]">
+                {members.length} {members.length === 1 ? 'member' : 'members'}
+                {answeredMembers > 0 && ` · ${answeredMembers}/${members.length} played`}
+              </p>
             </div>
             <button
               onClick={handleInvite}
@@ -185,7 +201,7 @@ export default function GroupToday() {
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex gap-0 rounded-[9px] bg-muted/50 p-[3px] mb-[12px]">
+        <div className="flex gap-0 rounded-[9px] bg-muted/50 p-[3px] mb-[10px]">
           {(['today', 'history'] as Tab[]).map(t => (
             <button
               key={t}
@@ -203,65 +219,107 @@ export default function GroupToday() {
 
         {/* Tab content */}
         {tab === 'today' ? (
-          <div className="space-y-3">
-            {/* Play CTA */}
+          <div className="space-y-[10px]">
+            {/* Play CTA — not played yet */}
             {!hasPlayed && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <Button
-                  size="lg"
-                  className="w-full rounded-[10px] h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[13px] active:scale-[0.97] transition-transform"
-                  asChild
-                >
-                  <Link to="/play">
-                    Play today's JINX <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <p className="text-[10px] text-muted-foreground/35 text-center mt-[6px]">
-                  Your answers count for all your groups
-                </p>
-              </motion.div>
-            )}
-
-            {/* Waiting */}
-            {hasPlayed && answeredMembers <= 1 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-5 space-y-2">
-                <div className="inline-flex items-center gap-1.5 px-3 py-[5px] rounded-full bg-primary/8">
-                  <Radio className="h-3 w-3 text-primary animate-pulse" />
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-[0.08em]">Waiting for others</span>
-                </div>
-                <p className="text-[12px] text-muted-foreground">
-                  {others.length === 0
-                    ? 'Invite friends to get started'
-                    : `${others.length} ${others.length === 1 ? 'member hasn\'t' : 'members haven\'t'} played yet`
-                  }
-                </p>
-                {others.length === 0 && (
-                  <Button variant="outline" size="sm" onClick={handleInvite} className="rounded-lg text-[11px] h-8 mt-1">
-                    <Share2 className="h-3 w-3 mr-1.5" /> Invite
+                <div className="rounded-[12px] border border-primary/15 bg-primary/[0.04] p-[14px]">
+                  <div className="flex items-center gap-[6px] mb-[8px]">
+                    <Clock className="h-[13px] w-[13px] text-primary" />
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-[0.08em]">Your turn</span>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground mb-[10px] leading-[1.4]">
+                    Play today's prompts to unlock this group's results.
+                    {answeredMembers > 0 && ` ${answeredMembers} ${answeredMembers === 1 ? 'member has' : 'members have'} already played.`}
+                  </p>
+                  <Button
+                    size="sm"
+                    className="w-full rounded-[8px] h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-[12px] active:scale-[0.97] transition-transform"
+                    asChild
+                  >
+                    <Link to="/play">
+                      Play today's JINX <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
                   </Button>
-                )}
+                </div>
               </motion.div>
             )}
 
-            {/* Results */}
-            {hasPlayed && answeredMembers >= 2 && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            {/* Waiting — played but not enough others */}
+            {showWaiting && (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="rounded-[12px] border border-border/50 bg-card p-[14px]">
+                  {/* Status */}
+                  <div className="flex items-center justify-between mb-[10px]">
+                    <div className="flex items-center gap-[6px]">
+                      <span className="inline-block w-[6px] h-[6px] rounded-full bg-primary animate-pulse" />
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-[0.08em]">Waiting for group</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/40">{answeredMembers}/{members.length} played</span>
+                  </div>
+
+                  {/* Member roster */}
+                  <div className="divide-y divide-border/30">
+                    {/* Show me first, then others */}
+                    {members
+                      .sort((a, b) => {
+                        if (a.session_id === myId) return -1;
+                        if (b.session_id === myId) return 1;
+                        const aPlayed = answeredSessionIds.has(a.session_id);
+                        const bPlayed = answeredSessionIds.has(b.session_id);
+                        if (aPlayed && !bPlayed) return -1;
+                        if (!aPlayed && bPlayed) return 1;
+                        return 0;
+                      })
+                      .map(m => (
+                        <MemberRow
+                          key={m.id}
+                          member={m}
+                          hasAnswered={answeredSessionIds.has(m.session_id)}
+                          isMe={m.session_id === myId}
+                        />
+                      ))}
+                  </div>
+
+                  {/* Contextual message */}
+                  <div className="mt-[10px] pt-[8px] border-t border-border/30">
+                    {others.length === 0 ? (
+                      <div className="flex items-center gap-[8px]">
+                        <p className="text-[11px] text-muted-foreground flex-1">Invite someone to compare answers</p>
+                        <Button variant="outline" size="sm" onClick={handleInvite} className="rounded-[8px] text-[10px] h-7 px-2.5 shrink-0">
+                          <Share2 className="h-3 w-3 mr-1" /> Invite
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        Results unlock when {waitingCount === 1 ? '1 more member plays' : `${waitingCount} more members play`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Results ready */}
+            {showResults && (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
                 <RoomResults results={roomResults} participants={roomParticipants} />
               </motion.div>
+            )}
+
+            {/* Crowd results link */}
+            {hasPlayed && (
+              <Button variant="ghost" className="w-full rounded-lg h-8 text-[11px] text-muted-foreground" asChild>
+                <Link to="/archive">View crowd results</Link>
+              </Button>
             )}
           </div>
         ) : (
           <GroupHistory groupId={group.id} groupName={group.name} />
         )}
 
-        {/* Footer actions */}
-        <div className="mt-5 space-y-1">
-          {hasPlayed && tab === 'today' && (
-            <Button variant="ghost" className="w-full rounded-lg h-8 text-[11px] text-muted-foreground" asChild>
-              <Link to="/archive">View crowd results</Link>
-            </Button>
-          )}
-
+        {/* Leave group */}
+        <div className="mt-4">
           {!confirmLeave ? (
             <button
               onClick={() => setConfirmLeave(true)}
