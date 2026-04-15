@@ -70,7 +70,8 @@ export default function Play() {
       if (firstUnanswered >= 0) setActiveIdx(firstUnanswered);
       else setActiveIdx(ps.length - 1);
 
-      setLoading(false);
+      // Small delay so state is committed before we show cards (prevents re-animation flicker)
+      requestAnimationFrame(() => setLoading(false));
     })();
   }, []);
 
