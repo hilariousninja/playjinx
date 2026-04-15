@@ -46,16 +46,13 @@ export default function Landing() {
           <h1 className="text-[46px] font-bold tracking-[-0.03em] text-foreground leading-none mb-[8px]">
             JINX
           </h1>
-          <p className="text-[15px] font-medium text-primary mb-[12px]">
+          <p className="text-[15px] font-medium text-primary mb-[18px]">
             Think the same. Rank higher.
           </p>
 
-          {/* Example card — teaches the linking mechanic as a reveal */}
-          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[13px] mb-[14px]">
-            <p className="text-[10px] tracking-[0.06em] text-muted-foreground uppercase mb-[8px] text-left">
-              How it works
-            </p>
-            <div className="flex items-center justify-center gap-[8px] mb-[6px]">
+          {/* Example card — teaches the mechanic visually */}
+          <div className="bg-card rounded-[14px] border border-foreground/[0.08] p-[14px] mb-[18px]">
+            <div className="flex items-center justify-center gap-[8px] mb-[8px]">
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">COW</span>
               <span className="text-[12px] text-foreground/20">+</span>
               <span className="text-[16px] font-semibold tracking-[0.04em] text-foreground">SNOW</span>
@@ -64,26 +61,18 @@ export default function Landing() {
                 Milk
               </span>
             </div>
-            <p className="text-[11px] text-muted-foreground text-center leading-[1.5] mb-[2px]">
-              Find the linking word most people will say.
-            </p>
-            <p className="text-[10px] text-primary/60 text-center font-medium">
-              71% of players said "Milk"
+            <p className="text-[11px] text-muted-foreground text-center">
+              Two words. One answer. Match the crowd.
             </p>
           </div>
 
           {/* CTA */}
           <Link
             to={allDone ? '/results' : '/play'}
-            className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[16px] active:scale-[0.97] transition-transform"
+            className="block w-full py-[13px] bg-primary text-white rounded-[12px] text-[14px] font-semibold text-center mb-[14px] active:scale-[0.97] transition-transform"
           >
             {allDone ? 'See my results →' : someStarted ? 'Continue playing →' : "Play today's 3 prompts →"}
           </Link>
-
-          {/* Minimal steps — single line */}
-          <p className="text-[11px] text-muted-foreground mb-[14px] leading-[1.5]">
-            3 prompts · type your word · see how the crowd answered
-          </p>
 
           <Countdown />
         </motion.div>
