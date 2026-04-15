@@ -146,7 +146,7 @@ export default function Archive() {
   const getVibeForDay = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
     if (answered.length === 0) return { text: null, dotCls: 'bg-primary/50' };
-    if (!day.statsLoaded) return { text: `${answered.length} answered`, dotCls: 'bg-primary' };
+    if (!day.statsLoaded) return { text: null, dotCls: 'bg-primary' };
     const tops = answered.filter(r => r.rank === 1).length;
     const avgRank = answered.reduce((s, r) => s + r.rank, 0) / answered.length;
     if (avgRank <= 1.5) return { text: `Strong consensus · ${tops} top pick${tops > 1 ? 's' : ''}`, dotCls: 'bg-[hsl(var(--success))]' };
@@ -164,11 +164,14 @@ export default function Archive() {
     const total = day.prompts.length;
     if (answered.length === 0) return null;
 
+    // Only show summary when it adds info beyond what's visible
     const tops = answered.filter(r => r.rank === 1).length;
     const strong = answered.filter(r => r.rank >= 1 && r.rank <= 2).length;
 
-    if (tops > 0) return `${tops}/${total} top pick${tops > 1 ? 's' : ''}`;
+    if (tops > 0) return `${tops} top pick${tops > 1 ? 's' : ''}`;
     if (strong > 0) return `${strong} strong hit${strong > 1 ? 's' : ''}`;
+    // If all answered, don't state the obvious
+    if (answered.length === total) return null;
     return `${answered.length}/${total} played`;
   };
 
