@@ -159,10 +159,24 @@ export default function Archive() {
     return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
+  const getDaySummary = (day: DayData) => {
+    const answered = day.prompts.filter(p => p.answer);
+    const total = day.prompts.length;
+    if (answered.length === 0) return null;
+
+    const tops = answered.filter(r => r.rank === 1).length;
+    const strong = answered.filter(r => r.rank >= 1 && r.rank <= 2).length;
+
+    if (tops > 0) return `${tops}/${total} top pick${tops > 1 ? 's' : ''}`;
+    if (strong > 0) return `${strong} strong hit${strong > 1 ? 's' : ''}`;
+    return `${answered.length}/${total} played`;
+  };
+
   const renderDayCard = (day: DayData, idx: number) => {
     const vibe = getVibeForDay(day);
     const hasPlayed = day.prompts.some(p => p.answer);
     const allAnswered = day.prompts.every(p => p.answer);
+    const summary = getDaySummary(day);
 
     return (
       <motion.div
@@ -183,26 +197,21 @@ export default function Archive() {
             {day.isToday && allAnswered && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-[hsl(var(--warning-foreground))]">Done</span>
             )}
-           {!day.isToday && !hasPlayed && (
+            {!day.isToday && !hasPlayed && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Play</span>
             )}
           </div>
           <div className="flex items-center gap-[6px]">
-            <span className="text-[10px] text-muted-foreground">👥 {day.playerCount}</span>
+            {summary && (
+              <span className="text-[10px] text-muted-foreground font-medium">{summary}</span>
+            )}
+            <span className="text-[10px] text-muted-foreground/60">👥 {day.playerCount}</span>
             <span className="text-muted-foreground/40">›</span>
           </div>
         </div>
 
-        {/* Vibe */}
-        {vibe.text && (
-          <div className="flex items-center gap-[6px] px-[14px] pb-[4px]">
-            <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
-            <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
-          </div>
-        )}
-
         {/* Prompt rows */}
-        <div className="flex flex-col gap-[5px] px-[14px] pt-[2px] pb-[12px]">
+        <div className="flex flex-col gap-[5px] px-[14px] py-[10px]">
           {day.prompts.map(s => (
             <div key={s.prompt.id} className="flex items-center gap-[8px]">
               <span className="text-[12px] font-semibold text-foreground flex-1 truncate">
@@ -217,18 +226,17 @@ export default function Archive() {
               ) : (
                 <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap">—</span>
               )}
-              {s.answer && s.rank > 0 && (
-                <span className={`text-[9px] font-semibold px-[6px] py-[2px] rounded-[5px] whitespace-nowrap shrink-0 ${
-                  s.rank === 1 ? 'bg-[hsl(var(--success))]/12 text-[hsl(142_72%_30%)]' :
-                  s.rank === 2 ? 'bg-primary/12 text-[hsl(var(--warning-foreground))]' :
-                  'bg-muted text-muted-foreground'
-                }`}>
-                  #{s.rank}
-                </span>
-              )}
             </div>
           ))}
         </div>
+
+        {/* Vibe footer */}
+        {vibe.text && (
+          <div className="flex items-center gap-[6px] px-[14px] pb-[10px] pt-0">
+            <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
+            <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
+          </div>
+        )}
       </motion.div>
     );
   };
