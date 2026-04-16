@@ -70,7 +70,6 @@ export default function Play() {
       if (firstUnanswered >= 0) setActiveIdx(firstUnanswered);
       else setActiveIdx(ps.length - 1);
 
-      // Small delay so state is committed before we show cards (prevents re-animation flicker)
       requestAnimationFrame(() => setLoading(false));
     })();
   }, []);
@@ -157,12 +156,13 @@ export default function Play() {
         <p className="text-[11px] text-muted-foreground mt-[1px]">What word links both?</p>
       </div>
 
-      {/* Prompt cards — v8 style */}
+      {/* Prompt cards */}
       <div className="flex-1 px-4 pb-6 max-w-md mx-auto w-full space-y-[9px]">
         {prompts.map((p, i) => {
           const isDone = submitted[p.id];
           const isActive = i === activeIdx && !isDone;
           const isInactive = !isDone && !isActive;
+          const draftText = answers[p.id]?.trim();
 
           return (
             <motion.div
@@ -176,7 +176,7 @@ export default function Play() {
                   ? 'border-primary bg-[#FFFBF3] p-[15px_16px] scroll-mt-3'
                   : isDone
                     ? 'border-[hsl(var(--success))]/15 bg-[hsl(var(--success))]/[0.02] p-[12px_16px]'
-                    : 'border-foreground/[0.06] p-[12px_16px] opacity-50'
+                    : 'border-foreground/[0.06] p-[12px_16px] opacity-60'
               }`}
               onClick={() => {
                 if (isInactive) {
@@ -191,12 +191,14 @@ export default function Play() {
               <div className="flex items-center gap-[6px] mb-2 text-[10px] font-medium text-muted-foreground tracking-[0.05em]">
                 {String(i + 1).padStart(2, '0')}
                 <div className="flex-1 h-px bg-foreground/[0.08]" />
+                {isDone && (
+                  <span className="text-[9px] font-semibold text-[hsl(var(--success))] uppercase tracking-wider">Submitted</span>
+                )}
               </div>
 
-              {/* Word pair + answer as inline relationship */}
+              {/* Active: full input */}
               {isActive ? (
                 <div>
-                  {/* Word pair */}
                   <div className="flex items-center gap-[9px] mb-[10px]">
                     <span className="text-[26px] font-bold tracking-[-0.02em] text-foreground leading-none">
                       {p.word_a}
@@ -207,7 +209,6 @@ export default function Play() {
                     </span>
                   </div>
 
-                  {/* Answer input */}
                   <div className="flex items-center gap-2">
                     <div className="flex-1 border-b-[1.5px] border-primary/60 pb-[3px]">
                       <input
@@ -225,9 +226,13 @@ export default function Play() {
                         autoFocus={i === activeIdx}
                       />
                     </div>
-                    {submittingId === p.id && (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                    )}
+                    <button
+                      onClick={() => handleSubmit(p.id)}
+                      disabled={!!submittingId || !draftText}
+                      className="text-[12px] font-semibold text-white bg-primary px-[12px] py-[6px] rounded-[8px] disabled:opacity-40 cursor-pointer shrink-0 active:scale-95 transition-transform"
+                    >
+                      {submittingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Submit'}
+                    </button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-[6px] italic">
                     Pick the one most people will say.
@@ -237,49 +242,60 @@ export default function Play() {
                   )}
                 </div>
               ) : isDone ? (
-                /* Done: compact word pair, smaller since answer is the focus */
-                <div className="flex items-center gap-[7px] mb-[6px]">
-                  <span className="text-[16px] font-semibold tracking-[-0.01em] text-foreground/50 leading-none">
-                    {p.word_a}
-                  </span>
-                  <span className="text-[11px] text-foreground/20">+</span>
-                  <span className="text-[16px] font-semibold tracking-[-0.01em] text-foreground/50 leading-none">
-                    {p.word_b}
-                  </span>
+                /* Done: compact word pair + locked answer */
+                <div>
+                  <div className="flex items-center gap-[7px] mb-[6px]">
+                    <span className="text-[16px] font-semibold tracking-[-0.01em] text-foreground/50 leading-none">
+                      {p.word_a}
+                    </span>
+                    <span className="text-[11px] text-foreground/20">+</span>
+                    <span className="text-[16px] font-semibold tracking-[-0.01em] text-foreground/50 leading-none">
+                      {p.word_b}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[16px] font-semibold text-[hsl(var(--success))]">
+                      {userAnswers[p.id]?.raw_answer}
+                    </span>
+                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6.5" fill="hsl(var(--success) / 0.1)" />
+                      <path d="M4 7l2 2 4-4" stroke="hsl(var(--success))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </div>
               ) : (
-                /* Inactive: normal word pair */
-                <div className="flex items-center mb-[8px]">
-                  <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground/70 leading-none">
-                    {p.word_a}
-                  </span>
-                  <span className="text-[12px] text-foreground/15 mx-[8px]">+</span>
-                  <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground/70 leading-none">
-                    {p.word_b}
-                  </span>
-                </div>
-              )}
+                /* Inactive: word pair + draft preview if exists */
+                <div>
+                  <div className="flex items-center mb-[8px]">
+                    <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground/70 leading-none">
+                      {p.word_a}
+                    </span>
+                    <span className="text-[12px] text-foreground/15 mx-[8px]">+</span>
+                    <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground/70 leading-none">
+                      {p.word_b}
+                    </span>
+                  </div>
 
-              {/* Done state — green answer with check */}
-              {isDone && userAnswers[p.id] && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[16px] font-semibold text-[hsl(var(--success))]">
-                    {userAnswers[p.id].raw_answer}
-                  </span>
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="6.5" fill="hsl(var(--success) / 0.1)" />
-                    <path d="M4 7l2 2 4-4" stroke="hsl(var(--success))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              )}
-
-              {/* Inactive — clearly unanswered */}
-              {isInactive && (
-                <div
-                  className="pb-[4px] border-b border-dashed border-foreground/[0.06] cursor-pointer group/tap hover:border-primary/20 transition-colors"
-                  onClick={() => setActiveIdx(i)}
-                >
-                  <span className="text-[11px] text-foreground/15 italic group-hover/tap:text-primary/30 transition-colors">Tap to answer…</span>
+                  {draftText ? (
+                    /* Draft indicator — shows typed-but-not-submitted text */
+                    <div
+                      className="pb-[4px] border-b border-dashed border-primary/30 cursor-pointer"
+                      onClick={() => setActiveIdx(i)}
+                    >
+                      <div className="flex items-center gap-[6px]">
+                        <span className="text-[14px] font-medium text-primary/60">{draftText}</span>
+                        <span className="text-[9px] font-medium text-primary/40 bg-primary/8 px-[5px] py-[1px] rounded">draft</span>
+                      </div>
+                      <span className="text-[10px] text-primary/35 italic mt-[2px] block">Tap to submit</span>
+                    </div>
+                  ) : (
+                    <div
+                      className="pb-[4px] border-b border-dashed border-foreground/[0.06] cursor-pointer group/tap hover:border-primary/20 transition-colors"
+                      onClick={() => setActiveIdx(i)}
+                    >
+                      <span className="text-[11px] text-foreground/15 italic group-hover/tap:text-primary/30 transition-colors">Tap to answer…</span>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

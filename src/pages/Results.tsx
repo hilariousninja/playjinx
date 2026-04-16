@@ -7,6 +7,7 @@ import {
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { syncJinxesFromResults, getJinxTotal, getJinxesThisWeek } from '@/lib/jinx-tracker';
 import Countdown from '@/components/Countdown';
 import BragBlock from '@/components/BragBlock';
 import AnswerDrawer from '@/components/AnswerDrawer';
@@ -74,6 +75,13 @@ export default function Results() {
         return;
       }
 
+      // Sync jinxes
+      syncJinxesFromResults(res.map(r => ({
+        promptId: r.prompt.id,
+        date: r.prompt.date,
+        rank: r.rank,
+      })));
+
       setResults(res);
       setLoading(false);
     })();
@@ -86,30 +94,16 @@ export default function Results() {
   );
 
   const answered = results.filter(r => r.answer);
-  const topPicks = answered.filter(r => r.rank === 1).length;
+  const jinxes = answered.filter(r => r.rank === 1).length;
+  const totalJinxes = getJinxTotal();
+  const weekJinxes = getJinxesThisWeek();
+
   const bestResult = answered.length > 0
     ? answered.reduce((best, r) => (r.percentage > best.percentage ? r : best), answered[0])
     : null;
 
   const maxTotal = Math.max(...answered.map(r => r.total), 0);
   const lowSample = maxTotal > 0 && maxTotal < 10;
-  const avgRank = answered.length > 0 ? answered.reduce((s, r) => s + r.rank, 0) / answered.length : 0;
-
-  // Vibe must honestly reflect performance — weak results never get positive labels
-  const getVibe = () => {
-    if (answered.length === 0) return { label: 'No answers yet' };
-    // Check if any top-answer % is below 15% → fragmented crowd
-    const topPcts = answered.map(r => r.stats[0]?.percentage ?? 0);
-    const avgTopPct = topPcts.reduce((a, b) => a + b, 0) / topPcts.length;
-    if (avgTopPct < 15) return { label: 'Split crowd today' };
-    if (topPicks === answered.length) return { label: 'Strong crowd read' };
-    if (avgRank <= 1.5) return { label: 'Pretty in sync' };
-    if (topPicks >= 2) return { label: 'Solid instincts' };
-    if (avgRank <= 3) return { label: 'Decent read' };
-    if (avgRank <= 5) return { label: 'Mixed signals' };
-    return { label: 'Unique thinker' };
-  };
-  const vibe = getVibe();
 
   const handleShare = async () => {
     const prompts = results.map(r => r.prompt);
@@ -141,12 +135,6 @@ export default function Results() {
     }
   };
 
-  const getRankStyle = (rank: number) => {
-    if (rank === 1) return { border: 'border-l-[3px] border-l-[hsl(var(--success))]', badge: 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]', label: `#1 · ${0}%` };
-    if (rank === 2) return { border: 'border-l-[3px] border-l-primary', badge: 'bg-primary/10 text-[hsl(var(--warning-foreground))]', label: `#2 · ${0}%` };
-    return { border: 'border-l-[3px] border-l-border', badge: 'bg-muted text-muted-foreground', label: `#${rank} · ${0}%` };
-  };
-
   const now = new Date();
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -163,12 +151,32 @@ export default function Results() {
         <BragBlock
           answeredCount={answered.length}
           totalCount={results.length}
-          vibeLabel={vibe.label}
+          vibeLabel=""
           vibeColor=""
           bestAnswer={bestResult?.answer?.raw_answer}
           bestPct={bestResult?.percentage}
-          topPicks={topPicks}
+          topPicks={jinxes}
         />
+
+        {/* JINX reward moment */}
+        {jinxes > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center justify-between bg-primary/8 rounded-[11px] px-[14px] py-[10px]"
+          >
+            <div className="flex items-center gap-[8px]">
+              <span className="text-[16px] font-bold text-primary">✕ {jinxes}</span>
+              <span className="text-[12px] text-foreground/70 font-medium">
+                {jinxes === results.length ? 'Perfect JINX day!' : `JINX${jinxes > 1 ? 'es' : ''} today`}
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-muted-foreground block">{totalJinxes} total · {weekJinxes} this week</span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Low sample warning */}
         {lowSample && (
@@ -180,10 +188,10 @@ export default function Results() {
           </div>
         )}
 
-        {/* Stats row — v8 ms-row */}
+        {/* Stats row */}
         <div className="flex bg-card rounded-[11px] border border-foreground/[0.08] overflow-hidden">
           {[
-            { value: `${topPicks}/${results.length}`, label: 'Top picks' },
+            { value: `✕ ${jinxes}`, label: 'JINXes' },
             { value: bestResult ? `Top ${Math.max(bestResult.percentage, 1)}%` : '—', label: 'Best result' },
             { value: answered.reduce((s, r) => s + r.stats.length, 0), label: 'Unique answers' },
           ].map((s, i) => (
@@ -199,19 +207,19 @@ export default function Results() {
           How the crowd voted
         </p>
 
-        {/* Per-prompt result cards — v8 rc style with left border */}
+        {/* Per-prompt result cards */}
         {results.map((r, i) => {
           const barWidth = r.total > 0 && r.matchCount > 0
             ? Math.max(Math.round((r.matchCount / r.total) * 100), 4) : 0;
           const topStat = r.stats[0];
-          const isTopPick = r.rank === 1;
-          const borderClass = r.rank === 1 ? 'border-l-[3px] border-l-[hsl(var(--success))]'
+          const isJinx = r.rank === 1;
+          const borderClass = isJinx ? 'border-l-[3px] border-l-[hsl(var(--success))]'
             : r.rank === 2 ? 'border-l-[3px] border-l-primary'
             : 'border-l-[3px] border-l-border';
-          const badgeCls = r.rank === 1 ? 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]'
+          const badgeCls = isJinx ? 'bg-[hsl(var(--success))]/10 text-[hsl(142_72%_30%)]'
             : r.rank === 2 ? 'bg-primary/10 text-[hsl(var(--warning-foreground))]'
             : 'bg-muted text-muted-foreground';
-          const barCls = r.rank === 1 ? 'bg-[hsl(var(--success))]/10'
+          const barCls = isJinx ? 'bg-[hsl(var(--success))]/10'
             : r.rank === 2 ? 'bg-primary/10'
             : 'bg-foreground/[0.06]';
 
@@ -228,14 +236,16 @@ export default function Results() {
                 <span className="text-[11px] font-medium text-muted-foreground tracking-[0.04em]">
                   {r.prompt.word_a} + {r.prompt.word_b}
                 </span>
-                <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${badgeCls}`}>
-                  #{r.rank} · {r.percentage}%
-                </span>
+                <div className="flex items-center gap-[4px]">
+                  {isJinx && <span className="text-[10px] font-bold text-primary">✕</span>}
+                  <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${badgeCls}`}>
+                    #{r.rank} · {r.percentage}%
+                  </span>
+                </div>
               </div>
 
               {r.answer ? (
                 <>
-                  {/* Answer + you tag */}
                   <div className="flex items-center gap-[5px] mb-[6px]">
                     <span className="text-[17px] font-bold text-foreground">
                       {r.answer.raw_answer}
@@ -245,7 +255,6 @@ export default function Results() {
                     </span>
                   </div>
 
-                  {/* Distribution bar */}
                   <div className="h-[18px] bg-muted/40 rounded-[5px] overflow-hidden mb-[3px]">
                     <motion.div
                       initial={{ width: 0 }}
@@ -254,23 +263,21 @@ export default function Results() {
                       className={`h-full rounded-[5px] flex items-center px-[7px] ${barCls}`}
                     >
                       <span className={`text-[10px] font-semibold ${
-                        r.rank === 1 ? 'text-[hsl(142_72%_30%)]' : r.rank === 2 ? 'text-[hsl(var(--warning-foreground))]' : 'text-muted-foreground'
+                        isJinx ? 'text-[hsl(142_72%_30%)]' : r.rank === 2 ? 'text-[hsl(var(--warning-foreground))]' : 'text-muted-foreground'
                       }`}>
                         {r.userCanonical || r.answer.normalized_answer}
                       </span>
                     </motion.div>
                   </div>
 
-                  {/* Context line */}
                   <p className="text-[10px] text-muted-foreground mb-[5px]">
-                    {r.percentage}% · {isTopPick ? 'top pick' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
+                    {r.percentage}% · {isJinx ? 'JINX!' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
                   </p>
                 </>
               ) : (
                 <p className="text-[12px] text-muted-foreground/40 mb-[5px] italic">Missed</p>
               )}
 
-              {/* See all answers */}
               <button
                 onClick={() => setDrawerPrompt(r)}
                 className="w-full bg-transparent border-none border-t border-foreground/[0.08] pt-[7px] text-[11px] text-primary font-medium cursor-pointer text-left flex items-center justify-between"
@@ -282,7 +289,7 @@ export default function Results() {
           );
         })}
 
-        {/* Bottom CTAs — v8: share primary, challenge text */}
+        {/* Bottom CTAs */}
         <div className="space-y-[10px] pt-[14px]">
           <button
             onClick={handleShare}
