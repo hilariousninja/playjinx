@@ -11,6 +11,7 @@ import ArchivePlayCard from '@/components/ArchivePlayCard';
 import Countdown from '@/components/Countdown';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
+import { getJinxesForDay, syncJinxesFromResults } from '@/lib/jinx-tracker';
 import {
   getArchivePrompts, ensureDailyPrompts,
   getStats, getCanonicalAnswer,
@@ -65,7 +66,6 @@ export default function Archive() {
         (dateGroups[p.date] = dateGroups[p.date] || []).push(p);
       }
 
-      // Build day list WITHOUT loading stats - use prompt table data only
       const dayList: DayData[] = Object.entries(dateGroups).map(([date, prompts]) => {
         const summaries: PromptSummary[] = prompts.map((prompt) => {
           const answer = answerMap[prompt.id] ?? null;
@@ -91,7 +91,6 @@ export default function Archive() {
     })();
   }, []);
 
-  // Load stats for a specific day when opened
   const loadDayStats = useCallback(async (day: DayData) => {
     if (day.statsLoaded) {
       setSelectedDay(day);
@@ -99,7 +98,7 @@ export default function Archive() {
     }
 
     setLoadingStats(true);
-    setSelectedDay(day); // Show panel immediately with loading state
+    setSelectedDay(day);
 
     const enrichedSummaries: PromptSummary[] = await Promise.all(
       day.prompts.map(async (s) => {
@@ -129,9 +128,15 @@ export default function Archive() {
       })
     );
 
+    // Sync jinxes from loaded stats
+    syncJinxesFromResults(enrichedSummaries.map(s => ({
+      promptId: s.prompt.id,
+      date: s.prompt.date,
+      rank: s.rank,
+    })));
+
     const enrichedDay = { ...day, prompts: enrichedSummaries, playerCount: Math.max(...enrichedSummaries.map(s => s.total), 0), statsLoaded: true };
 
-    // Update in days list so reopening is instant
     setDays(prev => prev.map(d => d.date === day.date ? enrichedDay : d));
     setSelectedDay(enrichedDay);
     setLoadingStats(false);
@@ -143,17 +148,6 @@ export default function Archive() {
     </div>
   );
 
-  const getVibeForDay = (day: DayData) => {
-    const answered = day.prompts.filter(p => p.answer);
-    if (answered.length === 0) return { text: null, dotCls: 'bg-primary/50' };
-    if (!day.statsLoaded) return { text: null, dotCls: 'bg-primary' };
-    const tops = answered.filter(r => r.rank === 1).length;
-    const avgRank = answered.reduce((s, r) => s + r.rank, 0) / answered.length;
-    if (avgRank <= 1.5) return { text: `Strong consensus · ${tops} top pick${tops > 1 ? 's' : ''}`, dotCls: 'bg-[hsl(var(--success))]' };
-    if (avgRank <= 3) return { text: 'Solid instincts', dotCls: 'bg-primary' };
-    return { text: 'Unique thinker', dotCls: 'bg-muted-foreground' };
-  };
-
   const formatDate = (date: string) => {
     const d = new Date(date + 'T12:00:00');
     return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -161,25 +155,24 @@ export default function Archive() {
 
   const getDaySummary = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
-    const total = day.prompts.length;
     if (answered.length === 0) return null;
 
-    // Only show summary when it adds info beyond what's visible
-    const tops = answered.filter(r => r.rank === 1).length;
-    const strong = answered.filter(r => r.rank >= 1 && r.rank <= 2).length;
+    // Before stats loaded, just show answered count
+    if (!day.statsLoaded) {
+      return `${answered.length}/${day.prompts.length} answered`;
+    }
 
-    if (tops > 0) return `${tops} top pick${tops > 1 ? 's' : ''}`;
-    if (strong > 0) return `${strong} strong hit${strong > 1 ? 's' : ''}`;
-    // If all answered, don't state the obvious
-    if (answered.length === total) return null;
-    return `${answered.length}/${total} played`;
+    // After stats: JINX count is primary
+    const jinxes = answered.filter(r => r.rank === 1).length;
+    if (jinxes > 0) return `${jinxes} JINX${jinxes > 1 ? 'es' : ''}`;
+    return null;
   };
 
   const renderDayCard = (day: DayData, idx: number) => {
-    const vibe = getVibeForDay(day);
     const hasPlayed = day.prompts.some(p => p.answer);
     const allAnswered = day.prompts.every(p => p.answer);
     const summary = getDaySummary(day);
+    const jinxCount = day.statsLoaded ? day.prompts.filter(p => p.rank === 1).length : getJinxesForDay(day.date);
 
     return (
       <motion.div
@@ -194,14 +187,16 @@ export default function Archive() {
         <div className="flex items-center justify-between px-[14px] py-[9px] border-b border-foreground/[0.06]">
           <div className="flex items-center gap-[7px]">
             <span className="text-[13px] font-semibold text-foreground">{day.isToday ? 'Today' : formatDate(day.date)}</span>
-            {day.isToday && (
+            {day.isToday && !allAnswered && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-[hsl(var(--success))]/12 text-[hsl(var(--success))]">Live</span>
-            )}
-            {day.isToday && allAnswered && (
-              <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-[hsl(var(--warning-foreground))]">Done</span>
             )}
             {!day.isToday && !hasPlayed && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Play</span>
+            )}
+            {jinxCount > 0 && (
+              <span className="text-[9px] font-semibold px-[6px] py-[2px] rounded-full bg-primary/12 text-primary">
+                ✕ {jinxCount}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-[6px]">
@@ -232,14 +227,6 @@ export default function Archive() {
             </div>
           ))}
         </div>
-
-        {/* Vibe footer */}
-        {vibe.text && (
-          <div className="flex items-center gap-[6px] px-[14px] pb-[10px] pt-0">
-            <div className={`w-[5px] h-[5px] rounded-full shrink-0 ${vibe.dotCls}`} />
-            <span className={`text-[11px] ${hasPlayed ? 'text-muted-foreground' : 'text-foreground/50'}`}>{vibe.text}</span>
-          </div>
-        )}
       </motion.div>
     );
   };
@@ -287,43 +274,48 @@ export default function Archive() {
       >
         {selectedDay && (
           <div className="px-4 py-4 space-y-[8px]">
-            {(() => {
-              const vibe = getVibeForDay(selectedDay);
-              return (
-                <div className="flex items-center gap-[6px] mb-[12px]">
-                  <div className={`w-[5px] h-[5px] rounded-full ${vibe.dotCls}`} />
-                  <span className="text-[11px] text-muted-foreground">{vibe.text}</span>
-                </div>
-              );
-            })()}
-
             {loadingStats ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
             ) : (
-              selectedDay.prompts.map((s) => (
-                <ArchivePlayCard
-                  key={s.prompt.id}
-                  summary={s}
-                  isToday={selectedDay.isToday}
-                  onAnswered={(updated) => {
-                    // Update the prompt summary in both selectedDay and days list
-                    const updatePrompts = (prompts: PromptSummary[]) =>
-                      prompts.map(p => p.prompt.id === updated.prompt.id ? updated : p);
-                    const updatedDay = { ...selectedDay, prompts: updatePrompts(selectedDay.prompts) };
-                    setSelectedDay(updatedDay);
-                    setDays(prev => prev.map(d => d.date === selectedDay.date ? { ...d, prompts: updatePrompts(d.prompts) } : d));
-                  }}
-                  onSeeAll={setDrawerPrompt}
-                />
-              ))
-            )}
+              <>
+                {/* Day JINX summary */}
+                {(() => {
+                  const jinxes = selectedDay.prompts.filter(p => p.rank === 1).length;
+                  if (jinxes === 0 || !selectedDay.statsLoaded) return null;
+                  return (
+                    <div className="flex items-center gap-[6px] mb-[4px] px-[2px]">
+                      <span className="text-[13px] font-bold text-primary">✕ {jinxes}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {jinxes === selectedDay.prompts.length ? 'Perfect day' : jinxes === 1 ? 'JINX today' : 'JINXes today'}
+                      </span>
+                    </div>
+                  );
+                })()}
 
-            {selectedDay.isToday && selectedDay.prompts.some(p => !p.answer) && (
-              <Button className="w-full rounded-xl h-11" asChild>
-                <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
-              </Button>
+                {selectedDay.prompts.map((s) => (
+                  <ArchivePlayCard
+                    key={s.prompt.id}
+                    summary={s}
+                    isToday={selectedDay.isToday}
+                    onAnswered={(updated) => {
+                      const updatePrompts = (prompts: PromptSummary[]) =>
+                        prompts.map(p => p.prompt.id === updated.prompt.id ? updated : p);
+                      const updatedDay = { ...selectedDay, prompts: updatePrompts(selectedDay.prompts) };
+                      setSelectedDay(updatedDay);
+                      setDays(prev => prev.map(d => d.date === selectedDay.date ? { ...d, prompts: updatePrompts(d.prompts) } : d));
+                    }}
+                    onSeeAll={setDrawerPrompt}
+                  />
+                ))}
+
+                {selectedDay.isToday && selectedDay.prompts.some(p => !p.answer) && (
+                  <Button className="w-full rounded-xl h-11" asChild>
+                    <Link to="/play">Continue playing <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}
