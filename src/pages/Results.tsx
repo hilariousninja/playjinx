@@ -7,7 +7,15 @@ import {
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import { syncJinxesFromResults, getJinxTotal, getJinxesThisWeek, isRealJinx, isProvisionalLead } from '@/lib/jinx-tracker';
+import {
+  syncJinxesFromResults,
+  getJinxTotal,
+  getJinxesThisWeek,
+  promptJinxes,
+  isMatchedPrompt,
+  isProvisionalLead,
+  isTopAnswer,
+} from '@/lib/jinx-tracker';
 import Countdown from '@/components/Countdown';
 import BragBlock from '@/components/BragBlock';
 import AnswerDrawer from '@/components/AnswerDrawer';
@@ -95,7 +103,12 @@ export default function Results() {
   );
 
   const answered = results.filter(r => r.answer);
-  const jinxes = answered.filter(r => isRealJinx(r.rank, r.matchCount)).length;
+  // Total overlap count today (cluster_size - 1 per prompt, summed)
+  const dayJinxes = answered.reduce((s, r) => s + promptJinxes(r.matchCount), 0);
+  // Prompts where I overlapped with at least one other player
+  const matchedPrompts = answered.filter(r => isMatchedPrompt(r.matchCount)).length;
+  // Top answers that ALSO have real overlap (a solo first-responder is not a top answer here)
+  const topAnswers = answered.filter(r => isTopAnswer(r.rank) && isMatchedPrompt(r.matchCount)).length;
   const provisionalLeads = answered.filter(r => isProvisionalLead(r.rank, r.matchCount)).length;
   const totalJinxes = getJinxTotal();
   const weekJinxes = getJinxesThisWeek();
