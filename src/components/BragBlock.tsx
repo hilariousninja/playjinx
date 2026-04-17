@@ -26,7 +26,7 @@ export default function BragBlock({
           ? `${jinxes} JINXes today.`
           : jinxes === 1
             ? `1 JINX today.`
-            : `0 JINXes today.`
+            : `Day complete.`
       : `You answered ${answeredCount} of ${totalCount}.`;
 
   const subline =
@@ -37,7 +37,7 @@ export default function BragBlock({
         : jinxes === 1
           ? 'One match — the rest went their own way.'
           : answeredCount > 0
-            ? 'The crowd went a different direction.'
+            ? 'No crowd matches yet — see how it played out.'
             : 'See how the crowd compared.';
 
   return (

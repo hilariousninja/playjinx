@@ -250,7 +250,8 @@ export default function Results() {
                   {r.prompt.word_a} + {r.prompt.word_b}
                 </span>
                 <div className="flex items-center gap-[4px]">
-                  {isJinx && <span className="text-[10px] font-bold text-primary">✕</span>}
+                  {isJinx && <span className="text-[10px] font-bold text-primary" aria-label="JINX">✕</span>}
+                  {isLeading && <span className="text-[9px] font-medium text-muted-foreground/70 italic">leading</span>}
                   <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${badgeCls}`}>
                     #{r.rank} · {r.percentage}%
                   </span>
@@ -284,7 +285,7 @@ export default function Results() {
                   </div>
 
                   <p className="text-[10px] text-muted-foreground mb-[5px]">
-                    {r.percentage}% · {isJinx ? 'JINX!' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
+                    {r.percentage}% · {isJinx ? 'JINX!' : isLeading ? 'leading so far — needs another match' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
                   </p>
                 </>
               ) : (
