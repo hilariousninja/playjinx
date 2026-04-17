@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar } from 'lucide-react';
+import { ArrowRight, Calendar, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -11,7 +11,7 @@ import ArchivePlayCard from '@/components/ArchivePlayCard';
 import Countdown from '@/components/Countdown';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
-import { getJinxesForDay, syncJinxesFromResults } from '@/lib/jinx-tracker';
+import { getJinxesForDay, syncJinxesFromResults, isPromptJinx } from '@/lib/jinx-tracker';
 import {
   getArchivePrompts, ensureDailyPrompts,
   getStats, getCanonicalAnswer,
@@ -128,11 +128,12 @@ export default function Archive() {
       })
     );
 
-    // Sync jinxes from loaded stats
+    // Sync jinxes from loaded stats — only true crowd matches qualify now
     syncJinxesFromResults(enrichedSummaries.map(s => ({
       promptId: s.prompt.id,
       date: s.prompt.date,
       rank: s.rank,
+      matchCount: s.matchCount,
     })));
 
     const enrichedDay = { ...day, prompts: enrichedSummaries, playerCount: Math.max(...enrichedSummaries.map(s => s.total), 0), statsLoaded: true };

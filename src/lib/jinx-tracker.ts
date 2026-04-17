@@ -70,6 +70,11 @@ export function getJinxesForDay(date: string): number {
   return getRecords().filter(r => r.date === date).length;
 }
 
+/** Was this specific prompt a real JINX (per stored tracker)? */
+export function isPromptJinx(promptId: string): boolean {
+  return getRecords().some(r => r.promptId === promptId);
+}
+
 /** Sync jinxes from results data — only records true JINXes (matchCount >= 2) */
 export function syncJinxesFromResults(
   results: { promptId: string; date: string; rank: number; matchCount: number }[]
