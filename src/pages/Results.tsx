@@ -7,7 +7,7 @@ import {
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import { syncJinxesFromResults, getJinxTotal, getJinxesThisWeek } from '@/lib/jinx-tracker';
+import { syncJinxesFromResults, getJinxTotal, getJinxesThisWeek, isRealJinx, isProvisionalLead } from '@/lib/jinx-tracker';
 import Countdown from '@/components/Countdown';
 import BragBlock from '@/components/BragBlock';
 import AnswerDrawer from '@/components/AnswerDrawer';
@@ -75,11 +75,12 @@ export default function Results() {
         return;
       }
 
-      // Sync jinxes
+      // Sync jinxes — only true crowd matches count
       syncJinxesFromResults(res.map(r => ({
         promptId: r.prompt.id,
         date: r.prompt.date,
         rank: r.rank,
+        matchCount: r.matchCount,
       })));
 
       setResults(res);
@@ -94,7 +95,8 @@ export default function Results() {
   );
 
   const answered = results.filter(r => r.answer);
-  const jinxes = answered.filter(r => r.rank === 1).length;
+  const jinxes = answered.filter(r => isRealJinx(r.rank, r.matchCount)).length;
+  const provisionalLeads = answered.filter(r => isProvisionalLead(r.rank, r.matchCount)).length;
   const totalJinxes = getJinxTotal();
   const weekJinxes = getJinxesThisWeek();
 
