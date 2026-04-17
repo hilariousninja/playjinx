@@ -224,7 +224,8 @@ export default function Results() {
           const barWidth = r.total > 0 && r.matchCount > 0
             ? Math.max(Math.round((r.matchCount / r.total) * 100), 4) : 0;
           const topStat = r.stats[0];
-          const isJinx = r.rank === 1;
+          const isJinx = isRealJinx(r.rank, r.matchCount);
+          const isLeading = isProvisionalLead(r.rank, r.matchCount);
           const borderClass = isJinx ? 'border-l-[3px] border-l-[hsl(var(--success))]'
             : r.rank === 2 ? 'border-l-[3px] border-l-primary'
             : 'border-l-[3px] border-l-border';
