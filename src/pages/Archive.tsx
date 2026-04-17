@@ -286,11 +286,12 @@ export default function Archive() {
               <>
                 {/* Day JINX summary */}
                 {(() => {
-                  const jinxes = selectedDay.prompts.filter(p => p.rank === 1).length;
+                  const jinxes = selectedDay.prompts.filter(p => p.rank === 1 && p.matchCount >= 2).length;
                   if (jinxes === 0 || !selectedDay.statsLoaded) return null;
                   return (
                     <div className="flex items-center gap-[6px] mb-[4px] px-[2px]">
-                      <span className="text-[13px] font-bold text-primary">✕ {jinxes}</span>
+                      <Zap className="h-[14px] w-[14px] text-primary" strokeWidth={2.5} />
+                      <span className="text-[13px] font-bold text-primary">{jinxes}</span>
                       <span className="text-[11px] text-muted-foreground">
                         {jinxes === selectedDay.prompts.length ? 'Perfect day' : jinxes === 1 ? 'JINX today' : 'JINXes today'}
                       </span>
