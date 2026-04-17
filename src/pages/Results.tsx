@@ -160,7 +160,7 @@ export default function Results() {
           topPicks={jinxes}
         />
 
-        {/* JINX reward moment */}
+        {/* JINX reward moment — only for real crowd matches */}
         {jinxes > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -180,8 +180,18 @@ export default function Results() {
           </motion.div>
         )}
 
+        {/* Provisional lead — top answer but no overlap yet */}
+        {jinxes === 0 && provisionalLeads > 0 && (
+          <div className="flex items-center gap-[8px] bg-foreground/[0.04] rounded-[11px] px-[14px] py-[10px]">
+            <span className="text-[14px]">⏳</span>
+            <span className="text-[11px] text-foreground/65 leading-[1.4]">
+              Leading so far on {provisionalLeads} {provisionalLeads === 1 ? 'prompt' : 'prompts'} — JINX confirms when others match.
+            </span>
+          </div>
+        )}
+
         {/* Low sample warning */}
-        {lowSample && (
+        {lowSample && jinxes === 0 && provisionalLeads === 0 && (
           <div className="flex items-center gap-[6px] bg-primary/8 rounded-[10px] px-3 py-[8px]">
             <span className="text-[12px]">🌱</span>
             <span className="text-[11px] text-foreground/60 leading-[1.4]">
