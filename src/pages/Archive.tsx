@@ -11,7 +11,7 @@ import ArchivePlayCard from '@/components/ArchivePlayCard';
 import Countdown from '@/components/Countdown';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
-import { getJinxesForDay, syncJinxesFromResults, isPromptJinx } from '@/lib/jinx-tracker';
+import { getJinxesForDay, syncJinxesFromResults, isPromptJinx, getPromptJinxCount, promptJinxes } from '@/lib/jinx-tracker';
 import {
   getArchivePrompts, ensureDailyPrompts,
   getStats, getCanonicalAnswer,
@@ -208,11 +208,15 @@ export default function Archive() {
         <div className="flex flex-col gap-[5px] px-[14px] py-[10px]">
           {day.prompts.map(s => {
             const promptIsJinx = isPromptJinx(s.prompt.id);
+            const pJinxCount = getPromptJinxCount(s.prompt.id);
             return (
               <div key={s.prompt.id} className="flex items-center gap-[8px]">
                 <span className="text-[12px] font-semibold text-foreground flex-1 truncate flex items-center gap-[5px]">
                   {promptIsJinx && (
-                    <Zap className="h-[10px] w-[10px] text-primary shrink-0" strokeWidth={2.5} aria-label="JINX" />
+                    <span className="inline-flex items-center gap-[1px] text-[10px] font-bold text-primary shrink-0" aria-label={`${pJinxCount} JINX`}>
+                      <Zap className="h-[10px] w-[10px]" strokeWidth={2.5} />
+                      {pJinxCount > 1 ? pJinxCount : ''}
+                    </span>
                   )}
                   <span className="truncate">
                     {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
@@ -286,14 +290,15 @@ export default function Archive() {
               <>
                 {/* Day JINX summary */}
                 {(() => {
-                  const jinxes = selectedDay.prompts.filter(p => p.rank === 1 && p.matchCount >= 2).length;
-                  if (jinxes === 0 || !selectedDay.statsLoaded) return null;
+                  const dayJinxes = selectedDay.prompts.reduce((s, p) => s + promptJinxes(p.matchCount), 0);
+                  const matched = selectedDay.prompts.filter(p => p.matchCount >= 2).length;
+                  if (!selectedDay.statsLoaded || dayJinxes === 0) return null;
                   return (
                     <div className="flex items-center gap-[6px] mb-[4px] px-[2px]">
                       <Zap className="h-[14px] w-[14px] text-primary" strokeWidth={2.5} />
-                      <span className="text-[13px] font-bold text-primary">{jinxes}</span>
+                      <span className="text-[13px] font-bold text-primary">{dayJinxes}</span>
                       <span className="text-[11px] text-muted-foreground">
-                        {jinxes === selectedDay.prompts.length ? 'Perfect day' : jinxes === 1 ? 'JINX today' : 'JINXes today'}
+                        JINX{dayJinxes === 1 ? '' : 'es'} · {matched}/{selectedDay.prompts.length} matched
                       </span>
                     </div>
                   );

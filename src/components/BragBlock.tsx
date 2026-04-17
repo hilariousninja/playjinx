@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Zap } from 'lucide-react';
 
 interface Props {
   answeredCount: number;
@@ -7,38 +8,37 @@ interface Props {
   vibeColor: string;
   bestAnswer?: string;
   bestPct?: number;
-  topPicks: number; // now represents JINXes count
+  /** matched prompts: prompts with overlap (>=1 other player matched) */
+  matchedPrompts: number;
+  /** total JINXes today (sum of cluster_size - 1 across the day's prompts) */
+  totalJinxes: number;
+  /** prompts where my answer was the largest cluster AND had real overlap */
+  topAnswers?: number;
 }
 
 export default function BragBlock({
   answeredCount,
   totalCount,
-  vibeLabel,
   bestAnswer,
   bestPct,
-  topPicks: jinxes,
+  matchedPrompts,
+  totalJinxes,
 }: Props) {
-  const headline =
-    answeredCount === totalCount
-      ? jinxes === totalCount
-        ? `${totalCount}/${totalCount} JINXed!`
-        : jinxes >= 2
-          ? `${jinxes} JINXes today.`
-          : jinxes === 1
-            ? `1 JINX today.`
-            : `Day complete.`
-      : `You answered ${answeredCount} of ${totalCount}.`;
+  // Hero headline = OVERALL SYNC across the day, not JINX language.
+  const headline = (() => {
+    if (answeredCount < totalCount) return `You answered ${answeredCount} of ${totalCount}.`;
+    if (matchedPrompts === totalCount && totalCount > 0) return `Matched on all ${totalCount}.`;
+    if (matchedPrompts === 0) return `Day complete.`;
+    return `${matchedPrompts}/${totalCount} in sync.`;
+  })();
 
-  const subline =
-    jinxes === totalCount
-      ? 'You matched the crowd on every one.'
-      : jinxes >= 2
-        ? 'Strong crowd instincts today.'
-        : jinxes === 1
-          ? 'One match — the rest went their own way.'
-          : answeredCount > 0
-            ? 'No crowd matches yet — see how it played out.'
-            : 'See how the crowd compared.';
+  const subline = (() => {
+    if (answeredCount < totalCount) return 'Finish today to see how you synced.';
+    if (matchedPrompts === totalCount && totalCount > 0) return 'Perfect sync day — you matched the crowd everywhere.';
+    if (matchedPrompts === 0 && totalJinxes === 0) return 'No overlap with the crowd today.';
+    if (matchedPrompts === 1) return 'One prompt synced with the crowd.';
+    return `Synced with the crowd on ${matchedPrompts} of ${totalCount}.`;
+  })();
 
   return (
     <motion.div
@@ -57,11 +57,9 @@ export default function BragBlock({
       </svg>
 
       <div className="relative z-10">
-        {vibeLabel && (
-          <p className="text-[10px] font-semibold text-primary/55 uppercase tracking-[0.08em] mb-[5px]">
-            {vibeLabel}
-          </p>
-        )}
+        <p className="text-[10px] font-semibold text-primary/55 uppercase tracking-[0.08em] mb-[5px]">
+          Today's sync
+        </p>
 
         <h2 className="text-[20px] font-bold tracking-[-0.02em] leading-tight mb-[3px]" style={{ color: '#FEF3C7' }}>
           {headline}
@@ -70,12 +68,22 @@ export default function BragBlock({
           {subline}
         </p>
 
+        {/* JINX reward chip — only when there's real overlap */}
+        {totalJinxes > 0 && (
+          <div className="inline-flex items-center gap-[6px] bg-primary/20 border border-primary/35 rounded-[9px] px-[12px] py-[6px] mr-[6px]">
+            <Zap className="h-[12px] w-[12px]" strokeWidth={2.5} style={{ color: '#FCD34D' }} />
+            <span className="text-[13px] font-bold" style={{ color: '#FCD34D' }}>
+              {totalJinxes} JINX{totalJinxes > 1 ? 'es' : ''}
+            </span>
+          </div>
+        )}
+
         {bestAnswer && bestPct !== undefined && (
-          <div className="inline-flex flex-col bg-primary/20 border border-primary/35 rounded-[9px] px-[14px] py-[7px]">
-            <span className="text-[9px] uppercase tracking-[0.05em] mb-[2px]" style={{ color: 'rgba(253,211,77,0.6)' }}>
+          <div className="inline-flex flex-col bg-white/5 border border-white/10 rounded-[9px] px-[12px] py-[6px] mt-[6px]">
+            <span className="text-[9px] uppercase tracking-[0.05em] mb-[1px]" style={{ color: 'rgba(254,243,199,0.55)' }}>
               Best hit
             </span>
-            <span className="text-[15px] font-bold" style={{ color: '#FCD34D' }}>
+            <span className="text-[13px] font-bold" style={{ color: '#FEF3C7' }}>
               {bestAnswer.toUpperCase()} · {bestPct}%
             </span>
           </div>

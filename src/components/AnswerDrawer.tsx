@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Zap } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -6,6 +7,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from '@/components/ui/drawer';
+import { promptJinxes, isProvisionalLead } from '@/lib/jinx-tracker';
 import type { AnswerStat, DbPrompt, DbAnswer } from '@/lib/store';
 
 interface PromptResult {
@@ -27,11 +29,24 @@ interface Props {
 
 export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
   if (!promptResult) return null;
-  const { prompt, stats, total, userCanonical } = promptResult;
+  const { prompt, stats, total, userCanonical, rank, matchCount } = promptResult;
   const TOP_N = 10;
   const topStats = stats.slice(0, TOP_N);
   const remaining = stats.slice(TOP_N);
   const maxPct = topStats.length > 0 ? Math.max(...topStats.map(s => s.percentage)) : 100;
+
+  const pJinx = promptJinxes(matchCount);
+  const isLeading = isProvisionalLead(rank, matchCount);
+  const unanimous = stats.length === 1 && total >= 2;
+
+  // Status line — warmer when there's true crowd consensus
+  const statusLine = (() => {
+    if (unanimous) return `Everyone said the same thing — ${total} for ${total}.`;
+    if (pJinx > 0) return `You matched ${pJinx} other ${pJinx === 1 ? 'player' : 'players'}${rank === 1 ? ' · #1 answer' : ` · #${rank}`}`;
+    if (isLeading) return `Leading so far — needs another match to JINX`;
+    if (matchCount === 1) return `You're the only one so far on this answer`;
+    return null;
+  })();
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -41,11 +56,24 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
             {prompt.word_a} + {prompt.word_b}
           </DrawerTitle>
           <DrawerDescription className="text-[11px] text-muted-foreground text-center">
-            {total} answers · {stats.length} unique
+            {total} {total === 1 ? 'player' : 'players'} · {stats.length} unique
           </DrawerDescription>
         </DrawerHeader>
 
         <div className="overflow-y-auto px-5 pb-6">
+          {/* Status strip — reinforces the metric model */}
+          {statusLine && (
+            <div className={`flex items-center gap-[6px] rounded-[10px] px-[10px] py-[7px] mb-3 ${
+              pJinx > 0 ? 'bg-primary/8' : 'bg-muted/40'
+            }`}>
+              {pJinx > 0 && <Zap className="h-[12px] w-[12px] text-primary shrink-0" strokeWidth={2.5} />}
+              {pJinx > 0 && (
+                <span className="text-[12px] font-bold text-primary">{pJinx} JINX{pJinx > 1 ? 'es' : ''}</span>
+              )}
+              <span className="text-[11px] text-foreground/70">{statusLine}</span>
+            </div>
+          )}
+
           {/* Top answers */}
           <div className="space-y-1.5">
             {topStats.map((s, i) => {
@@ -59,7 +87,7 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
                   className={`relative rounded-lg overflow-hidden ${
-                    isUser ? 'bg-primary/[0.06] ring-1 ring-primary/15' : 'hover:bg-muted/30'
+                    isUser ? 'bg-primary/[0.08] ring-2 ring-primary/40' : 'hover:bg-muted/30'
                   }`}
                 >
                   <motion.div
@@ -67,12 +95,14 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
                     animate={{ width: `${barWidth}%` }}
                     transition={{ duration: 0.5, delay: i * 0.03 }}
                     className={`absolute inset-y-0 left-0 rounded-lg ${
-                      isUser ? 'bg-primary/20' : i === 0 ? 'bg-foreground/[0.04]' : 'bg-foreground/[0.02]'
+                      isUser ? 'bg-primary/25' : i === 0 ? 'bg-foreground/[0.04]' : 'bg-foreground/[0.02]'
                     }`}
                   />
                   <div className="relative flex items-center justify-between gap-2 py-2 px-2.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-display text-[10px] tabular-nums shrink-0 w-4 text-right text-muted-foreground/40">
+                      <span className={`font-display text-[10px] tabular-nums shrink-0 w-4 text-right ${
+                        isUser ? 'text-primary font-bold' : 'text-muted-foreground/40'
+                      }`}>
                         {s.rank}
                       </span>
                       <span className={`font-display text-[13px] break-words min-w-0 ${
@@ -88,7 +118,9 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
                       }`}>
                         {s.percentage}%
                       </span>
-                      <span className="text-[9px] tabular-nums text-muted-foreground/20">({s.count})</span>
+                      <span className={`text-[9px] tabular-nums ${isUser ? 'text-muted-foreground/60' : 'text-muted-foreground/20'}`}>
+                        ({s.count})
+                      </span>
                     </div>
                   </div>
                 </motion.div>
@@ -122,7 +154,7 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
 
           {/* Editorial note */}
           <p className="text-[10px] text-muted-foreground/30 text-center leading-relaxed mt-5">
-            Answers are grouped by similarity. Results update as more people play.
+            Answers are grouped by similarity. Results update as more players answer.
           </p>
         </div>
       </DrawerContent>
