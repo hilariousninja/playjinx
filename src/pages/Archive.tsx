@@ -157,23 +157,17 @@ export default function Archive() {
   const getDaySummary = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
     if (answered.length === 0) return null;
-
-    // Before stats loaded, just show answered count
-    if (!day.statsLoaded) {
-      return `${answered.length}/${day.prompts.length} answered`;
-    }
-
-    // After stats: JINX count is primary
-    const jinxes = answered.filter(r => r.rank === 1).length;
-    if (jinxes > 0) return `${jinxes} JINX${jinxes > 1 ? 'es' : ''}`;
-    return null;
+    // Stable summary — never mutates after drill-in.
+    // Show answered fraction; JINX count is shown separately as a chip.
+    return `${answered.length}/${day.prompts.length} answered`;
   };
 
   const renderDayCard = (day: DayData, idx: number) => {
     const hasPlayed = day.prompts.some(p => p.answer);
     const allAnswered = day.prompts.every(p => p.answer);
     const summary = getDaySummary(day);
-    const jinxCount = day.statsLoaded ? day.prompts.filter(p => p.rank === 1).length : getJinxesForDay(day.date);
+    // Persistent jinx count from tracker — survives drill-in/out.
+    const jinxCount = getJinxesForDay(day.date);
 
     return (
       <motion.div
@@ -195,8 +189,9 @@ export default function Archive() {
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Play</span>
             )}
             {jinxCount > 0 && (
-              <span className="text-[9px] font-semibold px-[6px] py-[2px] rounded-full bg-primary/12 text-primary">
-                ✕ {jinxCount}
+              <span className="inline-flex items-center gap-[3px] text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-primary">
+                <Zap className="h-[9px] w-[9px]" strokeWidth={2.5} />
+                {jinxCount} JINX{jinxCount > 1 ? 'es' : ''}
               </span>
             )}
           </div>
@@ -211,22 +206,30 @@ export default function Archive() {
 
         {/* Prompt rows */}
         <div className="flex flex-col gap-[5px] px-[14px] py-[10px]">
-          {day.prompts.map(s => (
-            <div key={s.prompt.id} className="flex items-center gap-[8px]">
-              <span className="text-[12px] font-semibold text-foreground flex-1 truncate">
-                {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
-              </span>
-              {s.answer ? (
-                <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap">
-                  → {s.answer.raw_answer}
+          {day.prompts.map(s => {
+            const promptIsJinx = isPromptJinx(s.prompt.id);
+            return (
+              <div key={s.prompt.id} className="flex items-center gap-[8px]">
+                <span className="text-[12px] font-semibold text-foreground flex-1 truncate flex items-center gap-[5px]">
+                  {promptIsJinx && (
+                    <Zap className="h-[10px] w-[10px] text-primary shrink-0" strokeWidth={2.5} aria-label="JINX" />
+                  )}
+                  <span className="truncate">
+                    {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
+                  </span>
                 </span>
-              ) : !day.isToday ? (
-                <span className="text-[11px] text-primary font-medium whitespace-nowrap">Play →</span>
-              ) : (
-                <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap">—</span>
-              )}
-            </div>
-          ))}
+                {s.answer ? (
+                  <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap">
+                    → {s.answer.raw_answer}
+                  </span>
+                ) : !day.isToday ? (
+                  <span className="text-[11px] text-primary font-medium whitespace-nowrap">Play →</span>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap">—</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </motion.div>
     );
