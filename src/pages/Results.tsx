@@ -7,7 +7,7 @@ import {
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
-import { syncJinxesFromResults, getJinxTotal, getJinxesThisWeek } from '@/lib/jinx-tracker';
+import { syncJinxesFromResults, getJinxTotal, getJinxesThisWeek, isRealJinx, isProvisionalLead } from '@/lib/jinx-tracker';
 import Countdown from '@/components/Countdown';
 import BragBlock from '@/components/BragBlock';
 import AnswerDrawer from '@/components/AnswerDrawer';
@@ -75,11 +75,12 @@ export default function Results() {
         return;
       }
 
-      // Sync jinxes
+      // Sync jinxes — only true crowd matches count
       syncJinxesFromResults(res.map(r => ({
         promptId: r.prompt.id,
         date: r.prompt.date,
         rank: r.rank,
+        matchCount: r.matchCount,
       })));
 
       setResults(res);
@@ -94,7 +95,8 @@ export default function Results() {
   );
 
   const answered = results.filter(r => r.answer);
-  const jinxes = answered.filter(r => r.rank === 1).length;
+  const jinxes = answered.filter(r => isRealJinx(r.rank, r.matchCount)).length;
+  const provisionalLeads = answered.filter(r => isProvisionalLead(r.rank, r.matchCount)).length;
   const totalJinxes = getJinxTotal();
   const weekJinxes = getJinxesThisWeek();
 
@@ -158,7 +160,7 @@ export default function Results() {
           topPicks={jinxes}
         />
 
-        {/* JINX reward moment */}
+        {/* JINX reward moment — only for real crowd matches */}
         {jinxes > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -178,8 +180,18 @@ export default function Results() {
           </motion.div>
         )}
 
+        {/* Provisional lead — top answer but no overlap yet */}
+        {jinxes === 0 && provisionalLeads > 0 && (
+          <div className="flex items-center gap-[8px] bg-foreground/[0.04] rounded-[11px] px-[14px] py-[10px]">
+            <span className="text-[14px]">⏳</span>
+            <span className="text-[11px] text-foreground/65 leading-[1.4]">
+              Leading so far on {provisionalLeads} {provisionalLeads === 1 ? 'prompt' : 'prompts'} — JINX confirms when others match.
+            </span>
+          </div>
+        )}
+
         {/* Low sample warning */}
-        {lowSample && (
+        {lowSample && jinxes === 0 && provisionalLeads === 0 && (
           <div className="flex items-center gap-[6px] bg-primary/8 rounded-[10px] px-3 py-[8px]">
             <span className="text-[12px]">🌱</span>
             <span className="text-[11px] text-foreground/60 leading-[1.4]">
@@ -212,7 +224,8 @@ export default function Results() {
           const barWidth = r.total > 0 && r.matchCount > 0
             ? Math.max(Math.round((r.matchCount / r.total) * 100), 4) : 0;
           const topStat = r.stats[0];
-          const isJinx = r.rank === 1;
+          const isJinx = isRealJinx(r.rank, r.matchCount);
+          const isLeading = isProvisionalLead(r.rank, r.matchCount);
           const borderClass = isJinx ? 'border-l-[3px] border-l-[hsl(var(--success))]'
             : r.rank === 2 ? 'border-l-[3px] border-l-primary'
             : 'border-l-[3px] border-l-border';
@@ -237,7 +250,8 @@ export default function Results() {
                   {r.prompt.word_a} + {r.prompt.word_b}
                 </span>
                 <div className="flex items-center gap-[4px]">
-                  {isJinx && <span className="text-[10px] font-bold text-primary">✕</span>}
+                  {isJinx && <span className="text-[10px] font-bold text-primary" aria-label="JINX">✕</span>}
+                  {isLeading && <span className="text-[9px] font-medium text-muted-foreground/70 italic">leading</span>}
                   <span className={`text-[10px] font-semibold px-[6px] py-[2px] rounded-[6px] ${badgeCls}`}>
                     #{r.rank} · {r.percentage}%
                   </span>
@@ -271,7 +285,7 @@ export default function Results() {
                   </div>
 
                   <p className="text-[10px] text-muted-foreground mb-[5px]">
-                    {r.percentage}% · {isJinx ? 'JINX!' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
+                    {r.percentage}% · {isJinx ? 'JINX!' : isLeading ? 'leading so far — needs another match' : topStat ? `top was "${topStat.normalized_answer}" (${topStat.percentage}%)` : ''}
                   </p>
                 </>
               ) : (
