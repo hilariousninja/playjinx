@@ -61,15 +61,10 @@ export default function Archive() {
       const allIds = allPrompts.map(p => p.id);
       const { submittedMap, answerMap } = await getBatchUserAnswers(allIds);
 
-      const dateGroups: Record<string, DbPrompt[]> = {};
-      for (const p of allPrompts) {
-        (dateGroups[p.date] = dateGroups[p.date] || []).push(p);
-      }
-
-      const dayList: DayData[] = Object.entries(dateGroups).map(([date, prompts]) => {
-        const summaries: PromptSummary[] = prompts.map((prompt) => {
+      const promptSummaries = await Promise.all(
+        allPrompts.map(async (prompt) => {
           const answer = answerMap[prompt.id] ?? null;
-          return {
+          const baseSummary: PromptSummary = {
             prompt,
             answer,
             stats: [],
@@ -79,7 +74,50 @@ export default function Archive() {
             percentage: 0,
             userCanonical: null,
           };
-        });
+
+          if (!answer) return baseSummary;
+
+          const stats = await getStats(prompt.id);
+          const total = prompt.total_players || stats.reduce((a, st) => a + st.count, 0);
+          const canon = await getCanonicalAnswer(answer.normalized_answer);
+          let userStat = stats.find(st => st.normalized_answer === canon);
+
+          if (!userStat) {
+            const { levenshtein } = await import('@/lib/normalize');
+            userStat = stats.find(st => {
+              const dist = levenshtein(canon, st.normalized_answer);
+              return st.normalized_answer.length > 3 && dist <= (st.normalized_answer.length >= 10 ? 2 : 1);
+            });
+          }
+
+          return {
+            ...baseSummary,
+            total,
+            rank: userStat?.rank ?? 0,
+            matchCount: userStat?.count ?? 0,
+            percentage: userStat?.percentage ?? 0,
+            userCanonical: userStat?.normalized_answer ?? canon,
+          };
+        })
+      );
+
+      syncJinxesFromResults(
+        promptSummaries
+          .filter(summary => !!summary.answer)
+          .map(summary => ({
+            promptId: summary.prompt.id,
+            date: summary.prompt.date,
+            rank: summary.rank,
+            matchCount: summary.matchCount,
+          }))
+      );
+
+      const dateGroups: Record<string, PromptSummary[]> = {};
+      for (const summary of promptSummaries) {
+        (dateGroups[summary.prompt.date] = dateGroups[summary.prompt.date] || []).push(summary);
+      }
+
+      const dayList: DayData[] = Object.entries(dateGroups).map(([date, summaries]) => {
 
         const playerCount = Math.max(...summaries.map(s => s.total), 0);
         return { date, prompts: summaries, playerCount, isToday: date === todayStr, statsLoaded: false };
