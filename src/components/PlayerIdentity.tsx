@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
+import ProfileStatsPanel from '@/components/ProfileStatsPanel';
 
 export default function PlayerIdentity() {
   const [name, setName] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const [statsOpen, setStatsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -74,20 +76,28 @@ export default function PlayerIdentity() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.button
-        key="identity-chip"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        onClick={() => { setDraft(name || ''); setEditing(true); }}
-        className="flex items-center gap-[5px] bg-card border border-foreground/[0.08] rounded-full py-[3px] pl-[3px] pr-[10px] cursor-pointer hover:border-foreground/15 transition-colors"
-        title="Click to edit name"
-      >
-        <div className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[hsl(var(--logo-accent))] to-[hsl(var(--primary))] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-          {initial}
-        </div>
-        <span className="text-[11px] font-semibold text-foreground truncate max-w-[80px]">{name}</span>
-      </motion.button>
-    </AnimatePresence>
+    <>
+      <AnimatePresence mode="wait">
+        <motion.button
+          key="identity-chip"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setStatsOpen(true)}
+          className="flex items-center gap-[5px] bg-card border border-foreground/[0.08] rounded-full py-[3px] pl-[3px] pr-[10px] cursor-pointer hover:border-foreground/15 transition-colors"
+          title="View your JINX record"
+        >
+          <div className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-[hsl(var(--logo-accent))] to-[hsl(var(--primary))] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+            {initial}
+          </div>
+          <span className="text-[11px] font-semibold text-foreground truncate max-w-[80px]">{name}</span>
+        </motion.button>
+      </AnimatePresence>
+
+      <ProfileStatsPanel
+        open={statsOpen}
+        onClose={() => setStatsOpen(false)}
+        displayName={name}
+      />
+    </>
   );
 }
