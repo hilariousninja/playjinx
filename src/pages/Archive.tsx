@@ -181,7 +181,7 @@ export default function Archive() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-[14px] py-[9px] border-b border-foreground/[0.06]">
-          <div className="flex items-center gap-[7px]">
+          <div className="flex items-center gap-[7px] min-w-0">
             <span className="text-[13px] font-semibold text-foreground">{day.isToday ? 'Today' : formatDate(day.date)}</span>
             {day.isToday && !allAnswered && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-[hsl(var(--success))]/12 text-[hsl(var(--success))]">Live</span>
@@ -189,17 +189,16 @@ export default function Archive() {
             {!day.isToday && !hasPlayed && (
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Play</span>
             )}
-            {jinxCount > 0 && (
-              <span className="inline-flex items-center gap-[3px] text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/12 text-primary">
-                <Zap className="h-[9px] w-[9px]" strokeWidth={2.5} />
+          </div>
+          <div className="flex items-center gap-[8px]">
+            {jinxCount > 0 ? (
+              <span className="inline-flex items-center gap-[4px] text-[11px] font-bold px-[8px] py-[3px] rounded-full bg-primary/12 text-primary">
+                <Zap className="h-[11px] w-[11px]" strokeWidth={2.5} />
                 {jinxCount} JINX{jinxCount > 1 ? 'es' : ''}
               </span>
-            )}
-          </div>
-          <div className="flex items-center gap-[6px]">
-            {summary && (
+            ) : summary ? (
               <span className="text-[10px] text-muted-foreground font-medium">{summary}</span>
-            )}
+            ) : null}
             <span className="text-[10px] text-muted-foreground/60">👥 {day.playerCount}</span>
             <span className="text-muted-foreground/40">›</span>
           </div>
