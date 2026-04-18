@@ -218,7 +218,7 @@ export default function Archive() {
         onClick={() => loadDayStats(day)}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-[14px] py-[9px] border-b border-foreground/[0.06]">
+        <div className="flex items-center justify-between gap-[8px] px-[14px] py-[9px] border-b border-foreground/[0.06]">
           <div className="flex items-center gap-[7px] min-w-0">
             <span className="text-[13px] font-semibold text-foreground">{day.isToday ? 'Today' : formatDate(day.date)}</span>
             {day.isToday && !allAnswered && (
@@ -228,46 +228,52 @@ export default function Archive() {
               <span className="text-[9px] font-semibold px-[7px] py-[2px] rounded-full bg-primary/10 text-primary">Play</span>
             )}
           </div>
-          <div className="flex items-center gap-[8px]">
+          <div className="flex items-center gap-[10px] shrink-0">
             {jinxCount > 0 ? (
-              <span className="inline-flex items-center gap-[4px] text-[11px] font-bold px-[8px] py-[3px] rounded-full bg-primary/12 text-primary">
+              <span className="inline-flex items-center gap-[3px] text-[11px] font-semibold text-primary tabular-nums">
                 <Zap className="h-[11px] w-[11px]" strokeWidth={2.5} />
                 {jinxCount} JINX{jinxCount > 1 ? 'es' : ''}
               </span>
             ) : summary ? (
-              <span className="text-[10px] text-muted-foreground font-medium">{summary}</span>
+              <span className="text-[10px] text-muted-foreground font-medium tabular-nums">{summary}</span>
             ) : null}
-            <span className="text-[10px] text-muted-foreground/60">👥 {day.playerCount}</span>
+            <span className="inline-flex items-center gap-[3px] text-[10px] text-muted-foreground/60 tabular-nums">
+              <span>👥</span>{day.playerCount}
+            </span>
             <span className="text-muted-foreground/40">›</span>
           </div>
         </div>
 
-        {/* Prompt rows */}
+        {/* Prompt rows — stable 3-slot grid: pair | jinx marker | answer */}
         <div className="flex flex-col gap-[5px] px-[14px] py-[10px]">
           {day.prompts.map(s => {
             const promptIsJinx = isPromptJinx(s.prompt.id);
             const pJinxCount = getPromptJinxCount(s.prompt.id);
             return (
-              <div key={s.prompt.id} className="flex items-center gap-[8px]">
-                <span className="text-[12px] font-semibold text-foreground flex-1 truncate flex items-center gap-[5px]">
-                  {promptIsJinx && (
-                    <span className="inline-flex items-center gap-[1px] text-[10px] font-bold text-primary shrink-0" aria-label={`${pJinxCount} JINX`}>
+              <div
+                key={s.prompt.id}
+                className="grid items-center gap-[8px]"
+                style={{ gridTemplateColumns: '1fr 28px minmax(0, auto)' }}
+              >
+                <span className="text-[12px] font-semibold text-foreground truncate">
+                  {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
+                </span>
+                <span className="flex items-center justify-center text-[10px] font-bold text-primary tabular-nums">
+                  {promptIsJinx ? (
+                    <span className="inline-flex items-center gap-[1px]" aria-label={`${pJinxCount} JINX`}>
                       <Zap className="h-[10px] w-[10px]" strokeWidth={2.5} />
                       {pJinxCount > 1 ? pJinxCount : ''}
                     </span>
-                  )}
-                  <span className="truncate">
-                    {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
-                  </span>
+                  ) : null}
                 </span>
                 {s.answer ? (
-                  <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap">
+                  <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap text-right">
                     → {s.answer.raw_answer}
                   </span>
                 ) : !day.isToday ? (
-                  <span className="text-[11px] text-primary font-medium whitespace-nowrap">Play →</span>
+                  <span className="text-[11px] text-primary font-medium whitespace-nowrap text-right">Play →</span>
                 ) : (
-                  <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap">—</span>
+                  <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap text-right">—</span>
                 )}
               </div>
             );
