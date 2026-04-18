@@ -252,28 +252,27 @@ export default function Archive() {
             return (
               <div
                 key={s.prompt.id}
-                className="grid items-center gap-[10px]"
-                style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr) 32px' }}
+                className="flex items-center gap-[8px]"
               >
-                <span className="text-[12px] font-semibold text-foreground truncate">
+                <span className="text-[12px] font-semibold text-foreground truncate flex-1 min-w-0">
                   {s.prompt.word_a}<span className="text-primary font-normal mx-[3px]">+</span>{s.prompt.word_b}
                 </span>
-                {s.answer ? (
-                  <span className="text-[11px] text-[hsl(var(--success))] font-medium truncate">
-                    → {s.answer.raw_answer}
-                  </span>
-                ) : !day.isToday ? (
-                  <span className="text-[11px] text-primary font-medium truncate">→ Play</span>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground/50 italic truncate">→ —</span>
-                )}
-                <span className="flex items-center justify-end text-[10px] font-bold text-primary tabular-nums">
-                  {promptIsJinx ? (
-                    <span className="inline-flex items-center gap-[1px]" aria-label={`${pJinxCount} JINX`}>
+                <span className="inline-flex items-center gap-[6px] shrink-0">
+                  {s.answer ? (
+                    <span className="text-[11px] text-[hsl(var(--success))] font-medium whitespace-nowrap text-right">
+                      → {s.answer.raw_answer}
+                    </span>
+                  ) : !day.isToday ? (
+                    <span className="text-[11px] text-primary font-medium whitespace-nowrap text-right">Play →</span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground/50 italic whitespace-nowrap text-right">—</span>
+                  )}
+                  {promptIsJinx && (
+                    <span className="inline-flex items-center gap-[1px] text-[10px] font-bold text-primary tabular-nums" aria-label={`${pJinxCount} JINX`}>
                       <Zap className="h-[10px] w-[10px]" strokeWidth={2.5} />
                       {pJinxCount > 1 ? pJinxCount : ''}
                     </span>
-                  ) : null}
+                  )}
                 </span>
               </div>
             );
