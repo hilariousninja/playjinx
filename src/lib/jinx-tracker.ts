@@ -100,6 +100,36 @@ export function getJinxesThisWeek(): number {
   return sumJinxes(getRecords().filter(r => r.date >= cutoff));
 }
 
+export function getJinxesThisMonth(): number {
+  const now = new Date();
+  const cutoff = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  return sumJinxes(getRecords().filter(r => r.date >= cutoff));
+}
+
+export function getJinxesThisYear(): number {
+  const year = new Date().getFullYear();
+  return sumJinxes(getRecords().filter(r => r.date.startsWith(`${year}-`)));
+}
+
+/** Returns { date, count } for the day with the most JINXes (null if none). */
+export function getBestDay(): { date: string; count: number } | null {
+  const totals = new Map<string, number>();
+  for (const r of getRecords()) {
+    totals.set(r.date, (totals.get(r.date) ?? 0) + r.jinxes);
+  }
+  let best: { date: string; count: number } | null = null;
+  for (const [date, count] of totals) {
+    if (!best || count > best.count) best = { date, count };
+  }
+  return best;
+}
+
+/** Count of distinct days that produced at least one JINX. */
+export function getJinxDayCount(): number {
+  const days = new Set(getRecords().filter(r => r.jinxes > 0).map(r => r.date));
+  return days.size;
+}
+
 /** Sum of all overlap counts on a given day. */
 export function getJinxesForDay(date: string): number {
   return sumJinxes(getRecords().filter(r => r.date === date));
