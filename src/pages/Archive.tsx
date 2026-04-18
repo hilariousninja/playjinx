@@ -157,9 +157,10 @@ export default function Archive() {
   const getDaySummary = (day: DayData) => {
     const answered = day.prompts.filter(p => p.answer);
     if (answered.length === 0) return null;
-    // Stable summary — never mutates after drill-in.
-    // Show answered fraction; JINX count is shown separately as a chip.
-    return `${answered.length}/${day.prompts.length} answered`;
+    // Only show "answered" fraction when not all prompts are done.
+    // Once complete, the JINX chip (or absence of it) tells the story.
+    if (answered.length === day.prompts.length) return null;
+    return `${answered.length}/${day.prompts.length}`;
   };
 
   const renderDayCard = (day: DayData, idx: number) => {
