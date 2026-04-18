@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar, Zap, Users } from 'lucide-react';
+import { ArrowRight, Calendar, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -237,8 +237,8 @@ export default function Archive() {
             ) : summary ? (
               <span className="text-[10px] text-muted-foreground font-medium tabular-nums">{summary}</span>
             ) : null}
-            <span className="inline-flex items-center gap-[3px] text-[10px] text-muted-foreground tabular-nums">
-              <Users className="h-[10px] w-[10px]" strokeWidth={2.25} />{day.playerCount}
+            <span className="inline-flex items-center gap-[3px] text-[10px] text-muted-foreground/60 tabular-nums">
+              <span>👥</span>{day.playerCount}
             </span>
             <span className="text-muted-foreground/40">›</span>
           </div>
