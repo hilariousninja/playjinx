@@ -25,6 +25,12 @@ const DEPLURAL_SKIP = new Set([
   'glasses', 'scissors', 'pants', 'shorts', 'jeans',
   'chess', 'moss', 'ross', 'boss', 'loss', 'toss',
   'moose', 'goose', 'geese', 'dice', 'mice', 'lice',
+  // Holidays / proper nouns ending in -s that aren't plurals
+  'christmas', 'xmas', 'easter', 'kwanzaas',
+  'jesus', 'paris', 'venus', 'mars', 'thanos', 'judas',
+  'mass', 'kiss', 'grass', 'class', 'glass', 'brass', 'cross',
+  // Common false-plural single words
+  'iris', 'lotus', 'cactus', 'octopus', 'virus', 'genius', 'campus', 'circus', 'bonus',
 ]);
 
 function depluralize(word: string): string {
