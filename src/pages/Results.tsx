@@ -235,6 +235,19 @@ export default function Results() {
           ))}
         </div>
 
+        {/* Streak — subtle daily-game retention surface */}
+        {streak.current > 0 && (
+          <div className="flex items-center justify-between px-[14px] py-[6px] text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-[6px]">
+              <span aria-hidden>🔥</span>
+              <span className="font-semibold text-foreground/80">{streak.current}-day streak</span>
+            </span>
+            {streak.best > streak.current && (
+              <span className="text-muted-foreground/70">Best {streak.best}</span>
+            )}
+          </div>
+        )}
+
         {/* Section label */}
         <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground mt-1 mb-0">
           How the crowd voted
