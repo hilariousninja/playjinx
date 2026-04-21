@@ -16,6 +16,7 @@ import {
   isProvisionalLead,
   isTopAnswer,
 } from '@/lib/jinx-tracker';
+import { recordPlayToday, getStreak } from '@/lib/streak-tracker';
 import Countdown from '@/components/Countdown';
 import BragBlock from '@/components/BragBlock';
 import AnswerDrawer from '@/components/AnswerDrawer';
@@ -90,6 +91,9 @@ export default function Results() {
         rank: r.rank,
         matchCount: r.matchCount,
       })));
+
+      // Record streak — user has answered at least one prompt today
+      recordPlayToday();
 
       setResults(res);
       setLoading(false);
