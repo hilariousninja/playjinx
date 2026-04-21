@@ -26,10 +26,12 @@ export default function ProfileStatsPanel({ open, onClose, displayName }: Props)
   const [stats, setStats] = useState({
     total: 0, week: 0, month: 0, year: 0, dayCount: 0,
     best: null as { date: string; count: number } | null,
+    streakCurrent: 0, streakBest: 0,
   });
 
   useEffect(() => {
     if (!open) return;
+    const s = getStreak();
     setStats({
       total: getJinxTotal(),
       week: getJinxesThisWeek(),
@@ -37,12 +39,16 @@ export default function ProfileStatsPanel({ open, onClose, displayName }: Props)
       year: getJinxesThisYear(),
       dayCount: getJinxDayCount(),
       best: getBestDay(),
+      streakCurrent: s.current,
+      streakBest: s.best,
     });
   }, [open]);
 
   const initial = useMemo(() => (displayName ? displayName.charAt(0).toUpperCase() : '?'), [displayName]);
 
   const rows: { label: string; value: string | number }[] = [
+    { label: 'Current streak', value: stats.streakCurrent > 0 ? `🔥 ${stats.streakCurrent} day${stats.streakCurrent === 1 ? '' : 's'}` : '—' },
+    { label: 'Best streak', value: stats.streakBest > 0 ? `${stats.streakBest} day${stats.streakBest === 1 ? '' : 's'}` : '—' },
     { label: 'This week', value: stats.week },
     { label: 'This month', value: stats.month },
     { label: 'This year', value: stats.year },
