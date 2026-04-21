@@ -7,6 +7,7 @@ import {
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { shareResultCard, type ShareCardRow } from '@/lib/share-card';
 import {
   syncJinxesFromResults,
   getJinxTotal,
@@ -126,17 +127,30 @@ export default function Results() {
   const lowSample = maxTotal > 0 && maxTotal < 10;
 
   const handleShare = async () => {
-    const prompts = results.map(r => r.prompt);
     try {
-      const ch = await createChallenge(prompts);
-      const text = buildChallengeShareText(prompts, ch.token);
-      if (navigator.share) {
-        try { await navigator.share({ text }); return; } catch {}
+      const rows: ShareCardRow[] = results.map(r => ({
+        wordA: r.prompt.word_a,
+        wordB: r.prompt.word_b,
+        answer: r.answer?.raw_answer ?? null,
+        matched: isMatchedPrompt(r.matchCount),
+        topAnswer: isTopAnswer(r.rank) && isMatchedPrompt(r.matchCount),
+        jinxes: promptJinxes(r.matchCount),
+      }));
+      const caption = `My JINX results — ${dayJinxes} JINX${dayJinxes === 1 ? '' : 'es'} · ${matchedPrompts}/${results.length} matched. playjinx.com`;
+      const out = await shareResultCard({
+        rows,
+        totalJinxes: dayJinxes,
+        matchedPrompts,
+        totalPrompts: results.length,
+        maxResponses: maxTotal,
+        streakCurrent: streak.current,
+        date: new Date(),
+      }, caption);
+      if (out.downloaded) {
+        toast({ title: 'Image saved', description: 'Caption copied — share it with the image.' });
       }
-      await navigator.clipboard.writeText(text);
-      toast({ title: 'Results copied!', description: 'Share them with friends' });
     } catch {
-      toast({ title: 'Could not share', variant: 'destructive' });
+      toast({ title: 'Could not create image', variant: 'destructive' });
     }
   };
 
