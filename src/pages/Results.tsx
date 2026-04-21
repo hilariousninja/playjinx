@@ -116,6 +116,7 @@ export default function Results() {
   const provisionalLeads = answered.filter(r => isProvisionalLead(r.rank, r.matchCount)).length;
   const totalJinxes = getJinxTotal();
   const weekJinxes = getJinxesThisWeek();
+  const streak = getStreak();
 
   const bestResult = answered.length > 0
     ? answered.reduce((best, r) => (r.percentage > best.percentage ? r : best), answered[0])
