@@ -9,6 +9,7 @@ import {
   getBestDay,
   getJinxDayCount,
 } from '@/lib/jinx-tracker';
+import { getStreak } from '@/lib/streak-tracker';
 
 interface Props {
   open: boolean;
