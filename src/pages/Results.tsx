@@ -7,6 +7,7 @@ import {
   getTotalSubmissions, type DbPrompt, type DbAnswer, type AnswerStat,
 } from '@/lib/store';
 import { createChallenge, buildChallengeShareText } from '@/lib/challenge';
+import { shareResultCard, type ShareCardRow } from '@/lib/share-card';
 import {
   syncJinxesFromResults,
   getJinxTotal,
@@ -16,6 +17,7 @@ import {
   isProvisionalLead,
   isTopAnswer,
 } from '@/lib/jinx-tracker';
+import { recordPlayToday, getStreak } from '@/lib/streak-tracker';
 import Countdown from '@/components/Countdown';
 import BragBlock from '@/components/BragBlock';
 import AnswerDrawer from '@/components/AnswerDrawer';
@@ -91,6 +93,9 @@ export default function Results() {
         matchCount: r.matchCount,
       })));
 
+      // Record streak — user has answered at least one prompt today
+      recordPlayToday();
+
       setResults(res);
       setLoading(false);
     })();
@@ -112,6 +117,7 @@ export default function Results() {
   const provisionalLeads = answered.filter(r => isProvisionalLead(r.rank, r.matchCount)).length;
   const totalJinxes = getJinxTotal();
   const weekJinxes = getJinxesThisWeek();
+  const streak = getStreak();
 
   const bestResult = answered.length > 0
     ? answered.reduce((best, r) => (r.percentage > best.percentage ? r : best), answered[0])
@@ -121,17 +127,30 @@ export default function Results() {
   const lowSample = maxTotal > 0 && maxTotal < 10;
 
   const handleShare = async () => {
-    const prompts = results.map(r => r.prompt);
     try {
-      const ch = await createChallenge(prompts);
-      const text = buildChallengeShareText(prompts, ch.token);
-      if (navigator.share) {
-        try { await navigator.share({ text }); return; } catch {}
+      const rows: ShareCardRow[] = results.map(r => ({
+        wordA: r.prompt.word_a,
+        wordB: r.prompt.word_b,
+        answer: r.answer?.raw_answer ?? null,
+        matched: isMatchedPrompt(r.matchCount),
+        topAnswer: isTopAnswer(r.rank) && isMatchedPrompt(r.matchCount),
+        jinxes: promptJinxes(r.matchCount),
+      }));
+      const caption = `My JINX results — ${dayJinxes} JINX${dayJinxes === 1 ? '' : 'es'} · ${matchedPrompts}/${results.length} matched. playjinx.com`;
+      const out = await shareResultCard({
+        rows,
+        totalJinxes: dayJinxes,
+        matchedPrompts,
+        totalPrompts: results.length,
+        maxResponses: maxTotal,
+        streakCurrent: streak.current,
+        date: new Date(),
+      }, caption);
+      if (out.downloaded) {
+        toast({ title: 'Image saved', description: 'Caption copied — share it with the image.' });
       }
-      await navigator.clipboard.writeText(text);
-      toast({ title: 'Results copied!', description: 'Share them with friends' });
     } catch {
-      toast({ title: 'Could not share', variant: 'destructive' });
+      toast({ title: 'Could not create image', variant: 'destructive' });
     }
   };
 
@@ -229,6 +248,19 @@ export default function Results() {
             </div>
           ))}
         </div>
+
+        {/* Streak — subtle daily-game retention surface */}
+        {streak.current > 0 && (
+          <div className="flex items-center justify-between px-[14px] py-[6px] text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-[6px]">
+              <span aria-hidden>🔥</span>
+              <span className="font-semibold text-foreground/80">{streak.current}-day streak</span>
+            </span>
+            {streak.best > streak.current && (
+              <span className="text-muted-foreground/70">Best {streak.best}</span>
+            )}
+          </div>
+        )}
 
         {/* Section label */}
         <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground mt-1 mb-0">
