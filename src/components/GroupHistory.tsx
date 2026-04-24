@@ -182,6 +182,23 @@ export default function GroupHistory({ groupId, groupName }: Props) {
             />
           ))}
         </div>
+
+        {/* Load older days */}
+        {data.hasMore ? (
+          <button
+            onClick={loadOlder}
+            disabled={loadingMore}
+            className="mt-[10px] w-full flex items-center justify-center gap-[6px] py-[10px] text-[11px] font-semibold text-muted-foreground hover:text-foreground rounded-[10px] border border-dashed border-foreground/[0.08] hover:border-foreground/20 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? (
+              <><Loader2 className="h-3 w-3 animate-spin" /> Loading…</>
+            ) : (
+              <>See older days</>
+            )}
+          </button>
+        ) : data.days.length > PAGE_DAYS ? (
+          <p className="mt-[10px] text-center text-[10px] text-muted-foreground/40">That's all your group history.</p>
+        ) : null}
       </motion.div>
     </div>
   );
