@@ -10,21 +10,64 @@ interface Props {
   groupName: string;
 }
 
+const PAGE_DAYS = 14;
+
 export default function GroupHistory({ groupId, groupName }: Props) {
   const [data, setData] = useState<GroupHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
-      const h = await getGroupHistory(groupId);
+      const h = await getGroupHistory(groupId, { daysWindow: PAGE_DAYS });
       setData(h);
-      // Auto-expand the most recent day with activity
       const firstActive = h.days.find(d => d.totalJinxes > 0) ?? h.days[0];
       if (firstActive) setExpanded(new Set([firstActive.date]));
       setLoading(false);
     })();
   }, [groupId]);
+
+  const loadOlder = async () => {
+    if (!data || !data.hasMore || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      // Load the next window ending where the current one started
+      const before = data.oldestLoadedDate ?? new Date().toISOString().slice(0, 10);
+      const more = await getGroupHistory(groupId, { daysWindow: PAGE_DAYS, before });
+
+      // Merge: append new days, dedupe by date, recompute aggregates locally
+      const seen = new Set(data.days.map(d => d.date));
+      const mergedDays = [
+        ...data.days,
+        ...more.days.filter(d => !seen.has(d.date)),
+      ].sort((a, b) => b.date.localeCompare(a.date));
+
+      // Merge member stats (sum)
+      const statMap = new Map(data.memberStats.map(m => [m.session_id, { ...m }]));
+      for (const m of more.memberStats) {
+        const existing = statMap.get(m.session_id);
+        if (existing) {
+          existing.totalJinxes += m.totalJinxes;
+          existing.daysPlayed += m.daysPlayed;
+        } else {
+          statMap.set(m.session_id, { ...m });
+        }
+      }
+      const memberStats = Array.from(statMap.values()).sort((a, b) => b.totalJinxes - a.totalJinxes);
+
+      setData({
+        days: mergedDays,
+        memberStats,
+        totalDaysActive: mergedDays.length,
+        bestPair: data.bestPair, // keep original best pair (most relevant)
+        hasMore: more.hasMore,
+        oldestLoadedDate: more.oldestLoadedDate ?? data.oldestLoadedDate,
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   if (loading) return (
     <div className="py-10 text-center">
