@@ -425,7 +425,7 @@ export async function getGroupHistory(
     .in('prompt_id', promptIds)
     .in('session_id', sessionIds);
 
-  if (!answers) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+  if (!answers) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore, oldestLoadedDate: windowStart };
 
   // Group prompts by date
   const promptsByDate = new Map<string, typeof prompts>();
