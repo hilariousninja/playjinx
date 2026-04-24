@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Zap, Calendar, Trophy, Users, Loader2 } from 'lucide-react';
-import { getGroupHistory, type GroupHistoryData } from '@/lib/groups';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, Calendar, Loader2, ChevronDown } from 'lucide-react';
+import { getGroupHistory, type GroupHistoryData, type GroupDaySnapshot } from '@/lib/groups';
+import { getDisplayName } from '@/lib/challenge-room';
+import PromptPair from './PromptPair';
 
 interface Props {
   groupId: string;
@@ -11,11 +13,15 @@ interface Props {
 export default function GroupHistory({ groupId, groupName }: Props) {
   const [data, setData] = useState<GroupHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
       const h = await getGroupHistory(groupId);
       setData(h);
+      // Auto-expand the most recent day with activity
+      const firstActive = h.days.find(d => d.totalJinxes > 0) ?? h.days[0];
+      if (firstActive) setExpanded(new Set([firstActive.date]));
       setLoading(false);
     })();
   }, [groupId]);
@@ -36,10 +42,21 @@ export default function GroupHistory({ groupId, groupName }: Props) {
     );
   }
 
+  const toggle = (date: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
+
   const formatDate = (d: string) => {
     const date = new Date(d + 'T12:00:00');
     return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   };
+
+  const myName = getDisplayName() || '';
 
   return (
     <div className="space-y-4">
@@ -109,57 +126,130 @@ export default function GroupHistory({ groupId, groupName }: Props) {
         transition={{ delay: 0.1 }}
       >
         <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/40 font-semibold mb-[6px]">Past days</p>
-        <div className="space-y-[5px]">
+        <div className="space-y-[6px]">
           {data.days.map((day, i) => (
-            <motion.div
+            <DayCard
               key={day.date}
-              initial={{ opacity: 0, y: 3 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 + i * 0.03 }}
-              className="bg-card rounded-[10px] border border-foreground/[0.06] px-[10px] py-[8px]"
-            >
-              <div className="flex items-center justify-between mb-[4px]">
-                <span className="text-[11px] font-semibold text-foreground">{formatDate(day.date)}</span>
-                <div className="flex items-center gap-[8px]">
-                  <span className="text-[10px] text-muted-foreground/40">
-                    {day.answeredCount}/{day.memberCount} played
-                  </span>
-                  {day.totalJinxes > 0 && (
-                    <span className="flex items-center gap-[3px] text-[10px] font-bold text-primary">
-                      <Zap className="h-2.5 w-2.5" />{day.totalJinxes}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Notable jinxes for this day */}
-              {day.jinxPairs.length > 0 && (
-                <div className="flex flex-wrap gap-[4px] mt-[3px]">
-                  {day.jinxPairs.slice(0, 3).map((j, ji) => (
-                    <span
-                      key={ji}
-                      className="text-[10px] px-[6px] py-[2px] rounded-full bg-primary/6 text-foreground/60"
-                    >
-                      <span className="font-semibold text-foreground/80">{j.memberA}</span>
-                      {' & '}
-                      <span className="font-semibold text-foreground/80">{j.memberB}</span>
-                      <span className="text-muted-foreground/40 ml-[3px]">"{j.answer}"</span>
-                    </span>
-                  ))}
-                  {day.jinxPairs.length > 3 && (
-                    <span className="text-[9px] text-muted-foreground/30 self-center">
-                      +{day.jinxPairs.length - 3} more
-                    </span>
-                  )}
-                </div>
-              )}
-              {day.totalJinxes === 0 && (
-                <p className="text-[10px] text-muted-foreground/25 italic">No jinxes this day</p>
-              )}
-            </motion.div>
+              day={day}
+              index={i}
+              isExpanded={expanded.has(day.date)}
+              onToggle={() => toggle(day.date)}
+              formatDate={formatDate}
+              myName={myName}
+            />
           ))}
         </div>
       </motion.div>
     </div>
+  );
+}
+
+interface DayCardProps {
+  day: GroupDaySnapshot;
+  index: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  formatDate: (d: string) => string;
+  myName: string;
+}
+
+function DayCard({ day, index, isExpanded, onToggle, formatDate, myName }: DayCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.12 + index * 0.03 }}
+      className="bg-card rounded-[10px] border border-foreground/[0.06] overflow-hidden"
+    >
+      {/* Header (clickable) */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-[10px] py-[9px] text-left hover:bg-muted/30 transition-colors"
+      >
+        <div className="flex items-center gap-[8px] min-w-0 flex-1">
+          <ChevronDown
+            className={`h-3 w-3 text-muted-foreground/40 shrink-0 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+          />
+          <span className="text-[11px] font-semibold text-foreground">{formatDate(day.date)}</span>
+        </div>
+        <div className="flex items-center gap-[8px] shrink-0">
+          <span className="text-[10px] text-muted-foreground/40">
+            {day.answeredCount}/{day.memberCount} played
+          </span>
+          {day.totalJinxes > 0 ? (
+            <span className="flex items-center gap-[3px] text-[10px] font-bold text-primary tabular-nums">
+              <Zap className="h-2.5 w-2.5" />{day.totalJinxes}
+            </span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground/25">—</span>
+          )}
+        </div>
+      </button>
+
+      {/* Expanded prompt details */}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-[10px] pb-[10px] pt-[2px] space-y-[8px] border-t border-foreground/[0.04]">
+              {day.prompts.length === 0 && (
+                <p className="text-[11px] text-muted-foreground/40 italic pt-2">No prompts recorded</p>
+              )}
+              {day.prompts.map(p => (
+                <div key={p.prompt_id} className="rounded-[8px] bg-muted/30 border border-foreground/[0.04] overflow-hidden">
+                  <div className="px-[10px] pt-[8px] pb-[4px]">
+                    <PromptPair wordA={p.word_a} wordB={p.word_b} size="sm" />
+                  </div>
+                  <div className="px-[8px] pb-[8px] space-y-[3px]">
+                    {p.clusters.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground/40 italic px-2 py-1">No one answered</p>
+                    ) : p.clusters.map(cluster => {
+                      const isJinx = cluster.members.length >= 2;
+                      const isMine = !!myName && cluster.members.includes(myName);
+                      return (
+                        <div
+                          key={cluster.answer}
+                          className={`flex items-start justify-between gap-2 px-[8px] py-[5px] rounded-[6px] ${
+                            isJinx ? 'bg-primary/8' : 'bg-background/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-[5px] min-w-0 flex-1">
+                            {isJinx && <Zap className="h-2.5 w-2.5 text-primary shrink-0 mt-[2px]" />}
+                            <span className={`text-[11px] font-semibold break-words ${
+                              isMine ? 'text-foreground' : 'text-foreground/75'
+                            }`}>
+                              {cluster.answer}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-[3px] justify-end shrink-0 max-w-[55%]">
+                            {cluster.members.map(name => (
+                              <span
+                                key={name}
+                                className={`text-[9px] px-[5px] py-[1px] rounded-full ${
+                                  name === myName
+                                    ? 'bg-primary/15 text-primary font-bold'
+                                    : 'bg-muted text-muted-foreground'
+                                }`}
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
