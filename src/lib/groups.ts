@@ -340,6 +340,14 @@ export async function getGroupDayResults(groupId: string, date?: string): Promis
 
 // --- Group History ---
 
+export interface GroupDayPromptDetail {
+  prompt_id: string;
+  word_a: string;
+  word_b: string;
+  clusters: { answer: string; members: string[] }[];
+  answeredMembers: string[]; // display names
+}
+
 export interface GroupDaySnapshot {
   date: string;
   promptCount: number;
@@ -347,6 +355,7 @@ export interface GroupDaySnapshot {
   memberCount: number;
   jinxPairs: { memberA: string; memberB: string; answer: string; word_a: string; word_b: string }[];
   totalJinxes: number;
+  prompts: GroupDayPromptDetail[];
 }
 
 export interface GroupMemberStats {
