@@ -547,11 +547,16 @@ export async function getGroupHistory(
   const bestPairEntry = Array.from(pairJinxes.values()).sort((a, b) => b.count - a.count)[0] ?? null;
   const bestPair = bestPairEntry ? { nameA: bestPairEntry.nameA, nameB: bestPairEntry.nameB, jinxCount: bestPairEntry.count } : null;
 
+  // Oldest date actually loaded (earliest prompt date in this batch, or window start)
+  const oldestLoadedDate = prompts.length > 0 ? prompts[prompts.length - 1].date : windowStart;
+
   return {
     days,
     memberStats,
     totalDaysActive: days.length,
     bestPair,
+    hasMore,
+    oldestLoadedDate,
   };
 }
 
