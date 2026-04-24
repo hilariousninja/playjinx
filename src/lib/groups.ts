@@ -370,27 +370,51 @@ export interface GroupHistoryData {
   memberStats: GroupMemberStats[];
   totalDaysActive: number;
   bestPair: { nameA: string; nameB: string; jinxCount: number } | null;
+  hasMore: boolean;
+  oldestLoadedDate: string | null;
 }
 
-export async function getGroupHistory(groupId: string): Promise<GroupHistoryData> {
+/**
+ * Load group history.
+ * - `daysWindow`: how many days back from `before` to include (default 14)
+ * - `before`: load days strictly before this date (defaults to today)
+ */
+export async function getGroupHistory(
+  groupId: string,
+  options: { daysWindow?: number; before?: string } = {}
+): Promise<GroupHistoryData> {
+  const daysWindow = options.daysWindow ?? 14;
   const members = await getGroupMembers(groupId);
-  if (members.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+  if (members.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore: false, oldestLoadedDate: null };
 
   const sessionIds = members.map(m => m.session_id);
   const nameMap = new Map(members.map(m => [m.session_id, m.display_name]));
   const today = new Date().toISOString().slice(0, 10);
+  const beforeDate = options.before ?? today;
 
-  // Get past 14 days of prompts (excluding today)
-  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // Compute window start
+  const beforeMs = new Date(beforeDate + 'T12:00:00').getTime();
+  const windowStart = new Date(beforeMs - daysWindow * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const { data: prompts } = await supabase
     .from('prompts')
     .select('id, word_a, word_b, date')
     .in('mode', ['daily', 'archive'])
-    .gte('date', twoWeeksAgo)
-    .lt('date', today)
+    .gte('date', windowStart)
+    .lt('date', beforeDate)
     .order('date', { ascending: false });
 
-  if (!prompts || prompts.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+  // Check if any older prompts exist beyond this window (for hasMore)
+  const { data: olderProbe } = await supabase
+    .from('prompts')
+    .select('date')
+    .in('mode', ['daily', 'archive'])
+    .lt('date', windowStart)
+    .order('date', { ascending: false })
+    .limit(1);
+  const hasMore = !!(olderProbe && olderProbe.length > 0);
+
+  if (!prompts || prompts.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore, oldestLoadedDate: windowStart };
 
   const promptIds = prompts.map(p => p.id);
 
@@ -401,7 +425,7 @@ export async function getGroupHistory(groupId: string): Promise<GroupHistoryData
     .in('prompt_id', promptIds)
     .in('session_id', sessionIds);
 
-  if (!answers) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null };
+  if (!answers) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore, oldestLoadedDate: windowStart };
 
   // Group prompts by date
   const promptsByDate = new Map<string, typeof prompts>();
@@ -523,11 +547,16 @@ export async function getGroupHistory(groupId: string): Promise<GroupHistoryData
   const bestPairEntry = Array.from(pairJinxes.values()).sort((a, b) => b.count - a.count)[0] ?? null;
   const bestPair = bestPairEntry ? { nameA: bestPairEntry.nameA, nameB: bestPairEntry.nameB, jinxCount: bestPairEntry.count } : null;
 
+  // Oldest date actually loaded (earliest prompt date in this batch, or window start)
+  const oldestLoadedDate = prompts.length > 0 ? prompts[prompts.length - 1].date : windowStart;
+
   return {
     days,
     memberStats,
     totalDaysActive: days.length,
     bestPair,
+    hasMore,
+    oldestLoadedDate,
   };
 }
 
