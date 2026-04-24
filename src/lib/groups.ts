@@ -427,24 +427,54 @@ export async function getGroupHistory(groupId: string): Promise<GroupHistoryData
   for (const [date, dayPrompts] of promptsByDate) {
     const jinxPairs: GroupDaySnapshot['jinxPairs'] = [];
     const answeredSessions = new Set<string>();
+    const promptDetails: GroupDayPromptDetail[] = [];
 
     for (const prompt of dayPrompts) {
       const pa = answerMap.get(prompt.id);
-      if (!pa) continue;
+      if (!pa) {
+        promptDetails.push({
+          prompt_id: prompt.id,
+          word_a: prompt.word_a,
+          word_b: prompt.word_b,
+          clusters: [],
+          answeredMembers: [],
+        });
+        continue;
+      }
 
       // Track who answered
       for (const sid of pa.keys()) answeredSessions.add(sid);
+
+      // Build clusters for this prompt (group by normalized, label with raw)
+      const clusterMap = new Map<string, { raw: string; members: string[] }>();
+      for (const [sid, ans] of pa.entries()) {
+        const name = nameMap.get(sid) ?? 'Unknown';
+        const existing = clusterMap.get(ans.normalized) ?? { raw: ans.raw, members: [] };
+        existing.members.push(name);
+        clusterMap.set(ans.normalized, existing);
+      }
+      const clusters = Array.from(clusterMap.values())
+        .map(c => ({ answer: c.raw, members: c.members }))
+        .sort((a, b) => b.members.length - a.members.length);
+
+      promptDetails.push({
+        prompt_id: prompt.id,
+        word_a: prompt.word_a,
+        word_b: prompt.word_b,
+        clusters,
+        answeredMembers: Array.from(pa.keys()).map(sid => nameMap.get(sid) ?? 'Unknown'),
+      });
 
       // Find jinxes (matching answers between members)
       const entries = Array.from(pa.entries());
       for (let i = 0; i < entries.length; i++) {
         for (let j = i + 1; j < entries.length; j++) {
-          if (entries[i][1] === entries[j][1]) {
+          if (entries[i][1].normalized === entries[j][1].normalized) {
             const nameA = nameMap.get(entries[i][0]) ?? 'Unknown';
             const nameB = nameMap.get(entries[j][0]) ?? 'Unknown';
             jinxPairs.push({
               memberA: nameA, memberB: nameB,
-              answer: entries[i][1],
+              answer: entries[i][1].raw,
               word_a: prompt.word_a, word_b: prompt.word_b,
             });
 
@@ -478,6 +508,7 @@ export async function getGroupHistory(groupId: string): Promise<GroupHistoryData
         memberCount: members.length,
         jinxPairs,
         totalJinxes: jinxPairs.length,
+        prompts: promptDetails,
       });
     }
   }
