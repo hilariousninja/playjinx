@@ -397,7 +397,7 @@ export async function getGroupHistory(groupId: string): Promise<GroupHistoryData
   // Get answers from group members for these prompts
   const { data: answers } = await supabase
     .from('answers')
-    .select('prompt_id, session_id, normalized_answer')
+    .select('prompt_id, session_id, raw_answer, normalized_answer')
     .in('prompt_id', promptIds)
     .in('session_id', sessionIds);
 
@@ -411,11 +411,11 @@ export async function getGroupHistory(groupId: string): Promise<GroupHistoryData
     promptsByDate.set(p.date, list);
   }
 
-  // Build answer lookup: prompt_id -> session_id -> normalized_answer
-  const answerMap = new Map<string, Map<string, string>>();
+  // Build answer lookup: prompt_id -> session_id -> { raw, normalized }
+  const answerMap = new Map<string, Map<string, { raw: string; normalized: string }>>();
   for (const a of answers) {
     if (!answerMap.has(a.prompt_id)) answerMap.set(a.prompt_id, new Map());
-    answerMap.get(a.prompt_id)!.set(a.session_id, a.normalized_answer);
+    answerMap.get(a.prompt_id)!.set(a.session_id, { raw: a.raw_answer, normalized: a.normalized_answer });
   }
 
   // Track pair-level jinx counts
