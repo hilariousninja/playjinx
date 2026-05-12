@@ -312,6 +312,21 @@ export default function DashboardAnswers() {
     setWipeLoading(false);
   }, []);
 
+  const loadAudit = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const { data } = await supabase
+        .from('admin_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      setAudit((data ?? []) as AuditEntry[]);
+    } catch (e) { console.error(e); }
+    setAuditLoading(false);
+  }, []);
+
+  useEffect(() => { loadAudit(); }, [loadAudit]);
+
   const executeWipePlayerDay = async () => {
     if (!wipeConfirm) return;
     setActionLoading(true);
@@ -320,18 +335,106 @@ export default function DashboardAnswers() {
       const ids = (ps ?? []).map(p => p.id);
       if (ids.length === 0) throw new Error('No prompts for date');
 
-      const { error } = await supabase
+      // 1) Fetch the rows we're about to delete so we can archive them
+      const { data: rows, error: fetchErr } = await supabase
+        .from('answers')
+        .select('id, prompt_id, session_id, raw_answer, normalized_answer, created_at')
+        .eq('session_id', wipeConfirm.session_id)
+        .in('prompt_id', ids);
+      if (fetchErr) throw fetchErr;
+      const toArchive = rows ?? [];
+
+      // 2) Get current admin identity for the audit row
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 3) Insert audit log entry first (so deleted_answers can FK to it)
+      const { data: logRow, error: logErr } = await supabase
+        .from('admin_audit_log')
+        .insert({
+          action: 'wipe_player_day',
+          target_session_id: wipeConfirm.session_id,
+          target_display_name: wipeConfirm.display_name || null,
+          target_date: wipeDate,
+          answers_count: toArchive.length,
+          performed_by_user_id: user?.id ?? null,
+          performed_by_email: user?.email ?? null,
+          metadata: { prompt_ids: ids },
+        })
+        .select()
+        .single();
+      if (logErr) throw logErr;
+
+      // 4) Archive the rows
+      if (toArchive.length > 0) {
+        const archivePayload = toArchive.map(r => ({
+          original_answer_id: r.id,
+          prompt_id: r.prompt_id,
+          session_id: r.session_id,
+          raw_answer: r.raw_answer,
+          normalized_answer: r.normalized_answer,
+          original_created_at: r.created_at,
+          audit_log_id: logRow.id,
+        }));
+        const { error: archErr } = await supabase.from('deleted_answers').insert(archivePayload);
+        if (archErr) throw archErr;
+      }
+
+      // 5) Hard-delete from answers
+      const { error: delErr } = await supabase
         .from('answers')
         .delete()
         .eq('session_id', wipeConfirm.session_id)
         .in('prompt_id', ids);
-      if (error) throw error;
+      if (delErr) throw delErr;
 
       invalidateAnswerCaches();
-      toast.success(`Wiped ${wipeConfirm.count} answer${wipeConfirm.count !== 1 ? 's' : ''} for ${wipeConfirm.display_name || wipeConfirm.session_id.slice(0, 14)}…`);
-      await loadWipePlayers(wipeDate);
+      toast.success(`Wiped ${toArchive.length} answer${toArchive.length !== 1 ? 's' : ''} — restorable for ${RESTORE_WINDOW_DAYS} days`);
+      await Promise.all([loadWipePlayers(wipeDate), loadAudit()]);
     } catch (e) { console.error(e); toast.error('Wipe failed'); }
     setActionLoading(false); setWipeConfirm(null);
+  };
+
+  const restoreWipe = async (entry: AuditEntry) => {
+    setRestoringId(entry.id);
+    try {
+      const { data: archived, error: fetchErr } = await supabase
+        .from('deleted_answers')
+        .select('*')
+        .eq('audit_log_id', entry.id);
+      if (fetchErr) throw fetchErr;
+      const rows = archived ?? [];
+      if (rows.length === 0) {
+        toast.error('Nothing to restore — archive empty');
+        return;
+      }
+
+      // Re-insert into answers (re-using original ids preserves stable identity)
+      const insertPayload = rows.map(r => ({
+        id: r.original_answer_id,
+        prompt_id: r.prompt_id,
+        session_id: r.session_id,
+        raw_answer: r.raw_answer,
+        normalized_answer: r.normalized_answer,
+        created_at: r.original_created_at,
+      }));
+      const { error: insErr } = await supabase.from('answers').insert(insertPayload);
+      if (insErr) throw insErr;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('admin_audit_log').update({
+        restored_at: new Date().toISOString(),
+        restored_by_user_id: user?.id ?? null,
+        restored_by_email: user?.email ?? null,
+      }).eq('id', entry.id);
+
+      // Clean archive rows now that they're back live
+      await supabase.from('deleted_answers').delete().eq('audit_log_id', entry.id);
+
+      invalidateAnswerCaches();
+      toast.success(`Restored ${rows.length} answer${rows.length !== 1 ? 's' : ''}`);
+      await Promise.all([loadAudit(), loadWipePlayers(wipeDate)]);
+    } catch (e) { console.error(e); toast.error('Restore failed'); }
+    setRestoringId(null);
   };
 
   // Computed
