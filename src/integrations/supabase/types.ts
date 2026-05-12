@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          answers_count: number
+          created_at: string
+          id: string
+          metadata: Json
+          performed_by_email: string | null
+          performed_by_user_id: string | null
+          restored_at: string | null
+          restored_by_email: string | null
+          restored_by_user_id: string | null
+          target_date: string | null
+          target_display_name: string | null
+          target_session_id: string | null
+        }
+        Insert: {
+          action: string
+          answers_count?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          performed_by_email?: string | null
+          performed_by_user_id?: string | null
+          restored_at?: string | null
+          restored_by_email?: string | null
+          restored_by_user_id?: string | null
+          target_date?: string | null
+          target_display_name?: string | null
+          target_session_id?: string | null
+        }
+        Update: {
+          action?: string
+          answers_count?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          performed_by_email?: string | null
+          performed_by_user_id?: string | null
+          restored_at?: string | null
+          restored_by_email?: string | null
+          restored_by_user_id?: string | null
+          target_date?: string | null
+          target_display_name?: string | null
+          target_session_id?: string | null
+        }
+        Relationships: []
+      }
       answer_aliases: {
         Row: {
           alias_type: string
@@ -155,6 +203,50 @@ export type Database = {
           token?: string
         }
         Relationships: []
+      }
+      deleted_answers: {
+        Row: {
+          audit_log_id: string
+          deleted_at: string
+          id: string
+          normalized_answer: string
+          original_answer_id: string
+          original_created_at: string
+          prompt_id: string
+          raw_answer: string
+          session_id: string
+        }
+        Insert: {
+          audit_log_id: string
+          deleted_at?: string
+          id?: string
+          normalized_answer: string
+          original_answer_id: string
+          original_created_at: string
+          prompt_id: string
+          raw_answer: string
+          session_id: string
+        }
+        Update: {
+          audit_log_id?: string
+          deleted_at?: string
+          id?: string
+          normalized_answer?: string
+          original_answer_id?: string
+          original_created_at?: string
+          prompt_id?: string
+          raw_answer?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deleted_answers_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "admin_audit_log"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_members: {
         Row: {
