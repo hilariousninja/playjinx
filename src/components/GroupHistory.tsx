@@ -168,6 +168,7 @@ export default function GroupHistory({ groupId, groupName }: Props) {
               onToggle={() => toggle(day.date)}
               formatDate={formatDate}
               myName={myName}
+              iPlayed={playedDates.has(day.date)}
             />
           ))}
         </div>
