@@ -920,6 +920,79 @@ export default function DashboardAnswers() {
         </div>
       </Section>
 
+      {/* ─── Admin audit log ─── */}
+      <Section title="Admin audit log" icon={History} defaultOpen={false}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] text-muted-foreground">
+            Last 100 destructive admin actions. Wipes are restorable for {RESTORE_WINDOW_DAYS} days.
+          </p>
+          <Button onClick={loadAudit} disabled={auditLoading} size="sm" variant="ghost" className="h-7 px-2 text-[10px]">
+            {auditLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          </Button>
+        </div>
+
+        <div className="space-y-1 max-h-[420px] overflow-y-auto">
+          {audit.length === 0 && !auditLoading && (
+            <p className="text-xs text-muted-foreground text-center py-4">No actions logged yet.</p>
+          )}
+          {audit.map(entry => {
+            const created = new Date(entry.created_at);
+            const ageDays = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+            const isRestored = !!entry.restored_at;
+            const isExpired = ageDays > RESTORE_WINDOW_DAYS;
+            const canRestore = !isRestored && !isExpired && entry.answers_count > 0;
+            const label = entry.action === 'wipe_player_day' ? 'Wiped day' : entry.action;
+            return (
+              <div
+                key={entry.id}
+                className={`bg-[hsl(var(--surface-elevated))] border border-border/30 rounded-lg px-3 py-2 ${isRestored ? 'opacity-60' : ''}`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-display text-xs font-semibold">{label}</span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        · {entry.answers_count} answer{entry.answers_count !== 1 ? 's' : ''}
+                      </span>
+                      {isRestored && (
+                        <span className="text-[9px] px-1.5 py-px rounded bg-[hsl(var(--keep))]/15 text-[hsl(var(--keep))] font-semibold">Restored</span>
+                      )}
+                      {!isRestored && isExpired && (
+                        <span className="text-[9px] px-1.5 py-px rounded bg-muted text-muted-foreground font-semibold">Expired</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      <span className="font-medium text-foreground/80">
+                        {entry.target_display_name || <span className="italic">unnamed</span>}
+                      </span>
+                      {' · '}<span className="tabular-nums">{entry.target_date}</span>
+                      {entry.target_session_id && (
+                        <span className="font-mono text-muted-foreground/50"> · {entry.target_session_id.slice(0, 10)}…</span>
+                      )}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground/60 mt-0.5">
+                      {created.toLocaleString()} · by {entry.performed_by_email || 'unknown'}
+                      {isRestored && entry.restored_at && (<> · restored {new Date(entry.restored_at).toLocaleString()}</>)}
+                    </div>
+                  </div>
+                  {canRestore && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={restoringId === entry.id}
+                      onClick={() => restoreWipe(entry)}
+                      className="h-7 px-2 text-[10px] text-primary hover:text-primary shrink-0"
+                    >
+                      {restoringId === entry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Undo2 className="h-3 w-3 mr-1" /> Restore</>}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+
       <AlertDialog open={!!wipeConfirm} onOpenChange={(o) => !o && setWipeConfirm(null)}>
         <AlertDialogContent className="rounded-lg">
           <AlertDialogHeader>
