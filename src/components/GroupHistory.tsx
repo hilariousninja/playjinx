@@ -88,6 +88,7 @@ export default function GroupHistory({ groupId, groupName }: Props) {
   };
 
   const myName = getDisplayName() || '';
+  const playedDates = new Set(data.myAnsweredDates);
 
   return (
     <div className="space-y-4">
