@@ -32,37 +32,25 @@ export default function GroupHistory({ groupId, groupName }: Props) {
     if (!data || !data.hasMore || loadingMore) return;
     setLoadingMore(true);
     try {
-      // Load the next window ending where the current one started
       const before = data.oldestLoadedDate ?? new Date().toISOString().slice(0, 10);
       const more = await getGroupHistory(groupId, { daysWindow: PAGE_DAYS, before });
 
-      // Merge: append new days, dedupe by date, recompute aggregates locally
+      // Merge day cards (dedupe by date). Lifetime stats are recomputed each call,
+      // so use the freshest values from `more` (they're identical, but authoritative).
       const seen = new Set(data.days.map(d => d.date));
       const mergedDays = [
         ...data.days,
         ...more.days.filter(d => !seen.has(d.date)),
       ].sort((a, b) => b.date.localeCompare(a.date));
 
-      // Merge member stats (sum)
-      const statMap = new Map(data.memberStats.map(m => [m.session_id, { ...m }]));
-      for (const m of more.memberStats) {
-        const existing = statMap.get(m.session_id);
-        if (existing) {
-          existing.totalJinxes += m.totalJinxes;
-          existing.daysPlayed += m.daysPlayed;
-        } else {
-          statMap.set(m.session_id, { ...m });
-        }
-      }
-      const memberStats = Array.from(statMap.values()).sort((a, b) => b.totalJinxes - a.totalJinxes);
-
       setData({
         days: mergedDays,
-        memberStats,
-        totalDaysActive: mergedDays.length,
-        bestPair: data.bestPair, // keep original best pair (most relevant)
+        memberStats: more.memberStats,
+        totalDaysActive: more.totalDaysActive,
+        bestPair: more.bestPair,
         hasMore: more.hasMore,
         oldestLoadedDate: more.oldestLoadedDate ?? data.oldestLoadedDate,
+        myAnsweredDates: more.myAnsweredDates,
       });
     } finally {
       setLoadingMore(false);
@@ -100,6 +88,7 @@ export default function GroupHistory({ groupId, groupName }: Props) {
   };
 
   const myName = getDisplayName() || '';
+  const playedDates = new Set(data.myAnsweredDates);
 
   return (
     <div className="space-y-4">
@@ -179,6 +168,7 @@ export default function GroupHistory({ groupId, groupName }: Props) {
               onToggle={() => toggle(day.date)}
               formatDate={formatDate}
               myName={myName}
+              iPlayed={playedDates.has(day.date)}
             />
           ))}
         </div>
@@ -211,9 +201,10 @@ interface DayCardProps {
   onToggle: () => void;
   formatDate: (d: string) => string;
   myName: string;
+  iPlayed: boolean;
 }
 
-function DayCard({ day, index, isExpanded, onToggle, formatDate, myName }: DayCardProps) {
+function DayCard({ day, index, isExpanded, onToggle, formatDate, myName, iPlayed }: DayCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 3 }}
@@ -257,10 +248,16 @@ function DayCard({ day, index, isExpanded, onToggle, formatDate, myName }: DayCa
             className="overflow-hidden"
           >
             <div className="px-[10px] pb-[10px] pt-[2px] space-y-[8px] border-t border-foreground/[0.04]">
-              {day.prompts.length === 0 && (
+              {!iPlayed ? (
+                <div className="text-center py-4 px-3 space-y-1.5">
+                  <p className="text-[11px] font-semibold text-foreground/70">Locked for you</p>
+                  <p className="text-[10px] text-muted-foreground/60 leading-snug">
+                    You didn't play on this day. Prompts and answers stay hidden so the game isn't spoiled — play it from the Archive to unlock.
+                  </p>
+                </div>
+              ) : day.prompts.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground/40 italic pt-2">No prompts recorded</p>
-              )}
-              {day.prompts.map(p => (
+              ) : day.prompts.map(p => (
                 <div key={p.prompt_id} className="rounded-[8px] bg-muted/30 border border-foreground/[0.04] overflow-hidden">
                   <div className="px-[10px] pt-[8px] pb-[4px]">
                     <PromptPair wordA={p.word_a} wordB={p.word_b} size="sm" />
