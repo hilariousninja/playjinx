@@ -145,6 +145,24 @@ export default function DashboardAnswers() {
   const [wipePlayerSearch, setWipePlayerSearch] = useState('');
   const [wipeConfirm, setWipeConfirm] = useState<{ session_id: string; display_name: string; count: number } | null>(null);
 
+  // Audit log + restore
+  interface AuditEntry {
+    id: string;
+    action: string;
+    target_session_id: string | null;
+    target_display_name: string | null;
+    target_date: string | null;
+    answers_count: number;
+    performed_by_email: string | null;
+    created_at: string;
+    restored_at: string | null;
+    restored_by_email: string | null;
+  }
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const RESTORE_WINDOW_DAYS = 30;
+
   useEffect(() => {
     (async () => {
       const [active, archive, aliasRes, blockedRes] = await Promise.all([
