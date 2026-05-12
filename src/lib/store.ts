@@ -120,15 +120,15 @@ export async function ensureDailyPrompts(): Promise<DbPrompt[]> {
 }
 
 export async function getArchivePrompts(): Promise<DbPrompt[]> {
-  // Only return prompts that have actual play history (historical/archived)
-  // Exclude future bank, candidates, and scheduled-but-unplayed prompts
+  // Return all archived prompts regardless of play count — empty days should
+  // still be browsable/playable from the archive.
   const { data, error } = await supabase
     .from('prompts')
     .select('*')
     .eq('mode', 'archive')
-    .gt('total_players', 0)
     .order('date', { ascending: false })
-    .order('created_at');
+    .order('created_at')
+    .limit(2000);
   if (error) throw error;
 
   // Safety clamp: archive should only ever show one 3-prompt daily release per date.
