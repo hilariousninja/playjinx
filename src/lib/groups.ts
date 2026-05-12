@@ -372,6 +372,109 @@ export interface GroupHistoryData {
   bestPair: { nameA: string; nameB: string; jinxCount: number } | null;
   hasMore: boolean;
   oldestLoadedDate: string | null;
+  /** Dates (YYYY-MM-DD) on which the current player answered at least one prompt. Used to gate per-day reveal. */
+  myAnsweredDates: string[];
+}
+
+/**
+ * Compute all-time aggregate stats (member leaderboard + best pair + total active days) for a group.
+ * Independent of the visible day window so totals don't shrink as user paginates.
+ */
+async function computeGroupLifetimeStats(
+  sessionIds: string[],
+  nameMap: Map<string, string>
+): Promise<{
+  memberStats: GroupMemberStats[];
+  bestPair: GroupHistoryData['bestPair'];
+  totalDaysActive: number;
+}> {
+  if (sessionIds.length === 0) {
+    return { memberStats: [], bestPair: null, totalDaysActive: 0 };
+  }
+
+  // Pull every daily/archive prompt ever (id + date)
+  const { data: allPrompts } = await supabase
+    .from('prompts')
+    .select('id, date')
+    .in('mode', ['daily', 'archive']);
+
+  if (!allPrompts || allPrompts.length === 0) {
+    return { memberStats: [], bestPair: null, totalDaysActive: 0 };
+  }
+
+  const promptDateMap = new Map<string, string>();
+  for (const p of allPrompts) promptDateMap.set(p.id, p.date);
+
+  // Pull every answer this group has ever given. Chunk in case promptIds is large.
+  const promptIds = allPrompts.map(p => p.id);
+  const allAnswers: { prompt_id: string; session_id: string; normalized_answer: string }[] = [];
+  const CHUNK = 500;
+  for (let i = 0; i < promptIds.length; i += CHUNK) {
+    const slice = promptIds.slice(i, i + CHUNK);
+    const { data } = await supabase
+      .from('answers')
+      .select('prompt_id, session_id, normalized_answer')
+      .in('prompt_id', slice)
+      .in('session_id', sessionIds);
+    if (data) allAnswers.push(...data);
+  }
+
+  // Bucket answers by date+prompt
+  const byDatePrompt = new Map<string, Map<string, Map<string, string>>>(); // date -> prompt_id -> session_id -> normalized
+  const memberDays = new Map<string, Set<string>>();
+  for (const a of allAnswers) {
+    const date = promptDateMap.get(a.prompt_id);
+    if (!date) continue;
+    if (!byDatePrompt.has(date)) byDatePrompt.set(date, new Map());
+    const promptBucket = byDatePrompt.get(date)!;
+    if (!promptBucket.has(a.prompt_id)) promptBucket.set(a.prompt_id, new Map());
+    promptBucket.get(a.prompt_id)!.set(a.session_id, a.normalized_answer);
+    if (!memberDays.has(a.session_id)) memberDays.set(a.session_id, new Set());
+    memberDays.get(a.session_id)!.add(date);
+  }
+
+  const pairJinxes = new Map<string, { nameA: string; nameB: string; count: number }>();
+  const memberJinxTotals = new Map<string, number>();
+
+  for (const [, promptBucket] of byDatePrompt) {
+    for (const [, sessionMap] of promptBucket) {
+      const entries = Array.from(sessionMap.entries());
+      for (let i = 0; i < entries.length; i++) {
+        for (let j = i + 1; j < entries.length; j++) {
+          if (entries[i][1] === entries[j][1]) {
+            const sidA = entries[i][0];
+            const sidB = entries[j][0];
+            const nameA = nameMap.get(sidA) ?? 'Unknown';
+            const nameB = nameMap.get(sidB) ?? 'Unknown';
+            const pairKey = [sidA, sidB].sort().join(':');
+            const existing = pairJinxes.get(pairKey) ?? { nameA, nameB, count: 0 };
+            existing.count++;
+            pairJinxes.set(pairKey, existing);
+            memberJinxTotals.set(sidA, (memberJinxTotals.get(sidA) ?? 0) + 1);
+            memberJinxTotals.set(sidB, (memberJinxTotals.get(sidB) ?? 0) + 1);
+          }
+        }
+      }
+    }
+  }
+
+  const memberStats: GroupMemberStats[] = sessionIds.map(sid => ({
+    session_id: sid,
+    display_name: nameMap.get(sid) ?? 'Unknown',
+    totalJinxes: memberJinxTotals.get(sid) ?? 0,
+    daysPlayed: memberDays.get(sid)?.size ?? 0,
+  })).sort((a, b) => b.totalJinxes - a.totalJinxes || b.daysPlayed - a.daysPlayed);
+
+  const bestPairEntry = Array.from(pairJinxes.values()).sort((a, b) => b.count - a.count)[0] ?? null;
+  const bestPair = bestPairEntry
+    ? { nameA: bestPairEntry.nameA, nameB: bestPairEntry.nameB, jinxCount: bestPairEntry.count }
+    : null;
+
+  // Total distinct days where ANY group member played
+  const allDays = new Set<string>();
+  for (const days of memberDays.values()) for (const d of days) allDays.add(d);
+
+  return { memberStats, bestPair, totalDaysActive: allDays.size };
 }
 
 /**
