@@ -1008,7 +1008,7 @@ export default function DashboardAnswers() {
               on <strong className="text-foreground">{wipeDate}</strong>?
               <br />
               <span className="text-[11px] text-muted-foreground/70 mt-1 block">
-                They'll be able to re-enter answers for this date. This cannot be undone.
+                They'll be able to re-enter answers for this date. Restorable from the audit log for {RESTORE_WINDOW_DAYS} days.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
