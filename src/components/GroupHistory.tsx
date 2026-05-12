@@ -248,10 +248,16 @@ function DayCard({ day, index, isExpanded, onToggle, formatDate, myName, iPlayed
             className="overflow-hidden"
           >
             <div className="px-[10px] pb-[10px] pt-[2px] space-y-[8px] border-t border-foreground/[0.04]">
-              {day.prompts.length === 0 && (
+              {!iPlayed ? (
+                <div className="text-center py-4 px-3 space-y-1.5">
+                  <p className="text-[11px] font-semibold text-foreground/70">Locked for you</p>
+                  <p className="text-[10px] text-muted-foreground/60 leading-snug">
+                    You didn't play on this day. Prompts and answers stay hidden so the game isn't spoiled — play it from the Archive to unlock.
+                  </p>
+                </div>
+              ) : day.prompts.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground/40 italic pt-2">No prompts recorded</p>
-              )}
-              {day.prompts.map(p => (
+              ) : day.prompts.map(p => (
                 <div key={p.prompt_id} className="rounded-[8px] bg-muted/30 border border-foreground/[0.04] overflow-hidden">
                   <div className="px-[10px] pt-[8px] pb-[4px]">
                     <PromptPair wordA={p.word_a} wordB={p.word_b} size="sm" />
