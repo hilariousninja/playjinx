@@ -201,9 +201,10 @@ interface DayCardProps {
   onToggle: () => void;
   formatDate: (d: string) => string;
   myName: string;
+  iPlayed: boolean;
 }
 
-function DayCard({ day, index, isExpanded, onToggle, formatDate, myName }: DayCardProps) {
+function DayCard({ day, index, isExpanded, onToggle, formatDate, myName, iPlayed }: DayCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 3 }}
