@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Merge, Trash2, Loader2, AlertTriangle, Plus, ArrowRightLeft,
   Lightbulb, Shield, Check, ArrowLeft, RefreshCw, Search,
-  ChevronDown, ChevronUp, Sparkles, Ban, Eye, Hash
+  ChevronDown, ChevronUp, Sparkles, Ban, Eye, Hash, UserX
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
