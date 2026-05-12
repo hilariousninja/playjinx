@@ -32,37 +32,25 @@ export default function GroupHistory({ groupId, groupName }: Props) {
     if (!data || !data.hasMore || loadingMore) return;
     setLoadingMore(true);
     try {
-      // Load the next window ending where the current one started
       const before = data.oldestLoadedDate ?? new Date().toISOString().slice(0, 10);
       const more = await getGroupHistory(groupId, { daysWindow: PAGE_DAYS, before });
 
-      // Merge: append new days, dedupe by date, recompute aggregates locally
+      // Merge day cards (dedupe by date). Lifetime stats are recomputed each call,
+      // so use the freshest values from `more` (they're identical, but authoritative).
       const seen = new Set(data.days.map(d => d.date));
       const mergedDays = [
         ...data.days,
         ...more.days.filter(d => !seen.has(d.date)),
       ].sort((a, b) => b.date.localeCompare(a.date));
 
-      // Merge member stats (sum)
-      const statMap = new Map(data.memberStats.map(m => [m.session_id, { ...m }]));
-      for (const m of more.memberStats) {
-        const existing = statMap.get(m.session_id);
-        if (existing) {
-          existing.totalJinxes += m.totalJinxes;
-          existing.daysPlayed += m.daysPlayed;
-        } else {
-          statMap.set(m.session_id, { ...m });
-        }
-      }
-      const memberStats = Array.from(statMap.values()).sort((a, b) => b.totalJinxes - a.totalJinxes);
-
       setData({
         days: mergedDays,
-        memberStats,
-        totalDaysActive: mergedDays.length,
-        bestPair: data.bestPair, // keep original best pair (most relevant)
+        memberStats: more.memberStats,
+        totalDaysActive: more.totalDaysActive,
+        bestPair: more.bestPair,
         hasMore: more.hasMore,
         oldestLoadedDate: more.oldestLoadedDate ?? data.oldestLoadedDate,
+        myAnsweredDates: more.myAnsweredDates,
       });
     } finally {
       setLoadingMore(false);
