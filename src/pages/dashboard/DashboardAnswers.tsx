@@ -259,6 +259,63 @@ export default function DashboardAnswers() {
     setActionLoading(false); setDeleteConfirmOpen(false); setDeleteTarget(null);
   };
 
+  const loadWipePlayers = useCallback(async (date: string) => {
+    setWipeLoading(true);
+    try {
+      // Get prompt ids for that date
+      const { data: ps } = await supabase.from('prompts').select('id').eq('date', date);
+      const ids = (ps ?? []).map(p => p.id);
+      if (ids.length === 0) { setWipePlayers([]); setWipeLoading(false); return; }
+
+      const { data: ans } = await supabase
+        .from('answers')
+        .select('session_id, prompt_id')
+        .in('prompt_id', ids);
+
+      const counts = new Map<string, number>();
+      for (const a of ans ?? []) counts.set(a.session_id, (counts.get(a.session_id) ?? 0) + 1);
+      const sids = Array.from(counts.keys());
+      if (sids.length === 0) { setWipePlayers([]); setWipeLoading(false); return; }
+
+      // Try to resolve display names from challenge_participants and group_members
+      const [cpRes, gmRes] = await Promise.all([
+        supabase.from('challenge_participants').select('session_id, display_name').in('session_id', sids),
+        supabase.from('group_members').select('session_id, display_name').in('session_id', sids),
+      ]);
+      const nameMap = new Map<string, string>();
+      for (const r of (gmRes.data ?? [])) if (r.display_name && !nameMap.has(r.session_id)) nameMap.set(r.session_id, r.display_name);
+      for (const r of (cpRes.data ?? [])) if (r.display_name && !nameMap.has(r.session_id)) nameMap.set(r.session_id, r.display_name);
+
+      const list = sids
+        .map(sid => ({ session_id: sid, display_name: nameMap.get(sid) ?? '', count: counts.get(sid) ?? 0 }))
+        .sort((a, b) => b.count - a.count || a.session_id.localeCompare(b.session_id));
+      setWipePlayers(list);
+    } catch (e) { console.error(e); toast.error('Failed to load players'); }
+    setWipeLoading(false);
+  }, []);
+
+  const executeWipePlayerDay = async () => {
+    if (!wipeConfirm) return;
+    setActionLoading(true);
+    try {
+      const { data: ps } = await supabase.from('prompts').select('id').eq('date', wipeDate);
+      const ids = (ps ?? []).map(p => p.id);
+      if (ids.length === 0) throw new Error('No prompts for date');
+
+      const { error } = await supabase
+        .from('answers')
+        .delete()
+        .eq('session_id', wipeConfirm.session_id)
+        .in('prompt_id', ids);
+      if (error) throw error;
+
+      invalidateAnswerCaches();
+      toast.success(`Wiped ${wipeConfirm.count} answer${wipeConfirm.count !== 1 ? 's' : ''} for ${wipeConfirm.display_name || wipeConfirm.session_id.slice(0, 14)}…`);
+      await loadWipePlayers(wipeDate);
+    } catch (e) { console.error(e); toast.error('Wipe failed'); }
+    setActionLoading(false); setWipeConfirm(null);
+  };
+
   // Computed
   const filteredAliases = useMemo(() => {
     if (!aliasSearch.trim()) return aliases;
