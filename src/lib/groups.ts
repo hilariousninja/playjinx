@@ -488,47 +488,88 @@ export async function getGroupHistory(
 ): Promise<GroupHistoryData> {
   const daysWindow = options.daysWindow ?? 14;
   const members = await getGroupMembers(groupId);
-  if (members.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore: false, oldestLoadedDate: null };
+  const empty = (extra: Partial<GroupHistoryData> = {}): GroupHistoryData => ({
+    days: [], memberStats: [], totalDaysActive: 0, bestPair: null,
+    hasMore: false, oldestLoadedDate: null, myAnsweredDates: [], ...extra,
+  });
+  if (members.length === 0) return empty();
 
   const sessionIds = members.map(m => m.session_id);
   const nameMap = new Map(members.map(m => [m.session_id, m.display_name]));
   const today = new Date().toISOString().slice(0, 10);
   const beforeDate = options.before ?? today;
+  const mySessionId = getPlayerId();
 
   // Compute window start
   const beforeMs = new Date(beforeDate + 'T12:00:00').getTime();
   const windowStart = new Date(beforeMs - daysWindow * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const { data: prompts } = await supabase
-    .from('prompts')
-    .select('id, word_a, word_b, date')
-    .in('mode', ['daily', 'archive'])
-    .gte('date', windowStart)
-    .lt('date', beforeDate)
-    .order('date', { ascending: false });
+  // All-time aggregate stats (independent of visible window) + the window batch in parallel
+  const [lifetime, promptsRes, olderProbeRes] = await Promise.all([
+    computeGroupLifetimeStats(sessionIds, nameMap),
+    supabase
+      .from('prompts')
+      .select('id, word_a, word_b, date')
+      .in('mode', ['daily', 'archive'])
+      .gte('date', windowStart)
+      .lt('date', beforeDate)
+      .order('date', { ascending: false }),
+    supabase
+      .from('prompts')
+      .select('date')
+      .in('mode', ['daily', 'archive'])
+      .lt('date', windowStart)
+      .order('date', { ascending: false })
+      .limit(1),
+  ]);
 
-  // Check if any older prompts exist beyond this window (for hasMore)
-  const { data: olderProbe } = await supabase
-    .from('prompts')
-    .select('date')
-    .in('mode', ['daily', 'archive'])
-    .lt('date', windowStart)
-    .order('date', { ascending: false })
-    .limit(1);
-  const hasMore = !!(olderProbe && olderProbe.length > 0);
+  const prompts = promptsRes.data;
+  const hasMore = !!(olderProbeRes.data && olderProbeRes.data.length > 0);
 
-  if (!prompts || prompts.length === 0) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore, oldestLoadedDate: windowStart };
+  // Compute the current player's answered dates across ALL time, so reveal gating
+  // works for older days too (not just the visible window).
+  const { data: myAnswersAllTime } = await supabase
+    .from('answers')
+    .select('prompt_id')
+    .eq('session_id', mySessionId);
+  const myPromptIds = new Set((myAnswersAllTime ?? []).map(a => a.prompt_id));
+  // Resolve prompt -> date map for those answers
+  const myDateSet = new Set<string>();
+  if (myPromptIds.size > 0) {
+    const ids = Array.from(myPromptIds);
+    const CHUNK = 500;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      const { data } = await supabase
+        .from('prompts')
+        .select('date')
+        .in('id', slice)
+        .in('mode', ['daily', 'archive']);
+      for (const r of data ?? []) myDateSet.add(r.date);
+    }
+  }
+  const myAnsweredDates = Array.from(myDateSet);
+
+  if (!prompts || prompts.length === 0) {
+    return {
+      ...empty(),
+      memberStats: lifetime.memberStats,
+      bestPair: lifetime.bestPair,
+      totalDaysActive: lifetime.totalDaysActive,
+      hasMore,
+      oldestLoadedDate: windowStart,
+      myAnsweredDates,
+    };
+  }
 
   const promptIds = prompts.map(p => p.id);
 
-  // Get answers from group members for these prompts
+  // Get answers from group members for these prompts (windowed, for day cards)
   const { data: answers } = await supabase
     .from('answers')
     .select('prompt_id, session_id, raw_answer, normalized_answer')
     .in('prompt_id', promptIds)
     .in('session_id', sessionIds);
-
-  if (!answers) return { days: [], memberStats: [], totalDaysActive: 0, bestPair: null, hasMore, oldestLoadedDate: windowStart };
 
   // Group prompts by date
   const promptsByDate = new Map<string, typeof prompts>();
@@ -540,14 +581,10 @@ export async function getGroupHistory(
 
   // Build answer lookup: prompt_id -> session_id -> { raw, normalized }
   const answerMap = new Map<string, Map<string, { raw: string; normalized: string }>>();
-  for (const a of answers) {
+  for (const a of (answers ?? [])) {
     if (!answerMap.has(a.prompt_id)) answerMap.set(a.prompt_id, new Map());
     answerMap.get(a.prompt_id)!.set(a.session_id, { raw: a.raw_answer, normalized: a.normalized_answer });
   }
-
-  // Track pair-level jinx counts
-  const pairJinxes = new Map<string, { nameA: string; nameB: string; count: number }>();
-  const memberJinxes = new Map<string, { total: number; daysPlayed: Set<string> }>();
 
   const days: GroupDaySnapshot[] = [];
 
@@ -560,19 +597,14 @@ export async function getGroupHistory(
       const pa = answerMap.get(prompt.id);
       if (!pa) {
         promptDetails.push({
-          prompt_id: prompt.id,
-          word_a: prompt.word_a,
-          word_b: prompt.word_b,
-          clusters: [],
-          answeredMembers: [],
+          prompt_id: prompt.id, word_a: prompt.word_a, word_b: prompt.word_b,
+          clusters: [], answeredMembers: [],
         });
         continue;
       }
 
-      // Track who answered
       for (const sid of pa.keys()) answeredSessions.add(sid);
 
-      // Build clusters for this prompt (group by normalized, label with raw)
       const clusterMap = new Map<string, { raw: string; members: string[] }>();
       for (const [sid, ans] of pa.entries()) {
         const name = nameMap.get(sid) ?? 'Unknown';
@@ -585,14 +617,11 @@ export async function getGroupHistory(
         .sort((a, b) => b.members.length - a.members.length);
 
       promptDetails.push({
-        prompt_id: prompt.id,
-        word_a: prompt.word_a,
-        word_b: prompt.word_b,
+        prompt_id: prompt.id, word_a: prompt.word_a, word_b: prompt.word_b,
         clusters,
         answeredMembers: Array.from(pa.keys()).map(sid => nameMap.get(sid) ?? 'Unknown'),
       });
 
-      // Find jinxes (matching answers between members)
       const entries = Array.from(pa.entries());
       for (let i = 0; i < entries.length; i++) {
         for (let j = i + 1; j < entries.length; j++) {
@@ -604,27 +633,9 @@ export async function getGroupHistory(
               answer: entries[i][1].raw,
               word_a: prompt.word_a, word_b: prompt.word_b,
             });
-
-            // Track pair stats
-            const pairKey = [entries[i][0], entries[j][0]].sort().join(':');
-            const existing = pairJinxes.get(pairKey) ?? { nameA, nameB, count: 0 };
-            existing.count++;
-            pairJinxes.set(pairKey, existing);
           }
         }
       }
-    }
-
-    // Track member stats
-    for (const sid of answeredSessions) {
-      const ms = memberJinxes.get(sid) ?? { total: 0, daysPlayed: new Set() };
-      ms.daysPlayed.add(date);
-      const memberPairJinxes = jinxPairs.filter(j => {
-        const name = nameMap.get(sid);
-        return j.memberA === name || j.memberB === name;
-      }).length;
-      ms.total += memberPairJinxes;
-      memberJinxes.set(sid, ms);
     }
 
     if (answeredSessions.size > 0) {
@@ -640,26 +651,16 @@ export async function getGroupHistory(
     }
   }
 
-  const memberStats: GroupMemberStats[] = Array.from(memberJinxes.entries()).map(([sid, ms]) => ({
-    session_id: sid,
-    display_name: nameMap.get(sid) ?? 'Unknown',
-    totalJinxes: ms.total,
-    daysPlayed: ms.daysPlayed.size,
-  })).sort((a, b) => b.totalJinxes - a.totalJinxes);
-
-  const bestPairEntry = Array.from(pairJinxes.values()).sort((a, b) => b.count - a.count)[0] ?? null;
-  const bestPair = bestPairEntry ? { nameA: bestPairEntry.nameA, nameB: bestPairEntry.nameB, jinxCount: bestPairEntry.count } : null;
-
-  // Oldest date actually loaded (earliest prompt date in this batch, or window start)
   const oldestLoadedDate = prompts.length > 0 ? prompts[prompts.length - 1].date : windowStart;
 
   return {
     days,
-    memberStats,
-    totalDaysActive: days.length,
-    bestPair,
+    memberStats: lifetime.memberStats,
+    totalDaysActive: lifetime.totalDaysActive,
+    bestPair: lifetime.bestPair,
     hasMore,
     oldestLoadedDate,
+    myAnsweredDates,
   };
 }
 
