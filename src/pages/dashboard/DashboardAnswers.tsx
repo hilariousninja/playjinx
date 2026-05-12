@@ -138,6 +138,13 @@ export default function DashboardAnswers() {
   // Search
   const [aliasSearch, setAliasSearch] = useState('');
 
+  // Wipe player day
+  const [wipeDate, setWipeDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [wipePlayers, setWipePlayers] = useState<{ session_id: string; display_name: string; count: number }[]>([]);
+  const [wipeLoading, setWipeLoading] = useState(false);
+  const [wipePlayerSearch, setWipePlayerSearch] = useState('');
+  const [wipeConfirm, setWipeConfirm] = useState<{ session_id: string; display_name: string; count: number } | null>(null);
+
   useEffect(() => {
     (async () => {
       const [active, archive, aliasRes, blockedRes] = await Promise.all([
