@@ -733,6 +733,103 @@ export default function DashboardAnswers() {
           ))}
         </div>
       </Section>
+
+      {/* ─── Wipe a player's day ─── */}
+      <Section title="Wipe a player's day" icon={UserX} defaultOpen={false}>
+        <p className="text-[10px] text-muted-foreground mb-3">
+          Delete every answer one player submitted on a given day. They'll be able to re-enter answers for that date.
+        </p>
+
+        <div className="flex gap-2 items-end mb-3">
+          <div className="flex-1">
+            <label className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1 block">Date</label>
+            <Input type="date" value={wipeDate} onChange={e => setWipeDate(e.target.value)} className="h-8 text-xs rounded-lg" />
+          </div>
+          <Button onClick={() => loadWipePlayers(wipeDate)} disabled={wipeLoading || !wipeDate} size="sm" className="h-8 rounded-lg text-xs">
+            {wipeLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Search className="h-3 w-3 mr-1" />}
+            Load players
+          </Button>
+        </div>
+
+        {wipePlayers.length > 0 && (
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/50" />
+            <Input
+              value={wipePlayerSearch}
+              onChange={e => setWipePlayerSearch(e.target.value)}
+              placeholder="Search by name or session id…"
+              className="h-7 text-xs rounded-lg pl-7"
+            />
+          </div>
+        )}
+
+        <div className="space-y-1 max-h-[360px] overflow-y-auto">
+          {wipePlayers.length === 0 && !wipeLoading && (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              {wipeDate ? 'No players for that date yet — load to refresh.' : 'Pick a date to start.'}
+            </p>
+          )}
+          {wipePlayers
+            .filter(p => {
+              const q = wipePlayerSearch.trim().toLowerCase();
+              if (!q) return true;
+              return p.session_id.toLowerCase().includes(q) || p.display_name.toLowerCase().includes(q);
+            })
+            .map(p => (
+              <div key={p.session_id} className="bg-[hsl(var(--surface-elevated))] border border-border/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-display text-xs font-semibold truncate">
+                    {p.display_name || <span className="text-muted-foreground/60 italic">unnamed</span>}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground/50 font-mono truncate">{p.session_id}</div>
+                </div>
+                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                  {p.count} answer{p.count !== 1 ? 's' : ''}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-[10px] text-muted-foreground/60 hover:text-destructive shrink-0"
+                  onClick={() => setWipeConfirm(p)}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" /> Wipe
+                </Button>
+              </div>
+            ))}
+        </div>
+      </Section>
+
+      <AlertDialog open={!!wipeConfirm} onOpenChange={(o) => !o && setWipeConfirm(null)}>
+        <AlertDialogContent className="rounded-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" /> Wipe player's day
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently delete <strong className="text-foreground">{wipeConfirm?.count}</strong> answer
+              {wipeConfirm && wipeConfirm.count !== 1 ? 's' : ''} from{' '}
+              <strong className="text-foreground">
+                {wipeConfirm?.display_name || wipeConfirm?.session_id.slice(0, 14) + '…'}
+              </strong>{' '}
+              on <strong className="text-foreground">{wipeDate}</strong>?
+              <br />
+              <span className="text-[11px] text-muted-foreground/70 mt-1 block">
+                They'll be able to re-enter answers for this date. This cannot be undone.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeWipePlayerDay}
+              disabled={actionLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {actionLoading && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}Wipe day
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
