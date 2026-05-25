@@ -179,20 +179,19 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(`${row.wordA.toUpperCase()} + ${row.wordB.toUpperCase()}`, 100, y + 42);
 
-    // answer (large)
-    ctx.fillStyle = row.answer ? C.ink : C.muted;
+    // answer status (large) — never reveal the actual answer text
+    const isMissed = !row.answer;
+    const statusText = isMissed
+      ? 'Missed'
+      : row.topAnswer
+        ? 'Top answer'
+        : row.matched
+          ? 'Matched'
+          : 'Solo answer';
+    ctx.fillStyle = isMissed ? C.muted : C.ink;
     ctx.font = `700 46px "Space Grotesk", system-ui, sans-serif`;
-    const answerText = row.answer ?? 'Missed';
-    // truncate visually if extremely long
-    const maxAnsW = W - 128 - 80 - 200;
-    let displayAns = answerText;
-    if (ctx.measureText(displayAns).width > maxAnsW) {
-      while (displayAns.length > 4 && ctx.measureText(displayAns + '…').width > maxAnsW) {
-        displayAns = displayAns.slice(0, -1);
-      }
-      displayAns += '…';
-    }
-    ctx.fillText(displayAns, 100, y + 100);
+    ctx.fillText(statusText, 100, y + 100);
+
 
     // right side: jinx pill
     if (row.jinxes > 0) {
