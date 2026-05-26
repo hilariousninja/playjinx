@@ -276,15 +276,17 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
   ));
 
   // One batched answer pull across every group + today's prompts
-  let todayAnswers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string }[] = [];
+  let todayAnswers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string; created_at: string }[] = [];
   if (promptIds.length > 0 && allMemberSessionIds.length > 0) {
     const { data } = await supabase
       .from('answers')
-      .select('prompt_id, session_id, raw_answer, normalized_answer')
+      .select('prompt_id, session_id, raw_answer, normalized_answer, created_at')
       .in('prompt_id', promptIds)
       .in('session_id', allMemberSessionIds);
     todayAnswers = data ?? [];
   }
+
+  const lastVisits = getAllLastVisits();
 
   const result: GroupWithActivity[] = groups.map(g => {
     const members = membersByGroup.get(g.id) ?? [];
@@ -299,6 +301,19 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
     const viewerPlayedToday = answeredSessions.has(sessionId);
     const hasActivityToday = answeredSessions.size > 1
       || (answeredSessions.size === 1 && !answeredSessions.has(sessionId));
+
+    // New since last visit: others' answers created after lastVisitedAt
+    const lastVisitedAt = lastVisits[g.id] ?? null;
+    let newSinceLastVisit = 0;
+    if (lastVisitedAt) {
+      const lvMs = new Date(lastVisitedAt).getTime();
+      newSinceLastVisit = groupAnswers.filter(a =>
+        a.session_id !== sessionId && new Date(a.created_at).getTime() > lvMs
+      ).length;
+    } else {
+      // Never visited: count others' answers as new
+      newSinceLastVisit = groupAnswers.filter(a => a.session_id !== sessionId).length;
+    }
 
     // Build headline: prefer a prompt with a jinx, else first prompt
     let headline: GroupTodayHeadline | null = null;
@@ -343,15 +358,25 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
       };
     }
 
+    // Member preview: viewer first, then others by join order
+    const memberPreview = [...members].sort((a, b) => {
+      if (a.session_id === sessionId) return -1;
+      if (b.session_id === sessionId) return 1;
+      return 0;
+    });
+
     return {
       ...g,
       memberCount,
+      memberPreview,
       hasActivityToday,
       todayAnsweredCount,
       todayHeadline: headline,
       viewerPlayedToday,
+      newSinceLastVisit,
     };
   });
+
 
   // Sort: unread jinxes first (others played, viewer hasn't), then live, then quiet
   return result.sort((a, b) => {
