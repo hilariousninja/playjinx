@@ -80,15 +80,8 @@ export default function Groups() {
     toast({ title: 'Invite link copied!' });
   };
 
-  const getActivity = (g: GroupWithActivity) => {
-    if (g.memberCount === 1) return { type: 'solo' as const, emoji: '👋', label: 'Just you — invite someone', color: 'text-primary', bg: 'bg-primary/6' };
-    if (g.todayAnsweredCount === 0) return { type: 'quiet' as const, emoji: '💤', label: "Nobody's played yet", color: 'text-muted-foreground', bg: 'bg-muted/60' };
-    if (g.todayAnsweredCount < g.memberCount) {
-      const waiting = g.memberCount - g.todayAnsweredCount;
-      return { type: 'waiting' as const, emoji: '⏳', label: `${g.todayAnsweredCount} played · ${waiting} to go`, color: 'text-foreground/70', bg: 'bg-primary/8' };
-    }
-    return { type: 'complete' as const, emoji: '✓', label: 'Everyone played!', color: 'text-[hsl(var(--success))] font-medium', bg: 'bg-[hsl(var(--success))]/8' };
-  };
+
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
