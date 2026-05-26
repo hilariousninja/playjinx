@@ -23,6 +23,8 @@ export interface ExistingIdentity {
   session_id: string;
   display_name: string;
   last_seen: string;
+  answerCount: number;
+  groupCount: number;
 }
 
 export async function findExistingIdentities(name: string): Promise<ExistingIdentity[]> {
@@ -44,24 +46,67 @@ export async function findExistingIdentities(name: string): Promise<ExistingIden
   const map = new Map<string, ExistingIdentity>();
   for (const r of gm.data ?? []) {
     if (r.session_id === currentSid) continue;
-    const prev = map.get(r.session_id);
-    if (!prev || prev.last_seen < r.joined_at) {
-      map.set(r.session_id, { session_id: r.session_id, display_name: r.display_name, last_seen: r.joined_at });
-    }
+    const prev = map.get(r.session_id) ?? { session_id: r.session_id, display_name: r.display_name, last_seen: r.joined_at, answerCount: 0, groupCount: 0 };
+    if (prev.last_seen < r.joined_at) prev.last_seen = r.joined_at;
+    prev.groupCount += 1;
+    map.set(r.session_id, prev);
   }
   for (const r of cp.data ?? []) {
     if (r.session_id === currentSid) continue;
-    const prev = map.get(r.session_id);
-    if (!prev || prev.last_seen < r.created_at) {
-      map.set(r.session_id, { session_id: r.session_id, display_name: r.display_name, last_seen: r.created_at });
+    const prev = map.get(r.session_id) ?? { session_id: r.session_id, display_name: r.display_name, last_seen: r.created_at, answerCount: 0, groupCount: 0 };
+    if (prev.last_seen < r.created_at) prev.last_seen = r.created_at;
+    map.set(r.session_id, prev);
+  }
+
+  // Enrich with answer counts so we can pick the richest historical session
+  // as the canonical identity to merge into.
+  const sids = Array.from(map.keys());
+  if (sids.length > 0) {
+    const { data: ans } = await supabase
+      .from('answers')
+      .select('session_id')
+      .in('session_id', sids);
+    for (const r of ans ?? []) {
+      const prev = map.get(r.session_id);
+      if (prev) prev.answerCount += 1;
     }
   }
 
-  return Array.from(map.values()).sort((a, b) => b.last_seen.localeCompare(a.last_seen));
+  // Sort by total activity (answers + groups), then recency.
+  return Array.from(map.values()).sort((a, b) => {
+    const aw = a.answerCount + a.groupCount;
+    const bw = b.answerCount + b.groupCount;
+    if (bw !== aw) return bw - aw;
+    return b.last_seen.localeCompare(a.last_seen);
+  });
 }
 
-export function claimIdentity(sessionId: string, displayName: string) {
-  localStorage.setItem('jinx_player_id', sessionId);
+/**
+ * Claim a prior identity. Merges every matched legacy session_id (answers,
+ * group memberships, challenge participations, rivalries) into a single
+ * canonical session_id so nothing is left stranded across old devices.
+ */
+export async function claimIdentity(
+  canonicalSessionId: string,
+  displayName: string,
+  otherSessionIds: string[] = [],
+) {
+  const currentSid = getPlayerId();
+  const others = Array.from(new Set([currentSid, ...otherSessionIds].filter(s => s && s !== canonicalSessionId)));
+
+  try {
+    await supabase.functions.invoke('merge-identities', {
+      body: {
+        canonical_session_id: canonicalSessionId,
+        other_session_ids: others,
+        display_name: displayName.trim(),
+      },
+    });
+  } catch {
+    // Non-fatal: identity still switches even if merge partially fails.
+  }
+
+  localStorage.setItem('jinx_player_id', canonicalSessionId);
   localStorage.removeItem('jinx_session_id');
   localStorage.setItem(DISPLAY_NAME_KEY, displayName.trim());
   localStorage.removeItem('jinx_completed_prompts');
