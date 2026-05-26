@@ -34,7 +34,7 @@ export default function Groups() {
   const [needsName, setNeedsName] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const [personality, setPersonality] = useState(randomStarter);
+  const [personality, setPersonality] = useState<{ emoji: string; accent: GroupAccent }>(randomStarter);
   const hasNewRoomActivity = useRoomHasNewActivity();
   const hasGroupActivity = useGroupHasActivity();
   const groupNewCount = useGroupNewCount();
