@@ -240,35 +240,20 @@ export default function GroupToday() {
               />
             )}
 
-            {/* One-liner roster footer */}
+            {/* Footer actions — clean stack */}
             {hasPlayed && (
-              <div className="flex items-center justify-between gap-2 pt-[2px] px-[2px]">
-                <p className="text-[10px] text-muted-foreground/70 font-display truncate">
+              <div className="pt-3 mt-2 border-t border-foreground/[0.06] space-y-2">
+                <p className="text-[10px] text-muted-foreground/60 font-display text-center">
                   {rosterLine}
                 </p>
-                {others.length === 0 ? (
-                  <button
-                    onClick={handleInvite}
-                    className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0 flex items-center gap-1"
-                  >
-                    <Share2 className="h-2.5 w-2.5" /> Invite
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setTab('members')}
-                    className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
-                  >
-                    See members →
-                  </button>
-                )}
+                <Button
+                  variant="outline"
+                  className="w-full rounded-[10px] h-10 text-[12px] font-semibold border-foreground/10 bg-card hover:bg-muted/40"
+                  asChild
+                >
+                  <Link to="/archive">View crowd results</Link>
+                </Button>
               </div>
-            )}
-
-            {/* Crowd results link */}
-            {hasPlayed && (
-              <Button variant="ghost" className="w-full rounded-lg h-8 text-[11px] text-muted-foreground" asChild>
-                <Link to="/archive">View crowd results</Link>
-              </Button>
             )}
           </div>
         ) : tab === 'members' ? (
@@ -283,12 +268,12 @@ export default function GroupToday() {
         )}
 
 
-        {/* Leave group */}
-        <div className="mt-4">
+        {/* Leave group — quiet utility */}
+        <div className="mt-8 pt-4 border-t border-foreground/[0.05]">
           {!confirmLeave ? (
             <button
               onClick={() => setConfirmLeave(true)}
-              className="w-full flex items-center justify-center gap-1 text-[10px] text-muted-foreground/25 hover:text-destructive/50 transition-colors py-1.5"
+              className="w-full flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-destructive/60 transition-colors py-2"
             >
               <LogOut className="h-2.5 w-2.5" />
               Leave group
