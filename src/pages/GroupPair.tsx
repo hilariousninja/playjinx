@@ -102,6 +102,82 @@ export default function GroupPair() {
           <StatBlock icon={<Flame className="h-3 w-3 text-[hsl(var(--info))]" />} label="Streak" value={data.currentStreak} />
         </motion.div>
 
+        {/* Rivalry meter */}
+        {enrichment?.rivalry && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.07 }}
+            className="mb-[14px] rounded-[12px] border border-foreground/[0.06] bg-card p-[12px]"
+          >
+            <div className="flex items-center justify-between mb-[6px]">
+              <span className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/50 font-semibold">Rivalry</span>
+              <span className="text-[13px] font-bold text-foreground">{enrichment.rivalry}</span>
+            </div>
+            <div className="h-[6px] rounded-full bg-muted/60 overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all"
+                style={{ width: `${Math.max(4, Math.round(enrichment.rivalryScore * 100))}%` }}
+              />
+            </div>
+            <p className="mt-[6px] text-[10px] text-muted-foreground/60 leading-[1.4]">
+              {rivalryBlurb(enrichment.rivalry, enrichment.rivalryScore)}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Shared signatures */}
+        {enrichment && enrichment.signatures.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.09 }}
+            className="mb-[14px]"
+          >
+            <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/40 font-semibold mb-[6px] flex items-center gap-[4px]">
+              <Sparkles className="h-2.5 w-2.5" /> Your shared signatures
+            </p>
+            <div className="flex flex-wrap gap-[5px]">
+              {enrichment.signatures.map((s, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-[5px] px-[10px] py-[5px] rounded-full bg-primary/[0.07] border border-primary/15 text-[11px] font-bold text-foreground"
+                >
+                  {s.answer}
+                  <span className="text-[9px] text-primary/70 font-semibold">×{s.occurrences}</span>
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Most divisive */}
+        {enrichment?.divisive && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.11 }}
+            className="mb-[14px] rounded-[12px] border border-foreground/[0.06] bg-card p-[12px]"
+          >
+            <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/40 font-semibold mb-[6px] flex items-center gap-[4px]">
+              <Split className="h-2.5 w-2.5" /> Most divisive
+            </p>
+            <PromptPair wordA={enrichment.divisive.word_a} wordB={enrichment.divisive.word_b} size="sm" />
+            <div className="mt-[8px] grid grid-cols-2 gap-[5px]">
+              <div className="rounded-[8px] bg-muted/40 px-[8px] py-[8px] text-center">
+                <p className="text-[9px] uppercase tracking-[0.06em] text-muted-foreground/50 font-semibold mb-[2px]">You</p>
+                <p className="text-[12px] font-bold text-foreground break-words">{enrichment.divisive.myAnswer}</p>
+              </div>
+              <div className="rounded-[8px] bg-muted/40 px-[8px] py-[8px] text-center">
+                <p className="text-[9px] uppercase tracking-[0.06em] text-muted-foreground/50 font-semibold mb-[2px] truncate">{data.them.display_name}</p>
+                <p className="text-[12px] font-bold text-foreground break-words">{enrichment.divisive.theirAnswer}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+
+
         {/* Today */}
         <motion.div
           initial={{ opacity: 0, y: 4 }}
