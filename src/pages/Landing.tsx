@@ -33,7 +33,7 @@ export default function Landing() {
     <div className="app-shell">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      <main className="flex-1 overflow-y-auto flex justify-center px-4 pt-6 pb-6">
+      <main className="flex-1 flex justify-center px-4 pt-6 pb-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

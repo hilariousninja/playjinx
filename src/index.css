@@ -114,6 +114,9 @@
   * {
     @apply border-border;
   }
+  html, body, #root {
+    background: hsl(var(--background));
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
@@ -174,13 +177,11 @@
     background-clip: text;
   }
 
-  /* Mobile app shell — natural document scroll. Bottom nav is fixed on
-     mobile and includes a background extension to mask the strip Firefox
-     Android briefly exposes during address-bar transitions. */
+  /* Mobile app shell — natural document scroll, no viewport-unit sizing.
+     Avoids Firefox Android URL-bar viewport reconciliation bugs. */
   .app-shell {
     @apply flex flex-col bg-background;
-    min-height: 100vh;
-    min-height: 100svh;
+    min-height: 100%;
   }
   .app-shell-main {
     @apply flex-1 flex flex-col w-full;
@@ -191,5 +192,4 @@
       padding-bottom: calc(56px + env(safe-area-inset-bottom));
     }
   }
-
 }
