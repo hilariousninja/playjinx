@@ -16,10 +16,16 @@ const navItems = [
   { to: '/archive', label: 'Archive', icon: Archive },
 ];
 
-const getVisualViewportGap = () => {
+// On Firefox Android, `position: fixed; bottom: 0` is positioned against the
+// layout viewport (full height, ignoring the URL bar). When the address bar is
+// visible, the visual viewport is shorter than the layout viewport, leaving a
+// blank gap beneath the nav. Pull the nav up by the difference so it always
+// sits flush with the visible bottom edge.
+const getVisualViewportOffset = () => {
   if (typeof window === 'undefined' || !window.visualViewport) return 0;
 
-  const gap = window.visualViewport.offsetTop + window.visualViewport.height - window.innerHeight;
+  const vv = window.visualViewport;
+  const gap = window.innerHeight - (vv.offsetTop + vv.height);
   return gap > 1 ? Math.ceil(gap) : 0;
 };
 
