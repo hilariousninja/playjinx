@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Zap, Loader2, AlertCircle, Lock, Calendar, Flame, Users } from 'lucide-react';
+import { ArrowLeft, Zap, Loader2, AlertCircle, Lock, Calendar, Flame, Users, Sparkles, Split } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import PromptPair from '@/components/PromptPair';
-import { getGroupByInviteCode, getPairData, type PairData } from '@/lib/groups';
+import { getGroupByInviteCode, getPairData, getPairEnrichment, type PairData, type PairEnrichment } from '@/lib/groups';
 
 export default function GroupPair() {
   const { inviteCode, otherSessionId } = useParams<{ inviteCode: string; otherSessionId: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<PairData | null>(null);
+  const [enrichment, setEnrichment] = useState<PairEnrichment | null>(null);
   const [groupName, setGroupName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +24,13 @@ export default function GroupPair() {
         const g = await getGroupByInviteCode(inviteCode);
         if (!g) { setError('Group not found'); setLoading(false); return; }
         setGroupName(g.name);
-        const pd = await getPairData(g.id, otherSessionId);
+        const [pd, en] = await Promise.all([
+          getPairData(g.id, otherSessionId),
+          getPairEnrichment(g.id, otherSessionId),
+        ]);
         if (!pd) { setError("This pair isn't available"); setLoading(false); return; }
         setData(pd);
+        setEnrichment(en);
         setLoading(false);
       } catch {
         setError('Something went wrong');
@@ -96,6 +101,82 @@ export default function GroupPair() {
           <StatBlock icon={<Calendar className="h-3 w-3 text-muted-foreground" />} label="Days both" value={data.daysPlayedTogether} />
           <StatBlock icon={<Flame className="h-3 w-3 text-[hsl(var(--info))]" />} label="Streak" value={data.currentStreak} />
         </motion.div>
+
+        {/* Rivalry meter */}
+        {enrichment?.rivalry && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.07 }}
+            className="mb-[14px] rounded-[12px] border border-foreground/[0.06] bg-card p-[12px]"
+          >
+            <div className="flex items-center justify-between mb-[6px]">
+              <span className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/50 font-semibold">Rivalry</span>
+              <span className="text-[13px] font-bold text-foreground">{enrichment.rivalry}</span>
+            </div>
+            <div className="h-[6px] rounded-full bg-muted/60 overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all"
+                style={{ width: `${Math.max(4, Math.round(enrichment.rivalryScore * 100))}%` }}
+              />
+            </div>
+            <p className="mt-[6px] text-[10px] text-muted-foreground/60 leading-[1.4]">
+              {rivalryBlurb(enrichment.rivalry, enrichment.rivalryScore)}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Shared signatures */}
+        {enrichment && enrichment.signatures.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.09 }}
+            className="mb-[14px]"
+          >
+            <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/40 font-semibold mb-[6px] flex items-center gap-[4px]">
+              <Sparkles className="h-2.5 w-2.5" /> Your shared signatures
+            </p>
+            <div className="flex flex-wrap gap-[5px]">
+              {enrichment.signatures.map((s, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-[5px] px-[10px] py-[5px] rounded-full bg-primary/[0.07] border border-primary/15 text-[11px] font-bold text-foreground"
+                >
+                  {s.answer}
+                  <span className="text-[9px] text-primary/70 font-semibold">×{s.occurrences}</span>
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Most divisive */}
+        {enrichment?.divisive && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.11 }}
+            className="mb-[14px] rounded-[12px] border border-foreground/[0.06] bg-card p-[12px]"
+          >
+            <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground/40 font-semibold mb-[6px] flex items-center gap-[4px]">
+              <Split className="h-2.5 w-2.5" /> Most divisive
+            </p>
+            <PromptPair wordA={enrichment.divisive.word_a} wordB={enrichment.divisive.word_b} size="sm" />
+            <div className="mt-[8px] grid grid-cols-2 gap-[5px]">
+              <div className="rounded-[8px] bg-muted/40 px-[8px] py-[8px] text-center">
+                <p className="text-[9px] uppercase tracking-[0.06em] text-muted-foreground/50 font-semibold mb-[2px]">You</p>
+                <p className="text-[12px] font-bold text-foreground break-words">{enrichment.divisive.myAnswer}</p>
+              </div>
+              <div className="rounded-[8px] bg-muted/40 px-[8px] py-[8px] text-center">
+                <p className="text-[9px] uppercase tracking-[0.06em] text-muted-foreground/50 font-semibold mb-[2px] truncate">{data.them.display_name}</p>
+                <p className="text-[12px] font-bold text-foreground break-words">{enrichment.divisive.theirAnswer}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+
 
         {/* Today */}
         <motion.div
@@ -219,4 +300,14 @@ function AnswerCell({ label, answer, locked, matched }: { label: string; answer:
       </p>
     </div>
   );
+}
+
+function rivalryBlurb(rivalry: 'Twin' | 'Sync' | 'Wildcard' | 'Opposite', score: number): string {
+  const pct = Math.round(score * 100);
+  switch (rivalry) {
+    case 'Twin': return `You match on ${pct}% of days you both played. Eerie.`;
+    case 'Sync': return `You match on ${pct}% of days you both played.`;
+    case 'Wildcard': return `You match on ${pct}% of days — unpredictable pair.`;
+    case 'Opposite': return `You almost never match. Opposite brains.`;
+  }
 }

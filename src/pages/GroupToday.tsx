@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupHistory from '@/components/GroupHistory';
 import GroupTodayFeed from '@/components/GroupTodayFeed';
+import PairChipsRow from '@/components/PairChipsRow';
 import {
   getGroupByInviteCode,
   getGroupMembers,
@@ -248,6 +249,11 @@ export default function GroupToday() {
               </div>
             )}
 
+            {/* Your pairs — discoverability into Pair page */}
+            {hasPlayed && (
+              <PairChipsRow groupId={group.id} inviteCode={group.invite_code} memberCount={members.length} />
+            )}
+
             {/* Crowd results link */}
             {hasPlayed && (
               <Button variant="ghost" className="w-full rounded-lg h-8 text-[11px] text-muted-foreground" asChild>
@@ -256,8 +262,10 @@ export default function GroupToday() {
             )}
           </div>
         ) : (
-
-          <GroupHistory groupId={group.id} groupName={group.name} />
+          <div className="space-y-[10px]">
+            <PairChipsRow groupId={group.id} inviteCode={group.invite_code} memberCount={members.length} />
+            <GroupHistory groupId={group.id} groupName={group.name} />
+          </div>
         )}
 
         {/* Leave group */}
