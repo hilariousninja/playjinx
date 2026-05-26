@@ -7,7 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupHistory from '@/components/GroupHistory';
 import GroupTodayFeed from '@/components/GroupTodayFeed';
-import PairChipsRow from '@/components/PairChipsRow';
+import GroupMembersList from '@/components/GroupMembersList';
 import {
   getGroupByInviteCode,
   getGroupMembers,
@@ -25,7 +25,7 @@ import { toast } from '@/hooks/use-toast';
 import { markGroupVisited } from '@/lib/group-visits';
 
 
-type Tab = 'today' | 'history';
+type Tab = 'today' | 'members' | 'history';
 
 
 export default function GroupToday() {
@@ -188,17 +188,17 @@ export default function GroupToday() {
 
         {/* Tabs */}
         <div className="flex gap-0 rounded-[9px] bg-muted/50 p-[3px] mb-[10px]">
-          {(['today', 'history'] as Tab[]).map(t => (
+          {(['today', 'members', 'history'] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-[6px] rounded-[7px] text-[11px] font-semibold transition-all ${
+              className={`flex-1 py-[6px] rounded-[7px] text-[11px] font-semibold transition-all capitalize ${
                 tab === t
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground/50 hover:text-muted-foreground'
               }`}
             >
-              {t === 'today' ? 'Today' : 'History'}
+              {t}
             </button>
           ))}
         </div>
@@ -246,20 +246,22 @@ export default function GroupToday() {
                 <p className="text-[10px] text-muted-foreground/70 font-display truncate">
                   {rosterLine}
                 </p>
-                {others.length === 0 && (
+                {others.length === 0 ? (
                   <button
                     onClick={handleInvite}
                     className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0 flex items-center gap-1"
                   >
                     <Share2 className="h-2.5 w-2.5" /> Invite
                   </button>
+                ) : (
+                  <button
+                    onClick={() => setTab('members')}
+                    className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
+                  >
+                    See members →
+                  </button>
                 )}
               </div>
-            )}
-
-            {/* Your pairs — discoverability into Pair page */}
-            {hasPlayed && (
-              <PairChipsRow groupId={group.id} inviteCode={group.invite_code} memberCount={members.length} />
             )}
 
             {/* Crowd results link */}
@@ -269,12 +271,17 @@ export default function GroupToday() {
               </Button>
             )}
           </div>
+        ) : tab === 'members' ? (
+          <GroupMembersList
+            groupId={group.id}
+            inviteCode={group.invite_code}
+            memberCount={members.length}
+            onInvite={handleInvite}
+          />
         ) : (
-          <div className="space-y-[10px]">
-            <PairChipsRow groupId={group.id} inviteCode={group.invite_code} memberCount={members.length} />
-            <GroupHistory groupId={group.id} groupName={group.name} />
-          </div>
+          <GroupHistory groupId={group.id} groupName={group.name} />
         )}
+
 
         {/* Leave group */}
         <div className="mt-4">
