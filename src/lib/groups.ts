@@ -23,10 +23,24 @@ export interface GroupMember {
   joined_at: string;
 }
 
+export interface GroupTodayHeadline {
+  promptId: string | null;
+  word_a: string | null;
+  word_b: string | null;
+  jinxAnswer: string | null;        // raw answer text when ≥2 members matched
+  jinxNames: [string, string] | null;
+  viewerPlayed: boolean;
+  answeredCount: number;
+  totalMembers: number;
+  hasJinxToday: boolean;
+}
+
 export interface GroupWithActivity extends JinxGroup {
   memberCount: number;
   hasActivityToday: boolean;
   todayAnsweredCount: number;
+  todayHeadline: GroupTodayHeadline | null;
+  viewerPlayedToday: boolean;
 }
 
 // --- Local tracking (supplement DB) ---
