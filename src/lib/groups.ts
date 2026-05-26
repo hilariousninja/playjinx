@@ -23,10 +23,24 @@ export interface GroupMember {
   joined_at: string;
 }
 
+export interface GroupTodayHeadline {
+  promptId: string | null;
+  word_a: string | null;
+  word_b: string | null;
+  jinxAnswer: string | null;        // raw answer text when ≥2 members matched
+  jinxNames: [string, string] | null;
+  viewerPlayed: boolean;
+  answeredCount: number;
+  totalMembers: number;
+  hasJinxToday: boolean;
+}
+
 export interface GroupWithActivity extends JinxGroup {
   memberCount: number;
   hasActivityToday: boolean;
   todayAnsweredCount: number;
+  todayHeadline: GroupTodayHeadline | null;
+  viewerPlayedToday: boolean;
 }
 
 // --- Local tracking (supplement DB) ---
@@ -210,59 +224,124 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
 
   const groupIds = memberships.map(m => m.group_id);
 
-  // Fetch group details
-  const { data: groups } = await supabase
-    .from('groups')
-    .select('*')
-    .in('id', groupIds);
+  // Parallel: groups + all members across these groups + today's prompts
+  const [groupsRes, allMembersRes, promptsRes] = await Promise.all([
+    supabase.from('groups').select('*').in('id', groupIds),
+    supabase
+      .from('group_members')
+      .select('group_id, session_id, display_name')
+      .in('group_id', groupIds)
+      .eq('active', true),
+    supabase
+      .from('prompts')
+      .select('id, word_a, word_b, created_at')
+      .eq('date', today)
+      .in('mode', ['daily', 'archive'])
+      .order('created_at')
+      .limit(3),
+  ]);
 
+  const groups = groupsRes.data as JinxGroup[] | null;
   if (!groups) return [];
 
-  // Get today's prompts for activity check
-  const { data: todayPrompts } = await supabase
-    .from('prompts')
-    .select('id')
-    .eq('date', today)
-    .in('mode', ['daily', 'archive']);
+  // Build per-group member map
+  const membersByGroup = new Map<string, { session_id: string; display_name: string }[]>();
+  for (const m of allMembersRes.data ?? []) {
+    const list = membersByGroup.get(m.group_id) ?? [];
+    list.push({ session_id: m.session_id, display_name: m.display_name });
+    membersByGroup.set(m.group_id, list);
+  }
 
-  const promptIds = (todayPrompts ?? []).map(p => p.id);
+  const todayPrompts = (promptsRes.data ?? []);
+  const promptIds = todayPrompts.map(p => p.id);
+  const allMemberSessionIds = Array.from(new Set(
+    (allMembersRes.data ?? []).map(m => m.session_id)
+  ));
 
-  // For each group, get member count and today activity
-  const result: GroupWithActivity[] = await Promise.all(
-    (groups as JinxGroup[]).map(async (g) => {
-      const { data: members } = await supabase
-        .from('group_members')
-        .select('session_id')
-        .eq('group_id', g.id)
-        .eq('active', true);
+  // One batched answer pull across every group + today's prompts
+  let todayAnswers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string }[] = [];
+  if (promptIds.length > 0 && allMemberSessionIds.length > 0) {
+    const { data } = await supabase
+      .from('answers')
+      .select('prompt_id, session_id, raw_answer, normalized_answer')
+      .in('prompt_id', promptIds)
+      .in('session_id', allMemberSessionIds);
+    todayAnswers = data ?? [];
+  }
 
-      const memberSessionIds = (members ?? []).map(m => m.session_id);
-      const memberCount = memberSessionIds.length;
+  const result: GroupWithActivity[] = groups.map(g => {
+    const members = membersByGroup.get(g.id) ?? [];
+    const memberSessionIds = new Set(members.map(m => m.session_id));
+    const nameMap = new Map(members.map(m => [m.session_id, m.display_name]));
+    const memberCount = members.length;
 
-      let hasActivityToday = false;
-      let todayAnsweredCount = 0;
+    // Filter answers to this group's members
+    const groupAnswers = todayAnswers.filter(a => memberSessionIds.has(a.session_id));
+    const answeredSessions = new Set(groupAnswers.map(a => a.session_id));
+    const todayAnsweredCount = answeredSessions.size;
+    const viewerPlayedToday = answeredSessions.has(sessionId);
+    const hasActivityToday = answeredSessions.size > 1
+      || (answeredSessions.size === 1 && !answeredSessions.has(sessionId));
 
-      if (promptIds.length > 0 && memberSessionIds.length > 0) {
-        const { data: answers } = await supabase
-          .from('answers')
-          .select('session_id')
-          .in('prompt_id', promptIds)
-          .in('session_id', memberSessionIds);
+    // Build headline: prefer a prompt with a jinx, else first prompt
+    let headline: GroupTodayHeadline | null = null;
+    if (todayPrompts.length > 0) {
+      let featured = todayPrompts[0];
+      let jinxAnswer: string | null = null;
+      let jinxNames: [string, string] | null = null;
 
-        const uniqueAnswered = new Set((answers ?? []).map(a => a.session_id));
-        todayAnsweredCount = uniqueAnswered.size;
-        // Has activity if someone other than me answered
-        hasActivityToday = uniqueAnswered.size > 1 || (uniqueAnswered.size === 1 && !uniqueAnswered.has(sessionId));
+      for (const p of todayPrompts) {
+        const pa = groupAnswers.filter(a => a.prompt_id === p.id);
+        const clusters = new Map<string, string[]>();
+        for (const a of pa) {
+          const arr = clusters.get(a.normalized_answer) ?? [];
+          arr.push(a.session_id);
+          clusters.set(a.normalized_answer, arr);
+        }
+        const winning = Array.from(clusters.entries()).find(([, sids]) => sids.length >= 2);
+        if (winning) {
+          const [, sids] = winning;
+          const raw = pa.find(a => a.normalized_answer === winning[0])?.raw_answer ?? winning[0];
+          featured = p;
+          jinxAnswer = raw;
+          jinxNames = [nameMap.get(sids[0]) ?? 'Player', nameMap.get(sids[1]) ?? 'Player'];
+          break;
+        }
       }
 
-      return { ...g, memberCount, hasActivityToday, todayAnsweredCount };
-    })
-  );
+      const featuredAnsweredCount = new Set(
+        groupAnswers.filter(a => a.prompt_id === featured.id).map(a => a.session_id)
+      ).size;
 
-  // Sort: most recently active first
+      headline = {
+        promptId: featured.id,
+        word_a: featured.word_a,
+        word_b: featured.word_b,
+        jinxAnswer,
+        jinxNames,
+        viewerPlayed: viewerPlayedToday,
+        answeredCount: featuredAnsweredCount,
+        totalMembers: memberCount,
+        hasJinxToday: !!jinxAnswer,
+      };
+    }
+
+    return {
+      ...g,
+      memberCount,
+      hasActivityToday,
+      todayAnsweredCount,
+      todayHeadline: headline,
+      viewerPlayedToday,
+    };
+  });
+
+  // Sort: unread jinxes first (others played, viewer hasn't), then live, then quiet
   return result.sort((a, b) => {
-    if (a.hasActivityToday && !b.hasActivityToday) return -1;
-    if (!a.hasActivityToday && b.hasActivityToday) return 1;
+    const aUnread = a.hasActivityToday && !a.viewerPlayedToday ? 1 : 0;
+    const bUnread = b.hasActivityToday && !b.viewerPlayedToday ? 1 : 0;
+    if (aUnread !== bUnread) return bUnread - aUnread;
+    if (a.hasActivityToday !== b.hasActivityToday) return a.hasActivityToday ? -1 : 1;
     return b.memberCount - a.memberCount;
   });
 }
@@ -678,4 +757,156 @@ export async function renameGroup(groupId: string, newName: string): Promise<voi
     .from('groups')
     .update({ name: newName.trim() })
     .eq('id', groupId);
+}
+
+// --- Pair data (you × one other member) ---
+
+export interface PairTodayPrompt {
+  prompt_id: string;
+  word_a: string;
+  word_b: string;
+  myAnswer: string | null;
+  theirAnswer: string | null;
+  matched: boolean;
+}
+
+export interface PairRecentJinx {
+  date: string;
+  word_a: string;
+  word_b: string;
+  answer: string;
+}
+
+export interface PairData {
+  me: { session_id: string; display_name: string };
+  them: { session_id: string; display_name: string };
+  totalJinxes: number;
+  daysPlayedTogether: number;
+  currentStreak: number;
+  recentJinxes: PairRecentJinx[];
+  todayPrompts: PairTodayPrompt[];
+  viewerPlayedToday: boolean;
+}
+
+export async function getPairData(groupId: string, otherSessionId: string): Promise<PairData | null> {
+  const mySessionId = getPlayerId();
+  if (mySessionId === otherSessionId) return null;
+
+  const members = await getGroupMembers(groupId);
+  const me = members.find(m => m.session_id === mySessionId);
+  const them = members.find(m => m.session_id === otherSessionId);
+  if (!me || !them) return null;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const sessionIds = [mySessionId, otherSessionId];
+
+  // Pull all prompts ever (id, date, words)
+  const { data: allPrompts } = await supabase
+    .from('prompts')
+    .select('id, date, word_a, word_b')
+    .in('mode', ['daily', 'archive'])
+    .order('date', { ascending: false });
+
+  if (!allPrompts || allPrompts.length === 0) {
+    return {
+      me: { session_id: me.session_id, display_name: me.display_name },
+      them: { session_id: them.session_id, display_name: them.display_name },
+      totalJinxes: 0, daysPlayedTogether: 0, currentStreak: 0,
+      recentJinxes: [], todayPrompts: [], viewerPlayedToday: false,
+    };
+  }
+
+  const promptMap = new Map(allPrompts.map(p => [p.id, p]));
+  const promptIds = allPrompts.map(p => p.id);
+
+  // Chunk to be safe
+  const answers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string }[] = [];
+  const CHUNK = 500;
+  for (let i = 0; i < promptIds.length; i += CHUNK) {
+    const slice = promptIds.slice(i, i + CHUNK);
+    const { data } = await supabase
+      .from('answers')
+      .select('prompt_id, session_id, raw_answer, normalized_answer')
+      .in('prompt_id', slice)
+      .in('session_id', sessionIds);
+    if (data) answers.push(...data);
+  }
+
+  // Group answers by prompt
+  const byPrompt = new Map<string, { mine?: { raw: string; norm: string }; theirs?: { raw: string; norm: string } }>();
+  for (const a of answers) {
+    const entry = byPrompt.get(a.prompt_id) ?? {};
+    if (a.session_id === mySessionId) entry.mine = { raw: a.raw_answer, norm: a.normalized_answer };
+    else entry.theirs = { raw: a.raw_answer, norm: a.normalized_answer };
+    byPrompt.set(a.prompt_id, entry);
+  }
+
+  // Walk prompts (already date-desc) for stats + recent jinxes
+  const recentJinxes: PairRecentJinx[] = [];
+  let totalJinxes = 0;
+  const daysBothPlayed = new Set<string>();
+
+  for (const p of allPrompts) {
+    const entry = byPrompt.get(p.id);
+    if (!entry?.mine || !entry?.theirs) continue;
+    daysBothPlayed.add(p.date);
+    if (entry.mine.norm === entry.theirs.norm) {
+      totalJinxes++;
+      if (recentJinxes.length < 10) {
+        recentJinxes.push({
+          date: p.date, word_a: p.word_a, word_b: p.word_b,
+          answer: entry.mine.raw,
+        });
+      }
+    }
+  }
+
+  // Current streak: consecutive days (from today backwards) where both played
+  const sortedDays = Array.from(daysBothPlayed).sort().reverse();
+  let currentStreak = 0;
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  let cursor = new Date(today + 'T12:00:00').getTime();
+  for (const d of sortedDays) {
+    const dayMs = new Date(d + 'T12:00:00').getTime();
+    if (dayMs === cursor) {
+      currentStreak++;
+      cursor -= oneDayMs;
+    } else if (dayMs < cursor) {
+      // gap of at least one day before today → streak broken (skip leading non-today)
+      if (currentStreak === 0 && dayMs === cursor - oneDayMs) {
+        // started yesterday; allow streak to begin from yesterday only if today hasn't been played by anyone yet
+        currentStreak++;
+        cursor = dayMs - oneDayMs;
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Today's prompts
+  const todayPrompts: PairTodayPrompt[] = allPrompts
+    .filter(p => p.date === today)
+    .map(p => {
+      const entry = byPrompt.get(p.id);
+      const myA = entry?.mine?.raw ?? null;
+      const theirA = entry?.theirs?.raw ?? null;
+      const matched = !!entry?.mine && !!entry?.theirs && entry.mine.norm === entry.theirs.norm;
+      return {
+        prompt_id: p.id, word_a: p.word_a, word_b: p.word_b,
+        myAnswer: myA, theirAnswer: theirA, matched,
+      };
+    });
+
+  const viewerPlayedToday = todayPrompts.some(p => p.myAnswer !== null);
+
+  return {
+    me: { session_id: me.session_id, display_name: me.display_name },
+    them: { session_id: them.session_id, display_name: them.display_name },
+    totalJinxes,
+    daysPlayedTogether: daysBothPlayed.size,
+    currentStreak,
+    recentJinxes,
+    todayPrompts,
+    viewerPlayedToday,
+  };
 }
