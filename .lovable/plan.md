@@ -1,67 +1,49 @@
-# JINX Design Reference Document
+# Fix: Blank strip below bottom nav on Firefox Android
 
-A single exhaustive markdown reference covering philosophy, every screen, every decision, and rejected paths — for future-you to stay aligned.
+## The problem
 
-## Location
+On Firefox for Android, a cream-colored strip (~nav height) appears between the in-app bottom nav (Play / Groups / Archive) and the system gesture bar. Chrome on Android renders the nav flush against the gesture bar. Visible in the attached video.
 
-`docs/design-reference.md` (new `docs/` folder). Markdown, versioned with the code.
+## Root cause
 
-## Structure
+`src/components/MobileBottomNav.tsx` positions the nav with `position: fixed; bottom: 0`. On Firefox Android, fixed elements are anchored to the **layout viewport**, not the **visual viewport**. When the URL bar collapses on scroll, the visual viewport grows downward but `bottom: 0` stays pinned to the original layout-viewport bottom — leaving a strip of `<body>` background visible beneath the nav.
 
-```text
-1.  Mission & North Star
-2.  Design Philosophy
-      2.1  Crowd prediction, not puzzle-solving
-      2.2  Social payoff over stats
-      2.3  Honesty over hype
-      2.4  Mobile-first, thumb-first
-3.  Audience & Use Cases
-4.  Visual Identity (V8)
-      4.1  Color system — Amber #D97706, Cream #F6F4EF, semantic tokens
-      4.2  Typography — Space Grotesk, sizing scale, never-truncate rule
-      4.3  Spacing, radii, shadows
-      4.4  Iconography & motion principles
-5.  Information Architecture
-      5.1  Three modes: Play / Groups / Archive
-      5.2  Bottom nav + 52px header
-      5.3  Navigation layers (SlidePanel, vaul drawer, z-index)
-6.  Screen-by-screen reference (purpose, layout, decisions, rejected alts)
-      Landing, Play, Results, Archive, Groups Hub, Group Today,
-      Group Members, Group History, Group Pair, Challenge Landing,
-      Challenge Compare, Creator Dashboard (5 tabs)
-7.  Core Game Mechanics
-      7.1  One answer per day policy
-      7.2  Three prompts per day
-      7.3  Daily set integrity safeguard
-      7.4  Answer normalization & fuzzy merging
-      7.5  Word freshness & lifecycle
-8.  Social Layer
-      8.1  Challenge a friend (/c/:token)
-      8.2  Recurring groups (/g/:slug)
-      8.3  Identity system (localStorage display name)
-      8.4  Social memory layer
-      8.5  Pair page rivalry model
-9.  Creator Dashboard Philosophy
-      9.1  Curation hub structure
-      9.2  JINXability framework
-      9.3  Quality controls (tuning, hygiene, governance)
-      9.4  Word strength scoring
-10. Copy & Voice
-      10.1  Tone of voice
-      10.2  Microcopy conventions (no jinxes, you jinxed, etc.)
-      10.3  Pluralization & truncation rules
-11. Decision Log (why these, why not those)
-      Rejected: dark mode for players, per-user stats dashboards,
-      anonymous signups, weekly recap (gated), and others
-12. Anti-patterns & Guardrails
-13. Open Questions & Future Considerations
-14. Glossary
-```
+This is a long-standing Firefox-mobile behavior (Bugzilla 1737918 / 1724353). Chrome resizes the visual viewport in sync, so it doesn't show.
 
-## Sources
+## Fix
 
-Distilled from `mem://` index entries, current code (theme tokens, screen components, lib helpers), and prior decisions captured in chat. No new design choices — purely documents what exists and why.
+Two small, surgical changes — both presentation-layer, no logic changes:
 
-## Length
+### 1. `src/components/MobileBottomNav.tsx`
 
-Aiming ~50–80 KB markdown (the "exhaustive bible" tier). Long-form prose where rationale matters, tight bullet/table format for tokens and conventions.
+Add a full-width background "extender" that paints the area beneath the nav with `bg-background`, so any Firefox phantom strip blends into the nav instead of revealing the page body.
+
+- Wrap the existing `<nav>` so a sibling `<div aria-hidden>` sits behind it with:
+  - `fixed left-0 right-0 bottom-0`
+  - height taller than the nav (e.g. `h-32`) so it covers the gesture-bar inset even after URL-bar collapse
+  - `bg-background` matching the nav
+  - `z-40` (one below the nav's `z-50`) and `pointer-events-none`
+  - `md:hidden`
+- Keep the nav itself unchanged (still `z-50`, `pb-[env(safe-area-inset-bottom)]`, `h-14`).
+
+### 2. `index.html`
+
+Add `viewport-fit=cover` to the viewport meta so `env(safe-area-inset-bottom)` returns the correct value on devices with home-indicator gesture areas (currently it's 0 because the meta omits this). This makes the existing `pb-[env(safe-area-inset-bottom)]` actually do its job and reduces the gap on iOS Safari too.
+
+- `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />`
+
+## Why this approach
+
+- Doesn't touch any business logic, routing, or nav structure.
+- Pure-paint fix: the extender is invisible on Chrome (sits behind the nav, same color as body) and only becomes visible on Firefox when it leaves a strip — at which point it correctly matches the nav background.
+- `viewport-fit=cover` is the standard fix for safe-area handling; pairs naturally with the existing `pb-[env(safe-area-inset-bottom)]`.
+
+## Files changed
+
+- `src/components/MobileBottomNav.tsx` — add background-extender sibling div
+- `index.html` — append `viewport-fit=cover` to viewport meta
+
+## Verification
+
+- Open `playjinx.com/results` (or any page that shows the bottom nav) on Firefox Android, scroll to collapse URL bar, confirm no cream strip below nav.
+- Re-check on Chrome Android and desktop — nav should look identical to today.

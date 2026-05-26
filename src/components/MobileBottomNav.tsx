@@ -28,6 +28,12 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
   };
 
   return (
+    <>
+      {/* Background extender — paints the strip Firefox Android leaves below fixed elements when the URL bar collapses */}
+      <div
+        aria-hidden
+        className="fixed left-0 right-0 bottom-0 h-32 bg-background z-40 pointer-events-none md:hidden"
+      />
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => {
