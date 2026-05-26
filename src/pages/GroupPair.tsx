@@ -12,6 +12,7 @@ export default function GroupPair() {
   const { inviteCode, otherSessionId } = useParams<{ inviteCode: string; otherSessionId: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<PairData | null>(null);
+  const [enrichment, setEnrichment] = useState<PairEnrichment | null>(null);
   const [groupName, setGroupName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +24,13 @@ export default function GroupPair() {
         const g = await getGroupByInviteCode(inviteCode);
         if (!g) { setError('Group not found'); setLoading(false); return; }
         setGroupName(g.name);
-        const pd = await getPairData(g.id, otherSessionId);
+        const [pd, en] = await Promise.all([
+          getPairData(g.id, otherSessionId),
+          getPairEnrichment(g.id, otherSessionId),
+        ]);
         if (!pd) { setError("This pair isn't available"); setLoading(false); return; }
         setData(pd);
+        setEnrichment(en);
         setLoading(false);
       } catch {
         setError('Something went wrong');
