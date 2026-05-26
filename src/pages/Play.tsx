@@ -314,6 +314,7 @@ export default function Play() {
             </button>
           </motion.div>
         )}
+        </div>
       </div>
 
       <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
