@@ -190,6 +190,7 @@ function UniqueTile({
   myId,
   expanded,
   onToggle,
+  variant,
 }: {
   totalAnswers: number;
   uniqueCount: number;
@@ -200,7 +201,11 @@ function UniqueTile({
   myId: string;
   expanded: boolean;
   onToggle: () => void;
+  variant?: 'other';
 }) {
+  const label = variant === 'other'
+    ? <>see <span className="font-semibold text-foreground">{uniqueCount}</span> other {uniqueCount === 1 ? 'answer' : 'answers'}</>
+    : <><span className="font-semibold text-foreground">{uniqueCount}</span> unique {uniqueCount === 1 ? 'answer' : 'answers'}<span className="text-muted-foreground/40"> · {totalAnswers} played · no jinxes</span></>;
   return (
     <div className="px-[12px] pb-[10px]">
       <button
