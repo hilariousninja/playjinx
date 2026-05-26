@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getPlayerId } from './store';
 import { getDisplayName } from './challenge-room';
+import { getAllLastVisits } from './group-visits';
+import type { GroupAccent } from './group-visuals';
 
 const MY_GROUPS_KEY = 'jinx_my_groups';
 
@@ -12,6 +14,8 @@ export interface JinxGroup {
   invite_code: string;
   creator_session_id: string;
   created_at: string;
+  emoji: string | null;
+  accent: string | null;
 }
 
 export interface GroupMember {
@@ -37,11 +41,14 @@ export interface GroupTodayHeadline {
 
 export interface GroupWithActivity extends JinxGroup {
   memberCount: number;
+  memberPreview: { session_id: string; display_name: string }[];
   hasActivityToday: boolean;
   todayAnsweredCount: number;
   todayHeadline: GroupTodayHeadline | null;
   viewerPlayedToday: boolean;
+  newSinceLastVisit: number; // # new answers from others since you last opened this group
 }
+
 
 // --- Local tracking (supplement DB) ---
 
