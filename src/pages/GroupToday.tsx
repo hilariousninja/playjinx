@@ -7,7 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupHistory from '@/components/GroupHistory';
 import GroupTodayFeed from '@/components/GroupTodayFeed';
-import PairChipsRow from '@/components/PairChipsRow';
+import GroupMembersList from '@/components/GroupMembersList';
 import {
   getGroupByInviteCode,
   getGroupMembers,
