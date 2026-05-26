@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Zap, Loader2, AlertCircle, Lock, Calendar, Flame, Users } from 'lucide-react';
+import { ArrowLeft, Zap, Loader2, AlertCircle, Lock, Calendar, Flame, Users, Sparkles, Split } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import PromptPair from '@/components/PromptPair';
-import { getGroupByInviteCode, getPairData, type PairData } from '@/lib/groups';
+import { getGroupByInviteCode, getPairData, getPairEnrichment, type PairData, type PairEnrichment } from '@/lib/groups';
 
 export default function GroupPair() {
   const { inviteCode, otherSessionId } = useParams<{ inviteCode: string; otherSessionId: string }>();
