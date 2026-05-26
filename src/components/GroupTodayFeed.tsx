@@ -96,13 +96,29 @@ function PromptRow({
           <p className="text-[11px] text-muted-foreground/50 italic">No answers yet</p>
         </div>
       ) : isJinx ? (
-        <JinxHero
-          cluster={topCluster}
-          myName={myName}
-          nameToSid={nameToSid}
-          inviteCode={inviteCode}
-          myId={myId}
-        />
+        <>
+          <JinxHero
+            cluster={topCluster}
+            myName={myName}
+            nameToSid={nameToSid}
+            inviteCode={inviteCode}
+            myId={myId}
+          />
+          {result.clusters.length > 1 && (
+            <UniqueTile
+              totalAnswers={totalAnswers}
+              uniqueCount={uniqueCount - 1}
+              clusters={result.clusters.slice(1)}
+              myName={myName}
+              nameToSid={nameToSid}
+              inviteCode={inviteCode}
+              myId={myId}
+              expanded={expanded}
+              onToggle={() => setExpanded(v => !v)}
+              variant="other"
+            />
+          )}
+        </>
       ) : (
         <UniqueTile
           totalAnswers={totalAnswers}
