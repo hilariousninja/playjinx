@@ -150,14 +150,15 @@ export default function Play() {
 
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
-      {/* Title area */}
-      <div className="max-w-md mx-auto w-full px-4 pt-3 pb-2">
-        <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
-        <p className="text-[11px] text-muted-foreground mt-[1px]">What word links both?</p>
-      </div>
+      {/* Scrollable content area */}
+      <div className="flex-1">
+        <div className="max-w-md mx-auto w-full px-4 pt-3 pb-2">
+          <h1 className="text-[17px] font-semibold text-foreground tracking-tight">Today's prompts</h1>
+          <p className="text-[11px] text-muted-foreground mt-[1px]">What word links both?</p>
+        </div>
 
-      {/* Prompt cards */}
-      <div className="flex-1 px-4 pb-6 max-w-md mx-auto w-full space-y-[9px]">
+        {/* Prompt cards */}
+        <div className="px-4 pb-6 max-w-md mx-auto w-full space-y-[9px]">
         {prompts.map((p, i) => {
           const isDone = submitted[p.id];
           const isActive = i === activeIdx && !isDone;
