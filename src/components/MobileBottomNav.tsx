@@ -16,11 +16,43 @@ const navItems = [
   { to: '/archive', label: 'Archive', icon: Archive },
 ];
 
+const getVisualViewportGap = () => {
+  if (typeof window === 'undefined' || !window.visualViewport) return 0;
+
+  const gap = window.visualViewport.offsetTop + window.visualViewport.height - window.innerHeight;
+  return gap > 1 ? Math.ceil(gap) : 0;
+};
+
 export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, groupNewCount }: Props) {
   const { pathname } = useLocation();
   // Hide badge while on Groups (and force re-mount when route changes) — visiting the page resets visits per group.
   const [seenAt, setSeenAt] = useState(0);
+  const [visualViewportGap, setVisualViewportGap] = useState(0);
   useEffect(() => { if (pathname.startsWith('/groups')) setSeenAt(Date.now()); }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    let frame = 0;
+    const updateGap = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => setVisualViewportGap(getVisualViewportGap()));
+    };
+
+    updateGap();
+    window.visualViewport.addEventListener('resize', updateGap);
+    window.visualViewport.addEventListener('scroll', updateGap);
+    window.addEventListener('resize', updateGap);
+    window.addEventListener('orientationchange', updateGap);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.visualViewport?.removeEventListener('resize', updateGap);
+      window.visualViewport?.removeEventListener('scroll', updateGap);
+      window.removeEventListener('resize', updateGap);
+      window.removeEventListener('orientationchange', updateGap);
+    };
+  }, []);
 
   const isActive = (to: string) => {
     if (to === '/play') return pathname === '/play' || pathname === '/';
@@ -28,13 +60,10 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
   };
 
   return (
-    <>
-      {/* Background extender — paints the strip Firefox Android leaves below fixed elements when the URL bar collapses */}
-      <div
-        aria-hidden
-        className="fixed left-0 right-0 bottom-0 h-32 bg-background z-40 pointer-events-none md:hidden"
-      />
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)]">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)] will-change-transform"
+      style={visualViewportGap ? { transform: `translate3d(0, ${visualViewportGap}px, 0)` } : undefined}
+    >
       <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => {
           const active = isActive(to);
@@ -77,6 +106,5 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
         })}
       </div>
     </nav>
-    </>
   );
 }
