@@ -1,49 +1,33 @@
-# Fix: Blank strip below bottom nav on Firefox Android
+## Plan
 
-## The problem
+1. **Remove the failed Firefox-specific nav workaround**
+   - Remove the `@supports (-moz-appearance: none)` sticky override added in `src/index.css`.
+   - Keep `MobileBottomNav` simple, with no visualViewport offset math and no browser-specific transform hacks.
 
-On Firefox for Android, a cream-colored strip (~nav height) appears between the in-app bottom nav (Play / Groups / Archive) and the system gesture bar. Chrome on Android renders the nav flush against the gesture bar. Visible in the attached video.
+2. **Create a real mobile app-shell layout**
+   - Add reusable semantic CSS classes in `src/index.css` for:
+     - a mobile page shell that uses `100svh`/`100dvh` viewport sizing instead of `min-h-screen`/`100vh`
+     - a scrollable content area above the nav
+     - a stable bottom nav slot that lives inside the shell instead of being positioned against Firefox’s browser viewport
+   - This avoids Firefox Android’s dynamic address-bar bug where `fixed bottom-0` can attach to the wrong viewport when the toolbar appears/disappears.
 
-## Root cause
+3. **Convert the bottom-nav pages to the shell pattern**
+   - Update the pages that render `MobileBottomNav` so their structure becomes:
 
-`src/components/MobileBottomNav.tsx` positions the nav with `position: fixed; bottom: 0`. On Firefox Android, fixed elements are anchored to the **layout viewport**, not the **visual viewport**. When the URL bar collapses on scroll, the visual viewport grows downward but `bottom: 0` stays pinned to the original layout-viewport bottom — leaving a strip of `<body>` background visible beneath the nav.
+```text
+mobile app shell
+  header
+  scrollable page content
+  bottom nav
+```
 
-This is a long-standing Firefox-mobile behavior (Bugzilla 1737918 / 1724353). Chrome resizes the visual viewport in sync, so it doesn't show.
+   - Apply this to the main mobile routes: Landing, Play, Groups, Archive, Results, GroupToday, and GroupPair.
+   - Remove the page-level `pb-20` spacer that was only compensating for a fixed nav.
 
-## Fix
+4. **Keep desktop/tablet behavior unchanged**
+   - The shell classes will be mobile-only where needed, and existing `md:` layout behavior remains intact.
+   - Dashboard and non-bottom-nav routes are not touched.
 
-Two small, surgical changes — both presentation-layer, no logic changes:
-
-### 1. `src/components/MobileBottomNav.tsx`
-
-Add a full-width background "extender" that paints the area beneath the nav with `bg-background`, so any Firefox phantom strip blends into the nav instead of revealing the page body.
-
-- Wrap the existing `<nav>` so a sibling `<div aria-hidden>` sits behind it with:
-  - `fixed left-0 right-0 bottom-0`
-  - height taller than the nav (e.g. `h-32`) so it covers the gesture-bar inset even after URL-bar collapse
-  - `bg-background` matching the nav
-  - `z-40` (one below the nav's `z-50`) and `pointer-events-none`
-  - `md:hidden`
-- Keep the nav itself unchanged (still `z-50`, `pb-[env(safe-area-inset-bottom)]`, `h-14`).
-
-### 2. `index.html`
-
-Add `viewport-fit=cover` to the viewport meta so `env(safe-area-inset-bottom)` returns the correct value on devices with home-indicator gesture areas (currently it's 0 because the meta omits this). This makes the existing `pb-[env(safe-area-inset-bottom)]` actually do its job and reduces the gap on iOS Safari too.
-
-- `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />`
-
-## Why this approach
-
-- Doesn't touch any business logic, routing, or nav structure.
-- Pure-paint fix: the extender is invisible on Chrome (sits behind the nav, same color as body) and only becomes visible on Firefox when it leaves a strip — at which point it correctly matches the nav background.
-- `viewport-fit=cover` is the standard fix for safe-area handling; pairs naturally with the existing `pb-[env(safe-area-inset-bottom)]`.
-
-## Files changed
-
-- `src/components/MobileBottomNav.tsx` — add background-extender sibling div
-- `index.html` — append `viewport-fit=cover` to viewport meta
-
-## Verification
-
-- Open `playjinx.com/results` (or any page that shows the bottom nav) on Firefox Android, scroll to collapse URL bar, confirm no cream strip below nav.
-- Re-check on Chrome Android and desktop — nav should look identical to today.
+5. **Verify the failure scenario**
+   - Check the edited structure for route changes between bottom tabs.
+   - Confirm the nav is no longer tied to `position: fixed` on Firefox Android, so scrolling upward to reveal the address bar should not create a grey/blank area underneath it.

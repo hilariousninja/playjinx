@@ -174,13 +174,16 @@
     background-clip: text;
   }
 
-  @supports (-moz-appearance: none) and (height: 100svh) {
-    @media (max-width: 767px) {
-      .mobile-bottom-nav {
-        position: sticky;
-        bottom: 0;
-        margin-top: auto;
-      }
-    }
+  /* Mobile app shell — dynamic-viewport-aware so the bottom nav sits flush
+     with the visible bottom on all browsers (esp. Firefox Android, where
+     position:fixed bottom:0 attaches to the layout viewport and leaves a
+     grey strip when the URL bar shows/hides). */
+  .app-shell {
+    @apply flex flex-col bg-background;
+    min-height: 100vh; /* fallback */
+    min-height: 100dvh;
+  }
+  .app-shell-main {
+    @apply flex-1 flex flex-col w-full;
   }
 }
