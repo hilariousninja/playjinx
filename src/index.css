@@ -188,8 +188,8 @@
   }
   @media (max-width: 767px) {
     .app-shell {
-      /* Reserve space for the fixed bottom nav (h-14 = 56px) + safe area */
-      padding-bottom: calc(56px + env(safe-area-inset-bottom));
+      /* Reserve only the fixed nav height. Extra safe-area padding creates a visible strip on Firefox Android. */
+      padding-bottom: 56px;
     }
   }
 }
