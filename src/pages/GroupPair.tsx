@@ -301,3 +301,13 @@ function AnswerCell({ label, answer, locked, matched }: { label: string; answer:
     </div>
   );
 }
+
+function rivalryBlurb(rivalry: 'Twin' | 'Sync' | 'Wildcard' | 'Opposite', score: number): string {
+  const pct = Math.round(score * 100);
+  switch (rivalry) {
+    case 'Twin': return `You match on ${pct}% of days you both played. Eerie.`;
+    case 'Sync': return `You match on ${pct}% of days you both played.`;
+    case 'Wildcard': return `You match on ${pct}% of days — unpredictable pair.`;
+    case 'Opposite': return `You almost never match. Opposite brains.`;
+  }
+}
