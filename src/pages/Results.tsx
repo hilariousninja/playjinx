@@ -194,25 +194,22 @@ export default function Results() {
           topAnswers={topAnswers}
         />
 
-        {/* JINX reward moment — only when there's real overlap */}
-        {dayJinxes > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center justify-between bg-primary/8 rounded-[11px] px-[14px] py-[10px]"
-          >
-            <div className="flex items-center gap-[8px]">
-              <span className="text-[16px] font-bold text-primary">⚡ {dayJinxes}</span>
-              <span className="text-[12px] text-foreground/70 font-medium">
-                JINX{dayJinxes > 1 ? 'es' : ''} today
-                <span className="text-muted-foreground font-normal"> · {matchedPrompts}/{results.length} matched</span>
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] text-muted-foreground block">{totalJinxes} total · {weekJinxes} this week</span>
-            </div>
-          </motion.div>
+        {/* Single meta line — lifetime + week + streak. Today's numbers belong to the hero. */}
+        {(totalJinxes > 0 || weekJinxes > 0 || streak.current > 0) && (
+          <div className="flex items-center justify-center gap-[8px] text-[11px] text-muted-foreground px-[14px] py-[2px]">
+            {totalJinxes > 0 && <span>{totalJinxes} total</span>}
+            {totalJinxes > 0 && weekJinxes > 0 && <span className="text-muted-foreground/40">·</span>}
+            {weekJinxes > 0 && <span>{weekJinxes} this week</span>}
+            {streak.current > 0 && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="flex items-center gap-[4px]">
+                  <span aria-hidden>🔥</span>
+                  <span className="font-semibold text-foreground/80">{streak.current}-day streak</span>
+                </span>
+              </>
+            )}
+          </div>
         )}
 
         {/* Provisional lead — top answer but no overlap yet (NOT a JINX) */}
@@ -235,32 +232,6 @@ export default function Results() {
           </div>
         )}
 
-        {/* Stats row — three distinct concepts */}
-        <div className="flex bg-card rounded-[11px] border border-foreground/[0.08] overflow-hidden">
-          {[
-            { value: `⚡ ${dayJinxes}`, label: 'JINXes' },
-            { value: `${matchedPrompts}/${results.length}`, label: 'Matched' },
-            { value: topAnswers, label: '#1 answers' },
-          ].map((s, i) => (
-            <div key={s.label} className={`flex-1 text-center py-[9px] px-1 ${i > 0 ? 'border-l border-foreground/[0.08]' : ''}`}>
-              <span className="text-[14px] font-bold text-primary block mb-px">{s.value}</span>
-              <span className="text-[9px] text-muted-foreground leading-tight">{s.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Streak — subtle daily-game retention surface */}
-        {streak.current > 0 && (
-          <div className="flex items-center justify-between px-[14px] py-[6px] text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-[6px]">
-              <span aria-hidden>🔥</span>
-              <span className="font-semibold text-foreground/80">{streak.current}-day streak</span>
-            </span>
-            {streak.best > streak.current && (
-              <span className="text-muted-foreground/70">Best {streak.best}</span>
-            )}
-          </div>
-        )}
 
         {/* Section label */}
         <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground mt-1 mb-0">
