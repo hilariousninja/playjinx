@@ -99,6 +99,26 @@ export default function ProfileStatsPanel({ open, onClose, displayName }: Props)
             Play today's prompts and overlap with other players to start earning JINXes.
           </p>
         )}
+
+        {/* Switch / reset identity */}
+        <div className="pt-2">
+          <button
+            onClick={() => {
+              if (!confirm('Sign out of this device? You can re-enter your name to pick up your past results and groups.')) return;
+              localStorage.removeItem('jinx_player_id');
+              localStorage.removeItem('jinx_session_id');
+              localStorage.removeItem('jinx_display_name');
+              localStorage.removeItem('jinx_completed_prompts');
+              window.location.href = '/';
+            }}
+            className="w-full text-[11px] font-semibold text-muted-foreground hover:text-foreground py-2 rounded-lg border border-foreground/10 hover:border-foreground/20 transition-colors"
+          >
+            Sign out / switch player
+          </button>
+          <p className="text-[10px] text-muted-foreground/60 text-center mt-2 leading-snug">
+            On a new device? Sign out, then re-enter your name to merge your past results and group history.
+          </p>
+        </div>
       </div>
     </SlidePanel>
   );
