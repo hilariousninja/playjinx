@@ -97,13 +97,22 @@ function generateInviteCode(groupName: string): string {
 
 // --- Group CRUD ---
 
-export async function createGroup(name: string): Promise<JinxGroup> {
+export async function createGroup(
+  name: string,
+  options: { emoji?: string | null; accent?: GroupAccent | null } = {}
+): Promise<JinxGroup> {
   const sessionId = getPlayerId();
   const inviteCode = generateInviteCode(name);
 
   const { data, error } = await supabase
     .from('groups')
-    .insert({ name: name.trim() || 'My JINX group', invite_code: inviteCode, creator_session_id: sessionId })
+    .insert({
+      name: name.trim() || 'My JINX group',
+      invite_code: inviteCode,
+      creator_session_id: sessionId,
+      emoji: options.emoji ?? null,
+      accent: options.accent ?? null,
+    })
     .select()
     .single();
 
@@ -117,6 +126,7 @@ export async function createGroup(name: string): Promise<JinxGroup> {
 
   return group;
 }
+
 
 export async function getGroupByInviteCode(code: string): Promise<JinxGroup | null> {
   const { data, error } = await supabase
