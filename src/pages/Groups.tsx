@@ -14,12 +14,8 @@ import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
 import { useGroupHasActivity } from '@/hooks/use-group-activity';
 import { toast } from '@/hooks/use-toast';
 
-const AVATAR_COLORS = [
-  { bg: 'bg-primary/15', text: 'text-primary', accent: 'border-primary/20' },
-  { bg: 'bg-[hsl(var(--info))]/12', text: 'text-[hsl(var(--info))]', accent: 'border-[hsl(var(--info))]/20' },
-  { bg: 'bg-[hsl(var(--success))]/12', text: 'text-[hsl(var(--success))]', accent: 'border-[hsl(var(--success))]/20' },
-  { bg: 'bg-muted', text: 'text-muted-foreground', accent: 'border-foreground/10' },
-];
+
+
 
 export default function Groups() {
   const navigate = useNavigate();
