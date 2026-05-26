@@ -30,7 +30,7 @@ export default function Landing() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
+    <div className="app-shell">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <main className="flex-1 overflow-y-auto flex justify-center px-4 pt-6 pb-6">

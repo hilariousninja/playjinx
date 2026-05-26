@@ -145,7 +145,7 @@ export default function Play() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
+    <div className="app-shell">
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
 
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />

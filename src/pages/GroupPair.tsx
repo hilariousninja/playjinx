@@ -61,7 +61,7 @@ export default function GroupPair() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
+    <div className="app-shell">
       <AppHeader />
 
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-3 pb-8">
