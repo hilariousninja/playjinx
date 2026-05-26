@@ -22,6 +22,7 @@ import {
 import { getPlayerId, ensureDailyPrompts, syncCompletionStatus } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { markGroupVisited } from '@/lib/group-visits';
 
 
 type Tab = 'today' | 'history';
@@ -78,6 +79,13 @@ export default function GroupToday() {
       }
     })();
   }, [inviteCode, navigate, loadData]);
+
+  // Mark visit on entry + exit so "new since" resets immediately
+  useEffect(() => {
+    if (!group) return;
+    markGroupVisited(group.id);
+    return () => { markGroupVisited(group.id); };
+  }, [group]);
 
   // Realtime
   useEffect(() => {

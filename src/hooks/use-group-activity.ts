@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getMyGroups } from '@/lib/groups';
 
 /** Returns true when any of the user's groups has activity today from other members */
 export function useGroupHasActivity(): boolean {
   const [hasActivity, setHasActivity] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     (async () => {
@@ -14,7 +16,7 @@ export function useGroupHasActivity(): boolean {
         // silently fail
       }
     })();
-  }, []);
+  }, [pathname]);
 
   return hasActivity;
 }
@@ -22,6 +24,7 @@ export function useGroupHasActivity(): boolean {
 /** Total "new since last visit" count across all the viewer's groups. */
 export function useGroupNewCount(): number {
   const [count, setCount] = useState(0);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     (async () => {
@@ -32,7 +35,7 @@ export function useGroupNewCount(): number {
         // silently fail
       }
     })();
-  }, []);
+  }, [pathname]);
 
   return count;
 }
