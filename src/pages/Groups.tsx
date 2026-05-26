@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, X, Loader2, LogOut, LinkIcon, UserPlus } from 'lucide-react';
+import { Users, Plus, X, Loader2, LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import GroupFeedCard from '@/components/GroupFeedCard';
 import { getMyGroups, createGroup, leaveGroup, buildGroupInviteText, type GroupWithActivity } from '@/lib/groups';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 import DisplayNameInput from '@/components/DisplayNameInput';
