@@ -13,6 +13,60 @@ export function setDisplayName(name: string) {
   localStorage.setItem(DISPLAY_NAME_KEY, name.trim());
 }
 
+// --- Soft identity claim ---
+// If someone uses a new browser/device but their friends already know them by
+// a display name, look up prior sessions so they can "claim" them and keep
+// their group history, answers and rivalry record. No password — fine for the
+// current trust model where identity is device-local.
+
+export interface ExistingIdentity {
+  session_id: string;
+  display_name: string;
+  last_seen: string;
+}
+
+export async function findExistingIdentities(name: string): Promise<ExistingIdentity[]> {
+  const trimmed = name.trim();
+  if (!trimmed) return [];
+  const currentSid = getPlayerId();
+
+  const [gm, cp] = await Promise.all([
+    supabase
+      .from('group_members')
+      .select('session_id, display_name, joined_at')
+      .ilike('display_name', trimmed),
+    supabase
+      .from('challenge_participants')
+      .select('session_id, display_name, created_at')
+      .ilike('display_name', trimmed),
+  ]);
+
+  const map = new Map<string, ExistingIdentity>();
+  for (const r of gm.data ?? []) {
+    if (r.session_id === currentSid) continue;
+    const prev = map.get(r.session_id);
+    if (!prev || prev.last_seen < r.joined_at) {
+      map.set(r.session_id, { session_id: r.session_id, display_name: r.display_name, last_seen: r.joined_at });
+    }
+  }
+  for (const r of cp.data ?? []) {
+    if (r.session_id === currentSid) continue;
+    const prev = map.get(r.session_id);
+    if (!prev || prev.last_seen < r.created_at) {
+      map.set(r.session_id, { session_id: r.session_id, display_name: r.display_name, last_seen: r.created_at });
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.last_seen.localeCompare(a.last_seen));
+}
+
+export function claimIdentity(sessionId: string, displayName: string) {
+  localStorage.setItem('jinx_player_id', sessionId);
+  localStorage.removeItem('jinx_session_id');
+  localStorage.setItem(DISPLAY_NAME_KEY, displayName.trim());
+  localStorage.removeItem('jinx_completed_prompts');
+}
+
 // --- Participants ---
 
 export interface RoomParticipant {
