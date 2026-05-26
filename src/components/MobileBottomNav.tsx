@@ -16,10 +16,16 @@ const navItems = [
   { to: '/archive', label: 'Archive', icon: Archive },
 ];
 
-const getVisualViewportGap = () => {
+// On Firefox Android, `position: fixed; bottom: 0` is positioned against the
+// layout viewport (full height, ignoring the URL bar). When the address bar is
+// visible, the visual viewport is shorter than the layout viewport, leaving a
+// blank gap beneath the nav. Pull the nav up by the difference so it always
+// sits flush with the visible bottom edge.
+const getVisualViewportOffset = () => {
   if (typeof window === 'undefined' || !window.visualViewport) return 0;
 
-  const gap = window.visualViewport.offsetTop + window.visualViewport.height - window.innerHeight;
+  const vv = window.visualViewport;
+  const gap = window.innerHeight - (vv.offsetTop + vv.height);
   return gap > 1 ? Math.ceil(gap) : 0;
 };
 
@@ -27,7 +33,7 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
   const { pathname } = useLocation();
   // Hide badge while on Groups (and force re-mount when route changes) — visiting the page resets visits per group.
   const [seenAt, setSeenAt] = useState(0);
-  const [visualViewportGap, setVisualViewportGap] = useState(0);
+  const [visualViewportOffset, setVisualViewportOffset] = useState(0);
   useEffect(() => { if (pathname.startsWith('/groups')) setSeenAt(Date.now()); }, [pathname]);
 
   useEffect(() => {
@@ -36,7 +42,7 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
     let frame = 0;
     const updateGap = () => {
       window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => setVisualViewportGap(getVisualViewportGap()));
+      frame = window.requestAnimationFrame(() => setVisualViewportOffset(getVisualViewportOffset()));
     };
 
     updateGap();
@@ -62,7 +68,7 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)] will-change-transform"
-      style={visualViewportGap ? { transform: `translate3d(0, ${visualViewportGap}px, 0)` } : undefined}
+      style={visualViewportOffset ? { transform: `translate3d(0, -${visualViewportOffset}px, 0)` } : undefined}
     >
       <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => {
