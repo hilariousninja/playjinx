@@ -77,5 +77,6 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
         })}
       </div>
     </nav>
+    </>
   );
 }
