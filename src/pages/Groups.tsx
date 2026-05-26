@@ -98,21 +98,24 @@ export default function Groups() {
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1 max-w-md mx-auto px-4 pt-3 pb-6 w-full">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[6px]">
-          <div>
-            <h1 className="text-[15px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
-            <p className="text-[10px] text-muted-foreground mt-[1px]">Same prompts, same people, every day.</p>
-          </div>
-          {groups.length > 0 && !showCreate && (
-            <button
-              onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
-              className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
-            >
-              <Plus className="h-3 w-3" /> New
-            </button>
-          )}
-        </motion.div>
+        {/* Header — hidden on empty state so the hero card owns the page */}
+        {(groups.length > 0 || showCreate) && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[6px]">
+            <div>
+              <h1 className="text-[15px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
+              <p className="text-[10px] text-muted-foreground mt-[1px]">Same prompts, same people, every day.</p>
+            </div>
+            {groups.length > 0 && !showCreate && (
+              <button
+                onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
+                className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              >
+                <Plus className="h-3 w-3" /> New
+              </button>
+            )}
+          </motion.div>
+        )}
+
 
         {loading ? (
           <div className="py-10 text-center">
