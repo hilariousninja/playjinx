@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Share2, Loader2, AlertCircle, ArrowRight, LogOut, Clock, CheckCircle2, Circle } from 'lucide-react';
+import { Users, Share2, Loader2, AlertCircle, ArrowRight, LogOut, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
-import RoomResults from '@/components/RoomResults';
 import GroupHistory from '@/components/GroupHistory';
+import GroupTodayFeed from '@/components/GroupTodayFeed';
 import {
   getGroupByInviteCode,
   getGroupMembers,
@@ -21,6 +21,7 @@ import {
 import { getPlayerId, ensureDailyPrompts, syncCompletionStatus } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+
 
 type Tab = 'today' | 'history';
 
