@@ -98,21 +98,24 @@ export default function Groups() {
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1 max-w-md mx-auto px-4 pt-3 pb-6 w-full">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[6px]">
-          <div>
-            <h1 className="text-[15px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
-            <p className="text-[10px] text-muted-foreground mt-[1px]">Same prompts, same people, every day.</p>
-          </div>
-          {groups.length > 0 && !showCreate && (
-            <button
-              onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
-              className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
-            >
-              <Plus className="h-3 w-3" /> New
-            </button>
-          )}
-        </motion.div>
+        {/* Header — hidden on empty state so the hero card owns the page */}
+        {(groups.length > 0 || showCreate) && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-[6px]">
+            <div>
+              <h1 className="text-[15px] font-bold text-foreground tracking-tight leading-none">Groups</h1>
+              <p className="text-[10px] text-muted-foreground mt-[1px]">Same prompts, same people, every day.</p>
+            </div>
+            {groups.length > 0 && !showCreate && (
+              <button
+                onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
+                className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              >
+                <Plus className="h-3 w-3" /> New
+              </button>
+            )}
+          </motion.div>
+        )}
+
 
         {loading ? (
           <div className="py-10 text-center">
@@ -162,13 +165,12 @@ export default function Groups() {
 
             {/* Empty state */}
             {groups.length === 0 && !showCreate && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[10px]">
-                <div className="bg-card rounded-[14px] border border-primary/15 p-[16px]">
-                  <p className="text-[14px] font-bold text-foreground leading-tight mb-[3px]">Play JINX with your people</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug mb-[12px]">Same prompts, every day. See who thinks like you.</p>
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[12px] pt-[8px]">
+                <div className="bg-card rounded-[16px] border border-primary/15 p-[20px]">
+                  <p className="text-[18px] font-bold text-foreground leading-[1.15] tracking-tight mb-[14px]">Play JINX with your people</p>
                   <Button
                     onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
-                    className="w-full rounded-[12px] h-[44px] text-[13px] font-bold"
+                    className="w-full rounded-[12px] h-[46px] text-[13px] font-bold"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1.5" /> Start your first group
                   </Button>
@@ -184,6 +186,14 @@ export default function Groups() {
                   >
                     <LinkIcon className="h-3 w-3" /> Join with invite link
                   </button>
+                </div>
+
+                {/* Static example — gives the empty state something concrete */}
+                <div className="rounded-[12px] border border-dashed border-foreground/[0.1] px-[14px] py-[10px]">
+                  <p className="text-[9px] uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold mb-[4px]">What it looks like</p>
+                  <p className="text-[12px] text-foreground/75 leading-[1.4]">
+                    <span className="font-semibold text-foreground">Sam · Maya · You</span> — <span className="text-primary font-semibold">2 jinxed</span> yesterday on <span className="italic">"mistake + river"</span>.
+                  </p>
                 </div>
               </motion.div>
             )}
