@@ -22,6 +22,7 @@ import {
 import { getPlayerId, ensureDailyPrompts, syncCompletionStatus } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { markGroupVisited } from '@/lib/group-visits';
 
 
 type Tab = 'today' | 'history';
