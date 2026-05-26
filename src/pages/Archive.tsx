@@ -286,7 +286,7 @@ export default function Archive() {
   const pastDays = days.filter(d => !d.isToday);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
+    <div className="app-shell">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-4 pb-8">

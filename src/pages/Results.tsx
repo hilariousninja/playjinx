@@ -173,7 +173,7 @@ export default function Results() {
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
+    <div className="app-shell">
       <AppHeader
         hasNewRoomActivity={hasNewRoomActivity}
         hasGroupActivity={hasGroupActivity}

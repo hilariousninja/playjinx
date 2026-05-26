@@ -94,7 +94,7 @@ export default function Groups() {
   const showSoloMagic = !!onlyGroup && onlyGroup.memberCount === 1;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
+    <div className="app-shell">
       <AppHeader hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
 
       <div className="flex-1 max-w-md mx-auto px-4 pt-3 pb-6 w-full">
