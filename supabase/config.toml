@@ -1,1 +1,4 @@
 project_id = "wehqgplyzwvpgdfbzxik"
+
+[functions.merge-identities]
+verify_jwt = false

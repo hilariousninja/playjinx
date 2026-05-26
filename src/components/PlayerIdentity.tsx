@@ -41,8 +41,12 @@ export default function PlayerIdentity() {
     }
   };
 
-  const claim = (m: ExistingIdentity) => {
-    claimIdentity(m.session_id, m.display_name);
+  const claim = async (m: ExistingIdentity) => {
+    if (!claimPrompt) return;
+    const others = claimPrompt.matches
+      .map(x => x.session_id)
+      .filter(sid => sid !== m.session_id);
+    await claimIdentity(m.session_id, m.display_name, others);
     setName(m.display_name);
     setClaimPrompt(null);
     setEditing(false);
