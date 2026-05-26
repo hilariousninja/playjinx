@@ -132,25 +132,19 @@ export default function GroupToday() {
     : new Set<string>();
   const answeredMembers = answeredSessionIds.size;
 
-  const roomParticipants = members.map(m => ({
-    id: m.id,
-    challenge_id: group.id,
-    session_id: m.session_id,
-    display_name: m.display_name,
-    created_at: m.joined_at,
-  }));
-
-  const roomResults = results.map(r => ({
-    prompt_id: r.prompt_id,
-    word_a: r.word_a,
-    word_b: r.word_b,
-    answers: r.answers,
-    clusters: r.clusters,
-  }));
-
-  const showResults = hasPlayed && answeredMembers >= 2;
-  const showWaiting = hasPlayed && answeredMembers <= 1;
-  const waitingCount = members.filter(m => !answeredSessionIds.has(m.session_id)).length;
+  // One-liner roster footer: "3/4 in · Sam, Maya, you"
+  const playedNames = members
+    .filter(m => answeredSessionIds.has(m.session_id))
+    .sort((a, b) => {
+      // self last so it reads naturally with " you"
+      if (a.session_id === myId) return 1;
+      if (b.session_id === myId) return -1;
+      return 0;
+    })
+    .map(m => (m.session_id === myId ? 'you' : m.display_name));
+  const rosterLine = playedNames.length > 0
+    ? `${answeredMembers}/${members.length} in · ${playedNames.join(', ')}`
+    : `0/${members.length} in`;
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
@@ -228,66 +222,30 @@ export default function GroupToday() {
               </motion.div>
             )}
 
-            {/* Waiting — played but not enough others */}
-            {showWaiting && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="rounded-[12px] border border-border/50 bg-card p-[14px]">
-                  {/* Status */}
-                  <div className="flex items-center justify-between mb-[10px]">
-                    <div className="flex items-center gap-[6px]">
-                      <span className="inline-block w-[6px] h-[6px] rounded-full bg-primary animate-pulse" />
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-[0.08em]">Waiting for group</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/40">{answeredMembers}/{members.length} played</span>
-                  </div>
-
-                  {/* Member roster */}
-                  <div className="divide-y divide-border/30">
-                    {/* Show me first, then others */}
-                    {members
-                      .sort((a, b) => {
-                        if (a.session_id === myId) return -1;
-                        if (b.session_id === myId) return 1;
-                        const aPlayed = answeredSessionIds.has(a.session_id);
-                        const bPlayed = answeredSessionIds.has(b.session_id);
-                        if (aPlayed && !bPlayed) return -1;
-                        if (!aPlayed && bPlayed) return 1;
-                        return 0;
-                      })
-                      .map(m => (
-                        <MemberRow
-                          key={m.id}
-                          member={m}
-                          hasAnswered={answeredSessionIds.has(m.session_id)}
-                          isMe={m.session_id === myId}
-                        />
-                      ))}
-                  </div>
-
-                  {/* Contextual message */}
-                  <div className="mt-[10px] pt-[8px] border-t border-border/30">
-                    {others.length === 0 ? (
-                      <div className="flex items-center gap-[8px]">
-                        <p className="text-[11px] text-muted-foreground flex-1">Invite someone to compare answers</p>
-                        <Button variant="outline" size="sm" onClick={handleInvite} className="rounded-[8px] text-[10px] h-7 px-2.5 shrink-0">
-                          <Share2 className="h-3 w-3 mr-1" /> Invite
-                        </Button>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        Results unlock when {waitingCount === 1 ? '1 more member plays' : `${waitingCount} more members play`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+            {/* Result-led feed (handles its own blur/lock when !hasPlayed) */}
+            {results.length > 0 && (
+              <GroupTodayFeed
+                results={results}
+                inviteCode={group.invite_code}
+                viewerPlayed={hasPlayed}
+              />
             )}
 
-            {/* Results ready */}
-            {showResults && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-                <RoomResults results={roomResults} participants={roomParticipants} />
-              </motion.div>
+            {/* One-liner roster footer */}
+            {hasPlayed && (
+              <div className="flex items-center justify-between gap-2 pt-[2px] px-[2px]">
+                <p className="text-[10px] text-muted-foreground/70 font-display truncate">
+                  {rosterLine}
+                </p>
+                {others.length === 0 && (
+                  <button
+                    onClick={handleInvite}
+                    className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0 flex items-center gap-1"
+                  >
+                    <Share2 className="h-2.5 w-2.5" /> Invite
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Crowd results link */}
@@ -298,6 +256,7 @@ export default function GroupToday() {
             )}
           </div>
         ) : (
+
           <GroupHistory groupId={group.id} groupName={group.name} />
         )}
 
