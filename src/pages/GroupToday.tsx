@@ -25,24 +25,6 @@ import { toast } from '@/hooks/use-toast';
 
 type Tab = 'today' | 'history';
 
-/* ── Member roster row ── */
-function MemberRow({ member, hasAnswered, isMe }: { member: GroupMember; hasAnswered: boolean; isMe: boolean }) {
-  return (
-    <div className="flex items-center gap-[8px] py-[5px]">
-      {hasAnswered ? (
-        <CheckCircle2 className="h-[14px] w-[14px] text-primary shrink-0" />
-      ) : (
-        <Circle className="h-[14px] w-[14px] text-muted-foreground/20 shrink-0" />
-      )}
-      <span className={`text-[12px] font-display truncate ${isMe ? 'font-bold text-foreground' : hasAnswered ? 'text-foreground/80' : 'text-muted-foreground/40'}`}>
-        {member.display_name}{isMe ? ' (you)' : ''}
-      </span>
-      {hasAnswered && (
-        <span className="text-[9px] text-primary/60 font-semibold ml-auto shrink-0">played</span>
-      )}
-    </div>
-  );
-}
 
 export default function GroupToday() {
   const { inviteCode } = useParams<{ inviteCode: string }>();
