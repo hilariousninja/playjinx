@@ -1102,9 +1102,10 @@ export interface ViewerPair {
   otherDisplayName: string;
   jinxCount: number;
   daysTogether: number;
+  lastJinxDate: string | null;
 }
 
-export async function getTopPairsForViewer(groupId: string, limit = 3): Promise<ViewerPair[]> {
+async function computeViewerPairs(groupId: string): Promise<ViewerPair[]> {
   const mySessionId = getPlayerId();
   const members = await getGroupMembers(groupId);
   const others = members.filter(m => m.session_id !== mySessionId);
@@ -1116,24 +1117,24 @@ export async function getTopPairsForViewer(groupId: string, limit = 3): Promise<
     .from('prompts')
     .select('id, date')
     .in('mode', ['daily', 'archive']);
-  if (!allPrompts || allPrompts.length === 0) return [];
 
-  const promptDateMap = new Map(allPrompts.map(p => [p.id, p.date]));
-  const promptIds = allPrompts.map(p => p.id);
+  const promptDateMap = new Map((allPrompts ?? []).map(p => [p.id, p.date]));
+  const promptIds = (allPrompts ?? []).map(p => p.id);
 
   const answers: { prompt_id: string; session_id: string; normalized_answer: string }[] = [];
-  const CHUNK = 500;
-  for (let i = 0; i < promptIds.length; i += CHUNK) {
-    const slice = promptIds.slice(i, i + CHUNK);
-    const { data } = await supabase
-      .from('answers')
-      .select('prompt_id, session_id, normalized_answer')
-      .in('prompt_id', slice)
-      .in('session_id', sessionIds);
-    if (data) answers.push(...data);
+  if (promptIds.length > 0) {
+    const CHUNK = 500;
+    for (let i = 0; i < promptIds.length; i += CHUNK) {
+      const slice = promptIds.slice(i, i + CHUNK);
+      const { data } = await supabase
+        .from('answers')
+        .select('prompt_id, session_id, normalized_answer')
+        .in('prompt_id', slice)
+        .in('session_id', sessionIds);
+      if (data) answers.push(...data);
+    }
   }
 
-  // By prompt: viewer's normalized + map of other -> normalized
   const byPrompt = new Map<string, { mine?: string; others: Map<string, string> }>();
   for (const a of answers) {
     const entry = byPrompt.get(a.prompt_id) ?? { others: new Map<string, string>() };
@@ -1142,8 +1143,8 @@ export async function getTopPairsForViewer(groupId: string, limit = 3): Promise<
     byPrompt.set(a.prompt_id, entry);
   }
 
-  const tallies = new Map<string, { jinx: number; days: Set<string> }>();
-  for (const o of others) tallies.set(o.session_id, { jinx: 0, days: new Set() });
+  const tallies = new Map<string, { jinx: number; days: Set<string>; lastJinx: string | null }>();
+  for (const o of others) tallies.set(o.session_id, { jinx: 0, days: new Set(), lastJinx: null });
 
   for (const [pid, entry] of byPrompt) {
     if (!entry.mine) continue;
@@ -1153,24 +1154,42 @@ export async function getTopPairsForViewer(groupId: string, limit = 3): Promise<
       const t = tallies.get(sid);
       if (!t) continue;
       t.days.add(date);
-      if (norm === entry.mine) t.jinx++;
+      if (norm === entry.mine) {
+        t.jinx++;
+        if (!t.lastJinx || date > t.lastJinx) t.lastJinx = date;
+      }
     }
   }
 
-  return others
-    .map(o => {
-      const t = tallies.get(o.session_id)!;
-      return {
-        otherSessionId: o.session_id,
-        otherDisplayName: o.display_name,
-        jinxCount: t.jinx,
-        daysTogether: t.days.size,
-      };
-    })
+  return others.map(o => {
+    const t = tallies.get(o.session_id)!;
+    return {
+      otherSessionId: o.session_id,
+      otherDisplayName: o.display_name,
+      jinxCount: t.jinx,
+      daysTogether: t.days.size,
+      lastJinxDate: t.lastJinx,
+    };
+  });
+}
+
+export async function getTopPairsForViewer(groupId: string, limit = 3): Promise<ViewerPair[]> {
+  const all = await computeViewerPairs(groupId);
+  return all
     .filter(p => p.jinxCount > 0 || p.daysTogether > 0)
     .sort((a, b) => b.jinxCount - a.jinxCount || b.daysTogether - a.daysTogether)
     .slice(0, limit);
 }
+
+export async function getAllPairsForViewer(groupId: string): Promise<ViewerPair[]> {
+  const all = await computeViewerPairs(groupId);
+  return all.sort((a, b) =>
+    b.jinxCount - a.jinxCount ||
+    b.daysTogether - a.daysTogether ||
+    a.otherDisplayName.localeCompare(b.otherDisplayName)
+  );
+}
+
 
 // --- Sample "what your group looks like" headline for solo groups ---
 
