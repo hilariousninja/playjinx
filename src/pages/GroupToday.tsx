@@ -25,7 +25,7 @@ import { toast } from '@/hooks/use-toast';
 import { markGroupVisited } from '@/lib/group-visits';
 
 
-type Tab = 'today' | 'history';
+type Tab = 'today' | 'members' | 'history';
 
 
 export default function GroupToday() {
