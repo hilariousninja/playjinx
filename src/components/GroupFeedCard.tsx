@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, UserPlus, LogOut, ArrowRight, Lock } from 'lucide-react';
+import { Zap, UserPlus, LogOut, ArrowRight, Lock, Sparkles } from 'lucide-react';
 import type { GroupWithActivity } from '@/lib/groups';
+import {
+  resolveGroupEmoji,
+  resolveGroupAccent,
+  getAccentTokens,
+} from '@/lib/group-visuals';
+import MemberAvatars from './MemberAvatars';
 
 interface Props {
   group: GroupWithActivity;
@@ -10,31 +16,19 @@ interface Props {
   onLeave: () => void;
 }
 
-// Stable color hash from group id
-function colorFor(id: string) {
-  const palettes = [
-    { bg: 'bg-primary/12', text: 'text-primary', border: 'border-primary/20' },
-    { bg: 'bg-[hsl(var(--info))]/12', text: 'text-[hsl(var(--info))]', border: 'border-[hsl(var(--info))]/20' },
-    { bg: 'bg-[hsl(var(--success))]/12', text: 'text-[hsl(var(--success))]', border: 'border-[hsl(var(--success))]/20' },
-    { bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-foreground/10' },
-  ];
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
-  return palettes[Math.abs(h) % palettes.length];
-}
-
 export default function GroupFeedCard({ group, index, onInvite, onLeave }: Props) {
-  const palette = colorFor(group.id);
-  const initials = group.name.substring(0, 2).toUpperCase();
+  const emoji = resolveGroupEmoji(group);
+  const accent = resolveGroupAccent(group);
+  const tokens = getAccentTokens(accent);
   const h = group.todayHeadline;
-  const isUnreadJinx = !!h?.viewerPlayed === false && !!h?.answeredCount && h.answeredCount > 0;
   const isLive = group.hasActivityToday && !group.viewerPlayedToday;
   const isAllIn = h && h.answeredCount === h.totalMembers && h.totalMembers > 1;
+  const isSolo = group.memberCount === 1;
 
   const statusPill = isAllIn
     ? { label: 'All in', cls: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]' }
     : isLive
-      ? { label: 'Live', cls: 'bg-primary/12 text-primary' }
+      ? { label: 'Live', cls: `${tokens.bgStrong} ${tokens.text}` }
       : null;
 
   return (
@@ -42,7 +36,7 @@ export default function GroupFeedCard({ group, index, onInvite, onLeave }: Props
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
-      className="bg-card rounded-[14px] border border-foreground/[0.08] overflow-hidden group/card"
+      className={`bg-card rounded-[14px] border ${tokens.border} overflow-hidden group/card`}
     >
       <Link
         to={`/g/${group.invite_code}/today`}
@@ -50,11 +44,16 @@ export default function GroupFeedCard({ group, index, onInvite, onLeave }: Props
       >
         {/* Header strip */}
         <div className="flex items-center gap-[8px] px-[12px] pt-[10px] pb-[6px]">
-          <div className={`w-[26px] h-[26px] rounded-full ${palette.bg} border ${palette.border} flex items-center justify-center shrink-0`}>
-            <span className={`text-[10px] font-bold ${palette.text}`}>{initials}</span>
+          <div className={`w-[28px] h-[28px] rounded-[8px] ${tokens.bgStrong} border ${tokens.border} flex items-center justify-center shrink-0`}>
+            <span className="text-[15px] leading-none">{emoji}</span>
           </div>
           <p className="text-[12px] font-bold text-foreground truncate flex-1 leading-tight">{group.name}</p>
-          {statusPill && (
+          {group.newSinceLastVisit > 0 && !isSolo && (
+            <span className="text-[8px] px-[6px] py-[1px] rounded-full font-bold leading-none shrink-0 bg-primary text-primary-foreground">
+              {group.newSinceLastVisit > 9 ? '9+' : group.newSinceLastVisit} new
+            </span>
+          )}
+          {statusPill && group.newSinceLastVisit === 0 && (
             <span className={`text-[8px] px-[6px] py-[1px] rounded-full font-bold leading-none shrink-0 ${statusPill.cls}`}>
               {statusPill.label}
             </span>
@@ -63,17 +62,20 @@ export default function GroupFeedCard({ group, index, onInvite, onLeave }: Props
 
         {/* Hero block */}
         <div className="px-[12px] pb-[10px]">
-          <HeadlineBlock group={group} />
+          {isSolo ? <SoloHero /> : <HeadlineBlock group={group} />}
         </div>
       </Link>
 
       {/* Footer chrome */}
-      <div className="flex items-center px-[12px] py-[6px] border-t border-foreground/[0.04]">
-        <span className="text-[10px] text-muted-foreground/50">
-          {group.memberCount > 1 ? (
-            <><span className="font-bold text-foreground/60">{group.todayAnsweredCount}/{group.memberCount}</span> today</>
-          ) : (
+      <div className="flex items-center px-[12px] py-[7px] border-t border-foreground/[0.04] gap-[8px]">
+        {group.memberPreview.length > 0 && (
+          <MemberAvatars members={group.memberPreview} max={4} size={20} />
+        )}
+        <span className="text-[10px] text-muted-foreground/60">
+          {isSolo ? (
             'Just you'
+          ) : (
+            <><span className="font-bold text-foreground/70">{group.todayAnsweredCount}/{group.memberCount}</span> today</>
           )}
         </span>
         <div className="flex-1" />
@@ -93,6 +95,17 @@ export default function GroupFeedCard({ group, index, onInvite, onLeave }: Props
         </button>
       </div>
     </motion.div>
+  );
+}
+
+/* ── Solo group hero — invites action ── */
+function SoloHero() {
+  return (
+    <div className="rounded-[10px] bg-muted/40 px-[10px] py-[12px] text-center space-y-[3px]">
+      <Sparkles className="h-3.5 w-3.5 text-primary/60 mx-auto" />
+      <p className="text-[11px] font-semibold text-foreground/80">Invite a friend to start jinxing</p>
+      <p className="text-[10px] text-muted-foreground/60">Tap to invite — same prompts, same day</p>
+    </div>
   );
 }
 

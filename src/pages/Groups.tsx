@@ -1,21 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, X, Loader2, LinkIcon } from 'lucide-react';
+import { Plus, X, Loader2, LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupFeedCard from '@/components/GroupFeedCard';
+import EmojiAccentPicker from '@/components/EmojiAccentPicker';
+import SampleGroupPreview from '@/components/SampleGroupPreview';
 import { getMyGroups, createGroup, leaveGroup, buildGroupInviteText, type GroupWithActivity } from '@/lib/groups';
 import { getDisplayName, setDisplayName } from '@/lib/challenge-room';
 import DisplayNameInput from '@/components/DisplayNameInput';
 import { useRoomHasNewActivity } from '@/hooks/use-room-activity';
-import { useGroupHasActivity } from '@/hooks/use-group-activity';
+import { useGroupHasActivity, useGroupNewCount } from '@/hooks/use-group-activity';
+import { GROUP_EMOJI_PRESETS, GROUP_ACCENT_PRESETS, type GroupAccent } from '@/lib/group-visuals';
 import { toast } from '@/hooks/use-toast';
 
-
-
+function randomStarter() {
+  return {
+    emoji: GROUP_EMOJI_PRESETS[Math.floor(Math.random() * GROUP_EMOJI_PRESETS.length)],
+    accent: GROUP_ACCENT_PRESETS[Math.floor(Math.random() * GROUP_ACCENT_PRESETS.length)] as GroupAccent,
+  };
+}
 
 export default function Groups() {
   const navigate = useNavigate();
@@ -27,8 +34,10 @@ export default function Groups() {
   const [needsName, setNeedsName] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [personality, setPersonality] = useState(randomStarter);
   const hasNewRoomActivity = useRoomHasNewActivity();
   const hasGroupActivity = useGroupHasActivity();
+  const groupNewCount = useGroupNewCount();
 
   useEffect(() => {
     (async () => {
@@ -42,7 +51,7 @@ export default function Groups() {
     if (!getDisplayName()) { setNeedsName(true); return; }
     setCreating(true);
     try {
-      const g = await createGroup(groupName.trim() || 'My JINX group');
+      const g = await createGroup(groupName.trim() || 'My JINX group', personality);
       navigate(`/g/${g.invite_code}/today`);
     } catch {
       toast({ title: 'Could not create group', variant: 'destructive' });
@@ -72,7 +81,7 @@ export default function Groups() {
   const handleInvite = async (e: React.MouseEvent, g: GroupWithActivity) => {
     e.preventDefault();
     e.stopPropagation();
-    const text = buildGroupInviteText(g as any);
+    const text = buildGroupInviteText(g);
     if (navigator.share) {
       try { await navigator.share({ text }); return; } catch {}
     }
@@ -80,8 +89,9 @@ export default function Groups() {
     toast({ title: 'Invite link copied!' });
   };
 
-
-
+  // Solo-magic: exactly one group AND only me in it
+  const onlyGroup = groups.length === 1 ? groups[0] : null;
+  const showSoloMagic = !!onlyGroup && onlyGroup.memberCount === 1;
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 md:pb-0">
@@ -96,7 +106,7 @@ export default function Groups() {
           </div>
           {groups.length > 0 && !showCreate && (
             <button
-              onClick={() => setShowCreate(true)}
+              onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
               className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
             >
               <Plus className="h-3 w-3" /> New
@@ -139,38 +149,41 @@ export default function Groups() {
               );
             })}
 
+            {/* Solo-magic preview + big share CTA when there's exactly one group and you're alone in it */}
+            {showSoloMagic && onlyGroup && (
+              <div className="pt-[8px]">
+                <SampleGroupPreview
+                  groupName={onlyGroup.name}
+                  inviteCode={onlyGroup.invite_code}
+                  inviteText={buildGroupInviteText(onlyGroup)}
+                />
+              </div>
+            )}
 
             {/* Empty state */}
             {groups.length === 0 && !showCreate && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[6px]">
-                <div className="bg-card rounded-[12px] border border-foreground/[0.08] p-[14px]">
-                  <div className="flex items-center gap-[10px] mb-[10px]">
-                    <div className="w-[32px] h-[32px] rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Users className="h-[15px] w-[15px] text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-bold text-foreground leading-tight">Play JINX with your people</p>
-                      <p className="text-[11px] text-muted-foreground leading-tight mt-[1px]">Same prompts · see who thinks like you</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-[6px]">
-                    <Button onClick={() => setShowCreate(true)} className="flex-1 rounded-[10px] h-[36px] text-[12px] font-bold">
-                      <Plus className="h-3 w-3 mr-1" /> Start a group
-                    </Button>
-                    <button
-                      onClick={() => {
-                        const code = prompt('Paste an invite link or code:');
-                        if (code) {
-                          const match = code.match(/\/g\/([^\s/]+)/);
-                          navigate(`/g/${match ? match[1] : code.trim()}`);
-                        }
-                      }}
-                      className="flex items-center gap-[4px] px-[12px] h-[36px] text-[11px] text-muted-foreground hover:text-foreground rounded-[10px] border border-foreground/[0.08] hover:border-foreground/15 transition-colors shrink-0"
-                    >
-                      <LinkIcon className="h-3 w-3" />
-                      Join
-                    </button>
-                  </div>
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[10px]">
+                <div className="bg-card rounded-[14px] border border-primary/15 p-[16px]">
+                  <p className="text-[14px] font-bold text-foreground leading-tight mb-[3px]">Play JINX with your people</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug mb-[12px]">Same prompts, every day. See who thinks like you.</p>
+                  <Button
+                    onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
+                    className="w-full rounded-[12px] h-[44px] text-[13px] font-bold"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Start your first group
+                  </Button>
+                  <button
+                    onClick={() => {
+                      const code = prompt('Paste an invite link or code:');
+                      if (code) {
+                        const match = code.match(/\/g\/([^\s/]+)/);
+                        navigate(`/g/${match ? match[1] : code.trim()}`);
+                      }
+                    }}
+                    className="w-full mt-[8px] flex items-center justify-center gap-[5px] h-[34px] text-[11px] text-muted-foreground hover:text-foreground rounded-[10px] border border-dashed border-foreground/[0.1] hover:border-foreground/20 transition-colors"
+                  >
+                    <LinkIcon className="h-3 w-3" /> Join with invite link
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -182,7 +195,7 @@ export default function Groups() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="rounded-[12px] border border-foreground/[0.08] bg-card p-[12px] space-y-[8px]"
+                  className="rounded-[14px] border border-foreground/[0.08] bg-card p-[14px] space-y-[12px]"
                 >
                   {needsName ? (
                     <div>
@@ -201,12 +214,17 @@ export default function Groups() {
                         value={groupName}
                         onChange={e => setGroupName(e.target.value)}
                         placeholder="e.g. Work, Family, Film friends"
-                        className="rounded-[8px] h-[38px] text-[13px] border-foreground/[0.08]"
+                        className="rounded-[10px] h-[40px] text-[13px] border-foreground/[0.1]"
                         maxLength={40}
                         autoFocus
                         onKeyDown={e => e.key === 'Enter' && handleCreate()}
                       />
-                      <Button onClick={handleCreate} disabled={creating} className="w-full rounded-[10px] h-[40px] text-[13px] font-bold">
+                      <EmojiAccentPicker
+                        emoji={personality.emoji}
+                        accent={personality.accent}
+                        onChange={setPersonality}
+                      />
+                      <Button onClick={handleCreate} disabled={creating} className="w-full rounded-[12px] h-[42px] text-[13px] font-bold">
                         {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Create group'}
                       </Button>
                     </>
@@ -215,7 +233,7 @@ export default function Groups() {
               </AnimatePresence>
             )}
 
-            {/* Add group button when groups exist */}
+            {/* Join with invite link */}
             {groups.length > 0 && !showCreate && (
               <button
                 onClick={() => {
@@ -235,7 +253,11 @@ export default function Groups() {
         )}
       </div>
 
-      <MobileBottomNav hasNewRoomActivity={hasNewRoomActivity} hasGroupActivity={hasGroupActivity} />
+      <MobileBottomNav
+        hasNewRoomActivity={hasNewRoomActivity}
+        hasGroupActivity={hasGroupActivity}
+        groupNewCount={groupNewCount}
+      />
     </div>
   );
 }

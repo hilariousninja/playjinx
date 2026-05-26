@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getPlayerId } from './store';
 import { getDisplayName } from './challenge-room';
+import { getAllLastVisits } from './group-visits';
+import type { GroupAccent } from './group-visuals';
 
 const MY_GROUPS_KEY = 'jinx_my_groups';
 
@@ -12,6 +14,8 @@ export interface JinxGroup {
   invite_code: string;
   creator_session_id: string;
   created_at: string;
+  emoji: string | null;
+  accent: string | null;
 }
 
 export interface GroupMember {
@@ -37,11 +41,14 @@ export interface GroupTodayHeadline {
 
 export interface GroupWithActivity extends JinxGroup {
   memberCount: number;
+  memberPreview: { session_id: string; display_name: string }[];
   hasActivityToday: boolean;
   todayAnsweredCount: number;
   todayHeadline: GroupTodayHeadline | null;
   viewerPlayedToday: boolean;
+  newSinceLastVisit: number; // # new answers from others since you last opened this group
 }
+
 
 // --- Local tracking (supplement DB) ---
 
@@ -90,13 +97,22 @@ function generateInviteCode(groupName: string): string {
 
 // --- Group CRUD ---
 
-export async function createGroup(name: string): Promise<JinxGroup> {
+export async function createGroup(
+  name: string,
+  options: { emoji?: string | null; accent?: GroupAccent | null } = {}
+): Promise<JinxGroup> {
   const sessionId = getPlayerId();
   const inviteCode = generateInviteCode(name);
 
   const { data, error } = await supabase
     .from('groups')
-    .insert({ name: name.trim() || 'My JINX group', invite_code: inviteCode, creator_session_id: sessionId })
+    .insert({
+      name: name.trim() || 'My JINX group',
+      invite_code: inviteCode,
+      creator_session_id: sessionId,
+      emoji: options.emoji ?? null,
+      accent: options.accent ?? null,
+    })
     .select()
     .single();
 
@@ -110,6 +126,7 @@ export async function createGroup(name: string): Promise<JinxGroup> {
 
   return group;
 }
+
 
 export async function getGroupByInviteCode(code: string): Promise<JinxGroup | null> {
   const { data, error } = await supabase
@@ -259,15 +276,17 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
   ));
 
   // One batched answer pull across every group + today's prompts
-  let todayAnswers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string }[] = [];
+  let todayAnswers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string; created_at: string }[] = [];
   if (promptIds.length > 0 && allMemberSessionIds.length > 0) {
     const { data } = await supabase
       .from('answers')
-      .select('prompt_id, session_id, raw_answer, normalized_answer')
+      .select('prompt_id, session_id, raw_answer, normalized_answer, created_at')
       .in('prompt_id', promptIds)
       .in('session_id', allMemberSessionIds);
     todayAnswers = data ?? [];
   }
+
+  const lastVisits = getAllLastVisits();
 
   const result: GroupWithActivity[] = groups.map(g => {
     const members = membersByGroup.get(g.id) ?? [];
@@ -282,6 +301,19 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
     const viewerPlayedToday = answeredSessions.has(sessionId);
     const hasActivityToday = answeredSessions.size > 1
       || (answeredSessions.size === 1 && !answeredSessions.has(sessionId));
+
+    // New since last visit: others' answers created after lastVisitedAt
+    const lastVisitedAt = lastVisits[g.id] ?? null;
+    let newSinceLastVisit = 0;
+    if (lastVisitedAt) {
+      const lvMs = new Date(lastVisitedAt).getTime();
+      newSinceLastVisit = groupAnswers.filter(a =>
+        a.session_id !== sessionId && new Date(a.created_at).getTime() > lvMs
+      ).length;
+    } else {
+      // Never visited: count others' answers as new
+      newSinceLastVisit = groupAnswers.filter(a => a.session_id !== sessionId).length;
+    }
 
     // Build headline: prefer a prompt with a jinx, else first prompt
     let headline: GroupTodayHeadline | null = null;
@@ -326,15 +358,25 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
       };
     }
 
+    // Member preview: viewer first, then others by join order
+    const memberPreview = [...members].sort((a, b) => {
+      if (a.session_id === sessionId) return -1;
+      if (b.session_id === sessionId) return 1;
+      return 0;
+    });
+
     return {
       ...g,
       memberCount,
+      memberPreview,
       hasActivityToday,
       todayAnsweredCount,
       todayHeadline: headline,
       viewerPlayedToday,
+      newSinceLastVisit,
     };
   });
+
 
   // Sort: unread jinxes first (others played, viewer hasn't), then live, then quiet
   return result.sort((a, b) => {
@@ -910,3 +952,287 @@ export async function getPairData(groupId: string, otherSessionId: string): Prom
     viewerPlayedToday,
   };
 }
+
+// --- Pair enrichment v2 (signatures, divisive prompt, rivalry meter) ---
+
+export interface PairSignature {
+  answer: string;        // raw form
+  occurrences: number;   // times both have used this normalized answer
+}
+
+export interface PairDivisivePrompt {
+  prompt_id: string;
+  word_a: string;
+  word_b: string;
+  myAnswer: string;
+  theirAnswer: string;
+  date: string;
+}
+
+export type PairRivalry = 'Twin' | 'Sync' | 'Wildcard' | 'Opposite';
+
+export interface PairEnrichment {
+  signatures: PairSignature[];
+  divisive: PairDivisivePrompt | null;
+  rivalry: PairRivalry | null;        // null when daysPlayedTogether === 0
+  rivalryScore: number;               // matched / daysPlayedTogether (0–1)
+}
+
+export async function getPairEnrichment(
+  groupId: string,
+  otherSessionId: string
+): Promise<PairEnrichment | null> {
+  const mySessionId = getPlayerId();
+  if (mySessionId === otherSessionId) return null;
+
+  const members = await getGroupMembers(groupId);
+  const me = members.find(m => m.session_id === mySessionId);
+  const them = members.find(m => m.session_id === otherSessionId);
+  if (!me || !them) return null;
+
+  // Pull every prompt (id, date) and every answer from both
+  const { data: allPrompts } = await supabase
+    .from('prompts')
+    .select('id, date, word_a, word_b')
+    .in('mode', ['daily', 'archive']);
+  if (!allPrompts || allPrompts.length === 0) {
+    return { signatures: [], divisive: null, rivalry: null, rivalryScore: 0 };
+  }
+
+  const promptMap = new Map(allPrompts.map(p => [p.id, p]));
+  const promptIds = allPrompts.map(p => p.id);
+
+  const answers: { prompt_id: string; session_id: string; raw_answer: string; normalized_answer: string }[] = [];
+  const CHUNK = 500;
+  for (let i = 0; i < promptIds.length; i += CHUNK) {
+    const slice = promptIds.slice(i, i + CHUNK);
+    const { data } = await supabase
+      .from('answers')
+      .select('prompt_id, session_id, raw_answer, normalized_answer')
+      .in('prompt_id', slice)
+      .in('session_id', [mySessionId, otherSessionId]);
+    if (data) answers.push(...data);
+  }
+
+  // Signatures: normalized answers both have used at least once each, ranked by combined occurrences
+  const myAnswers = answers.filter(a => a.session_id === mySessionId);
+  const theirAnswers = answers.filter(a => a.session_id === otherSessionId);
+  const mineByNorm = new Map<string, { raw: string; count: number }>();
+  for (const a of myAnswers) {
+    const e = mineByNorm.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    e.count++;
+    mineByNorm.set(a.normalized_answer, e);
+  }
+  const theirsByNorm = new Map<string, { raw: string; count: number }>();
+  for (const a of theirAnswers) {
+    const e = theirsByNorm.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    e.count++;
+    theirsByNorm.set(a.normalized_answer, e);
+  }
+  const signatures: PairSignature[] = [];
+  for (const [norm, mine] of mineByNorm) {
+    const theirs = theirsByNorm.get(norm);
+    if (!theirs) continue;
+    signatures.push({ answer: mine.raw, occurrences: mine.count + theirs.count });
+  }
+  signatures.sort((a, b) => b.occurrences - a.occurrences);
+
+  // By-prompt: both answered, track matches / divisive
+  const byPrompt = new Map<string, { mine?: { raw: string; norm: string }; theirs?: { raw: string; norm: string } }>();
+  for (const a of answers) {
+    const entry = byPrompt.get(a.prompt_id) ?? {};
+    if (a.session_id === mySessionId) entry.mine = { raw: a.raw_answer, norm: a.normalized_answer };
+    else entry.theirs = { raw: a.raw_answer, norm: a.normalized_answer };
+    byPrompt.set(a.prompt_id, entry);
+  }
+
+  // Divisive: a prompt both played + answered differently. Pick most recent.
+  let divisive: PairDivisivePrompt | null = null;
+  const today = new Date().toISOString().slice(0, 10);
+  const sortedPrompts = [...allPrompts].sort((a, b) => b.date.localeCompare(a.date));
+  for (const p of sortedPrompts) {
+    if (p.date === today) continue; // skip today — keep reveal gating tight
+    const e = byPrompt.get(p.id);
+    if (!e?.mine || !e?.theirs) continue;
+    if (e.mine.norm === e.theirs.norm) continue;
+    divisive = {
+      prompt_id: p.id, word_a: p.word_a, word_b: p.word_b,
+      myAnswer: e.mine.raw, theirAnswer: e.theirs.raw, date: p.date,
+    };
+    break;
+  }
+
+  // Rivalry: matched days / both-played days
+  let bothPlayed = 0;
+  let matchedDays = 0;
+  const dayState = new Map<string, { both: boolean; matched: boolean }>();
+  for (const [pid, e] of byPrompt) {
+    const p = promptMap.get(pid);
+    if (!p || !e.mine || !e.theirs) continue;
+    const state = dayState.get(p.date) ?? { both: false, matched: false };
+    state.both = true;
+    if (e.mine.norm === e.theirs.norm) state.matched = true;
+    dayState.set(p.date, state);
+  }
+  for (const s of dayState.values()) {
+    if (s.both) bothPlayed++;
+    if (s.matched) matchedDays++;
+  }
+  const score = bothPlayed === 0 ? 0 : matchedDays / bothPlayed;
+  let rivalry: PairRivalry | null = null;
+  if (bothPlayed > 0) {
+    if (score >= 0.6) rivalry = 'Twin';
+    else if (score >= 0.35) rivalry = 'Sync';
+    else if (score >= 0.1) rivalry = 'Wildcard';
+    else rivalry = 'Opposite';
+  }
+
+  return {
+    signatures: signatures.slice(0, 3),
+    divisive,
+    rivalry,
+    rivalryScore: score,
+  };
+}
+
+// --- Top pairs (viewer-only, for discoverability chips) ---
+
+export interface ViewerPair {
+  otherSessionId: string;
+  otherDisplayName: string;
+  jinxCount: number;
+  daysTogether: number;
+}
+
+export async function getTopPairsForViewer(groupId: string, limit = 3): Promise<ViewerPair[]> {
+  const mySessionId = getPlayerId();
+  const members = await getGroupMembers(groupId);
+  const others = members.filter(m => m.session_id !== mySessionId);
+  if (others.length === 0) return [];
+
+  const sessionIds = [mySessionId, ...others.map(o => o.session_id)];
+
+  const { data: allPrompts } = await supabase
+    .from('prompts')
+    .select('id, date')
+    .in('mode', ['daily', 'archive']);
+  if (!allPrompts || allPrompts.length === 0) return [];
+
+  const promptDateMap = new Map(allPrompts.map(p => [p.id, p.date]));
+  const promptIds = allPrompts.map(p => p.id);
+
+  const answers: { prompt_id: string; session_id: string; normalized_answer: string }[] = [];
+  const CHUNK = 500;
+  for (let i = 0; i < promptIds.length; i += CHUNK) {
+    const slice = promptIds.slice(i, i + CHUNK);
+    const { data } = await supabase
+      .from('answers')
+      .select('prompt_id, session_id, normalized_answer')
+      .in('prompt_id', slice)
+      .in('session_id', sessionIds);
+    if (data) answers.push(...data);
+  }
+
+  // By prompt: viewer's normalized + map of other -> normalized
+  const byPrompt = new Map<string, { mine?: string; others: Map<string, string> }>();
+  for (const a of answers) {
+    const entry = byPrompt.get(a.prompt_id) ?? { others: new Map<string, string>() };
+    if (a.session_id === mySessionId) entry.mine = a.normalized_answer;
+    else entry.others.set(a.session_id, a.normalized_answer);
+    byPrompt.set(a.prompt_id, entry);
+  }
+
+  const tallies = new Map<string, { jinx: number; days: Set<string> }>();
+  for (const o of others) tallies.set(o.session_id, { jinx: 0, days: new Set() });
+
+  for (const [pid, entry] of byPrompt) {
+    if (!entry.mine) continue;
+    const date = promptDateMap.get(pid);
+    if (!date) continue;
+    for (const [sid, norm] of entry.others) {
+      const t = tallies.get(sid);
+      if (!t) continue;
+      t.days.add(date);
+      if (norm === entry.mine) t.jinx++;
+    }
+  }
+
+  return others
+    .map(o => {
+      const t = tallies.get(o.session_id)!;
+      return {
+        otherSessionId: o.session_id,
+        otherDisplayName: o.display_name,
+        jinxCount: t.jinx,
+        daysTogether: t.days.size,
+      };
+    })
+    .filter(p => p.jinxCount > 0 || p.daysTogether > 0)
+    .sort((a, b) => b.jinxCount - a.jinxCount || b.daysTogether - a.daysTogether)
+    .slice(0, limit);
+}
+
+// --- Sample "what your group looks like" headline for solo groups ---
+
+export interface SampleHeadline {
+  word_a: string;
+  word_b: string;
+  jinxAnswer: string;
+  jinxNames: [string, string];
+}
+
+let sampleCache: SampleHeadline | null | undefined;
+
+export async function getSampleHeadlineFromYesterday(): Promise<SampleHeadline | null> {
+  if (sampleCache !== undefined) return sampleCache;
+
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const { data: prompts } = await supabase
+    .from('prompts')
+    .select('id, word_a, word_b, total_players, top_answer_pct')
+    .eq('date', yesterday)
+    .in('mode', ['daily', 'archive'])
+    .gt('total_players', 0)
+    .order('top_answer_pct', { ascending: false })
+    .limit(1);
+
+  if (!prompts || prompts.length === 0) {
+    sampleCache = null;
+    return null;
+  }
+
+  const p = prompts[0];
+  const { data: answers } = await supabase
+    .from('answers')
+    .select('raw_answer, normalized_answer')
+    .eq('prompt_id', p.id)
+    .limit(200);
+
+  if (!answers || answers.length === 0) {
+    sampleCache = null;
+    return null;
+  }
+
+  // Pick the most common normalized answer
+  const counts = new Map<string, { raw: string; count: number }>();
+  for (const a of answers) {
+    const e = counts.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    e.count++;
+    counts.set(a.normalized_answer, e);
+  }
+  const top = Array.from(counts.values()).sort((a, b) => b.count - a.count)[0];
+  if (!top) {
+    sampleCache = null;
+    return null;
+  }
+
+  sampleCache = {
+    word_a: p.word_a,
+    word_b: p.word_b,
+    jinxAnswer: top.raw,
+    jinxNames: ['Sam', 'Maya'],
+  };
+  return sampleCache;
+}
+

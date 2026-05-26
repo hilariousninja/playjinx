@@ -1,0 +1,3 @@
+ALTER TABLE public.groups
+  ADD COLUMN IF NOT EXISTS emoji TEXT,
+  ADD COLUMN IF NOT EXISTS accent TEXT;

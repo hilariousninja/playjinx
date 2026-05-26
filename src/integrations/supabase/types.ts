@@ -285,22 +285,28 @@ export type Database = {
       }
       groups: {
         Row: {
+          accent: string | null
           created_at: string
           creator_session_id: string
+          emoji: string | null
           id: string
           invite_code: string
           name: string
         }
         Insert: {
+          accent?: string | null
           created_at?: string
           creator_session_id: string
+          emoji?: string | null
           id?: string
           invite_code: string
           name?: string
         }
         Update: {
+          accent?: string | null
           created_at?: string
           creator_session_id?: string
+          emoji?: string | null
           id?: string
           invite_code?: string
           name?: string
