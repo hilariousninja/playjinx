@@ -29,7 +29,7 @@ export default function MobileBottomNav({ hasNewRoomActivity, hasGroupActivity, 
 
   return (
     <nav
-      className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)] after:content-[''] after:absolute after:top-full after:left-0 after:right-0 after:h-40 after:bg-background after:pointer-events-none"
+      className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/[0.08] bg-background md:hidden pb-[env(safe-area-inset-bottom)]"
     >
       <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => {
