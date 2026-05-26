@@ -16,6 +16,7 @@ import ChallengeLanding from "./pages/ChallengeLanding";
 import ChallengeCompare from "./pages/ChallengeCompare";
 import GroupJoin from "./pages/GroupJoin";
 import GroupToday from "./pages/GroupToday";
+import GroupPair from "./pages/GroupPair";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardOverview from "./pages/dashboard/DashboardOverview";
 import DashboardAnswers from "./pages/dashboard/DashboardAnswers";
