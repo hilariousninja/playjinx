@@ -174,10 +174,10 @@
     background-clip: text;
   }
 
-  /* Mobile app shell — dynamic-viewport-aware so the bottom nav sits flush
-     with the visible bottom on all browsers (esp. Firefox Android, where
-     position:fixed bottom:0 attaches to the layout viewport and leaves a
-     grey strip when the URL bar shows/hides). */
+  /* Mobile app shell — on mobile the shell exactly fills the visible
+     viewport and only the middle (flex-1) region scrolls. This stops
+     Firefox Android from re-anchoring a fixed/sticky bottom nav against
+     its dynamic browser viewport (the source of the grey strip bug). */
   .app-shell {
     @apply flex flex-col bg-background;
     min-height: 100vh; /* fallback */
@@ -185,5 +185,23 @@
   }
   .app-shell-main {
     @apply flex-1 flex flex-col w-full;
+  }
+  @media (max-width: 767px) {
+    html, body, #root {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    .app-shell {
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .app-shell > .flex-1 {
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   }
 }
