@@ -174,34 +174,22 @@
     background-clip: text;
   }
 
-  /* Mobile app shell — on mobile the shell exactly fills the visible
-     viewport and only the middle (flex-1) region scrolls. This stops
-     Firefox Android from re-anchoring a fixed/sticky bottom nav against
-     its dynamic browser viewport (the source of the grey strip bug). */
+  /* Mobile app shell — natural document scroll. Bottom nav is fixed on
+     mobile and includes a background extension to mask the strip Firefox
+     Android briefly exposes during address-bar transitions. */
   .app-shell {
     @apply flex flex-col bg-background;
-    min-height: 100vh; /* fallback */
-    min-height: 100dvh;
+    min-height: 100vh;
+    min-height: 100svh;
   }
   .app-shell-main {
     @apply flex-1 flex flex-col w-full;
   }
   @media (max-width: 767px) {
-    html, body, #root {
-      height: 100%;
-      overflow: hidden;
-      overscroll-behavior: none;
-    }
     .app-shell {
-      height: 100vh;
-      height: 100dvh;
-      min-height: 0;
-      overflow: hidden;
-    }
-    .app-shell > .flex-1 {
-      min-height: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      /* Reserve space for the fixed bottom nav (h-14 = 56px) + safe area */
+      padding-bottom: calc(56px + env(safe-area-inset-bottom));
     }
   }
+
 }
