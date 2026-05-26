@@ -96,13 +96,29 @@ function PromptRow({
           <p className="text-[11px] text-muted-foreground/50 italic">No answers yet</p>
         </div>
       ) : isJinx ? (
-        <JinxHero
-          cluster={topCluster}
-          myName={myName}
-          nameToSid={nameToSid}
-          inviteCode={inviteCode}
-          myId={myId}
-        />
+        <>
+          <JinxHero
+            cluster={topCluster}
+            myName={myName}
+            nameToSid={nameToSid}
+            inviteCode={inviteCode}
+            myId={myId}
+          />
+          {result.clusters.length > 1 && (
+            <UniqueTile
+              totalAnswers={totalAnswers}
+              uniqueCount={uniqueCount - 1}
+              clusters={result.clusters.slice(1)}
+              myName={myName}
+              nameToSid={nameToSid}
+              inviteCode={inviteCode}
+              myId={myId}
+              expanded={expanded}
+              onToggle={() => setExpanded(v => !v)}
+              variant="other"
+            />
+          )}
+        </>
       ) : (
         <UniqueTile
           totalAnswers={totalAnswers}
@@ -174,6 +190,7 @@ function UniqueTile({
   myId,
   expanded,
   onToggle,
+  variant,
 }: {
   totalAnswers: number;
   uniqueCount: number;
@@ -184,18 +201,18 @@ function UniqueTile({
   myId: string;
   expanded: boolean;
   onToggle: () => void;
+  variant?: 'other';
 }) {
+  const label = variant === 'other'
+    ? <>see <span className="font-semibold text-foreground">{uniqueCount}</span> other {uniqueCount === 1 ? 'answer' : 'answers'}</>
+    : <><span className="font-semibold text-foreground">{uniqueCount}</span> unique {uniqueCount === 1 ? 'answer' : 'answers'}<span className="text-muted-foreground/40"> · {totalAnswers} played · no jinxes</span></>;
   return (
     <div className="px-[12px] pb-[10px]">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between text-left rounded-[8px] hover:bg-muted/30 transition-colors py-[4px] -mx-[2px] px-[6px]"
       >
-        <span className="text-[12px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{uniqueCount}</span> unique{' '}
-          {uniqueCount === 1 ? 'answer' : 'answers'}
-          <span className="text-muted-foreground/40"> · {totalAnswers} played · no jinx</span>
-        </span>
+        <span className="text-[12px] text-muted-foreground">{label}</span>
         {expanded ? (
           <ChevronUp className="h-3 w-3 text-muted-foreground/60 shrink-0" />
         ) : (
