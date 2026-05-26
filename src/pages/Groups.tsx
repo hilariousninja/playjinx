@@ -165,13 +165,12 @@ export default function Groups() {
 
             {/* Empty state */}
             {groups.length === 0 && !showCreate && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[10px]">
-                <div className="bg-card rounded-[14px] border border-primary/15 p-[16px]">
-                  <p className="text-[14px] font-bold text-foreground leading-tight mb-[3px]">Play JINX with your people</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug mb-[12px]">Same prompts, every day. See who thinks like you.</p>
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-[12px] pt-[8px]">
+                <div className="bg-card rounded-[16px] border border-primary/15 p-[20px]">
+                  <p className="text-[18px] font-bold text-foreground leading-[1.15] tracking-tight mb-[14px]">Play JINX with your people</p>
                   <Button
                     onClick={() => { setPersonality(randomStarter()); setShowCreate(true); }}
-                    className="w-full rounded-[12px] h-[44px] text-[13px] font-bold"
+                    className="w-full rounded-[12px] h-[46px] text-[13px] font-bold"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1.5" /> Start your first group
                   </Button>
@@ -187,6 +186,14 @@ export default function Groups() {
                   >
                     <LinkIcon className="h-3 w-3" /> Join with invite link
                   </button>
+                </div>
+
+                {/* Static example — gives the empty state something concrete */}
+                <div className="rounded-[12px] border border-dashed border-foreground/[0.1] px-[14px] py-[10px]">
+                  <p className="text-[9px] uppercase tracking-[0.08em] text-muted-foreground/70 font-semibold mb-[4px]">What it looks like</p>
+                  <p className="text-[12px] text-foreground/75 leading-[1.4]">
+                    <span className="font-semibold text-foreground">Sam · Maya · You</span> — <span className="text-primary font-semibold">2 jinxed</span> yesterday on <span className="italic">"mistake + river"</span>.
+                  </p>
                 </div>
               </motion.div>
             )}
