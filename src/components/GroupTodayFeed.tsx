@@ -212,11 +212,7 @@ function UniqueTile({
         onClick={onToggle}
         className="w-full flex items-center justify-between text-left rounded-[8px] hover:bg-muted/30 transition-colors py-[4px] -mx-[2px] px-[6px]"
       >
-        <span className="text-[12px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{uniqueCount}</span> unique{' '}
-          {uniqueCount === 1 ? 'answer' : 'answers'}
-          <span className="text-muted-foreground/40"> · {totalAnswers} played · no jinx</span>
-        </span>
+        <span className="text-[12px] text-muted-foreground">{label}</span>
         {expanded ? (
           <ChevronUp className="h-3 w-3 text-muted-foreground/60 shrink-0" />
         ) : (
