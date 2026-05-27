@@ -290,7 +290,7 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
 
   const lastVisits = getAllLastVisits();
 
-  const result: GroupWithActivity[] = groups.map(g => {
+  const result: GroupWithActivity[] = groups.map((g, groupIdx) => {
     const members = membersByGroup.get(g.id) ?? [];
     const memberSessionIds = new Set(members.map(m => m.session_id));
     const nameMap = new Map(members.map(m => [m.session_id, m.display_name]));
@@ -317,12 +317,14 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
       newSinceLastVisit = groupAnswers.filter(a => a.session_id !== sessionId).length;
     }
 
-    // Build headline: prefer a prompt with a jinx, else first prompt
+    // Build headline: prefer a prompt with a jinx, else rotate which prompt is featured
+    // across groups so the feed doesn't show the same prompt three times in a row.
     let headline: GroupTodayHeadline | null = null;
     if (todayPrompts.length > 0) {
-      let featured = todayPrompts[0];
+      // Default fallback: rotate by group index so each card leans on a different prompt
+      let featured = todayPrompts[groupIdx % todayPrompts.length];
       let jinxAnswer: string | null = null;
-      let jinxNames: [string, string] | null = null;
+      let jinxNames: string[] | null = null;
 
       for (const p of todayPrompts) {
         const pa = groupAnswers.filter(a => a.prompt_id === p.id);
@@ -338,14 +340,24 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
           const raw = pa.find(a => a.normalized_answer === winning[0])?.raw_answer ?? winning[0];
           featured = p;
           jinxAnswer = raw;
-          jinxNames = [nameMap.get(sids[0]) ?? 'Player', nameMap.get(sids[1]) ?? 'Player'];
+          jinxNames = sids.map(sid => nameMap.get(sid) ?? 'Player');
           break;
         }
       }
 
-      const featuredAnsweredCount = new Set(
-        groupAnswers.filter(a => a.prompt_id === featured.id).map(a => a.session_id)
-      ).size;
+      const featuredAnswers = groupAnswers.filter(a => a.prompt_id === featured.id);
+      const featuredAnsweredCount = new Set(featuredAnswers.map(a => a.session_id)).size;
+
+      // For small groups (≤3) with no jinx but everyone (or nearly) played, surface
+      // each member's actual answer so you can see what they said.
+      let allAnswers: GroupTodayHeadline['allAnswers'] | undefined;
+      if (!jinxAnswer && memberCount <= 3 && viewerPlayedToday && featuredAnsweredCount >= 2) {
+        allAnswers = featuredAnswers.map(a => ({
+          name: nameMap.get(a.session_id) ?? 'Player',
+          answer: a.raw_answer,
+          isViewer: a.session_id === sessionId,
+        }));
+      }
 
       headline = {
         promptId: featured.id,
@@ -357,6 +369,7 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
         answeredCount: featuredAnsweredCount,
         totalMembers: memberCount,
         hasJinxToday: !!jinxAnswer,
+        allAnswers,
       };
     }
 
