@@ -152,7 +152,21 @@ function HeadlineBlock({ group }: { group: GroupWithActivity }) {
   }
 
   // State C: viewer has played AND there's a jinx today
-  if (h.viewerPlayed && h.hasJinxToday && h.jinxAnswer && h.jinxNames) {
+  if (h.viewerPlayed && h.hasJinxToday && h.jinxAnswer && h.jinxNames && h.jinxNames.length >= 2) {
+    const names = h.jinxNames;
+    const namesLabel =
+      names.length === 2
+        ? <><span className="font-semibold text-foreground/80">{names[0]}</span> & <span className="font-semibold text-foreground/80">{names[1]}</span> both said it</>
+        : <>
+            {names.slice(0, -1).map((n, i) => (
+              <span key={i}>
+                <span className="font-semibold text-foreground/80">{n}</span>{i < names.length - 2 ? ', ' : ''}
+              </span>
+            ))}
+            {' & '}
+            <span className="font-semibold text-foreground/80">{names[names.length - 1]}</span>
+            {' all said it'}
+          </>;
     return (
       <div className="rounded-[10px] bg-primary/[0.06] border border-primary/15 px-[10px] py-[10px]">
         <p className="text-[9px] uppercase tracking-[0.12em] font-bold text-muted-foreground/60 text-center mb-[3px]">
@@ -166,7 +180,7 @@ function HeadlineBlock({ group }: { group: GroupWithActivity }) {
           <Zap className="h-3 w-3 text-primary fill-primary" />
         </div>
         <p className="text-[10px] text-center text-muted-foreground mt-[3px]">
-          <span className="font-semibold text-foreground/80">{h.jinxNames[0]}</span> & <span className="font-semibold text-foreground/80">{h.jinxNames[1]}</span> both said it
+          {namesLabel}
         </p>
       </div>
     );
@@ -174,6 +188,31 @@ function HeadlineBlock({ group }: { group: GroupWithActivity }) {
 
   // State D: viewer played, no jinx today
   if (h.viewerPlayed) {
+    // For small groups (≤3) show each member's actual answer side-by-side
+    if (h.allAnswers && h.allAnswers.length >= 2) {
+      return (
+        <div className="rounded-[10px] bg-muted/40 px-[10px] py-[10px]">
+          <p className="text-[9px] uppercase tracking-[0.12em] font-bold text-muted-foreground/60 text-center mb-[6px]">
+            {h.word_a} + {h.word_b}
+          </p>
+          <div className="space-y-[4px]">
+            {h.allAnswers.map((a, i) => (
+              <div key={i} className="flex items-center justify-between gap-[8px] px-[8px] py-[4px] rounded-[6px] bg-background/60">
+                <span className={`text-[10px] font-bold uppercase tracking-[0.08em] shrink-0 ${a.isViewer ? 'text-primary' : 'text-foreground/60'}`}>
+                  {a.isViewer ? 'You' : a.name}
+                </span>
+                <span className="text-[13px] font-semibold text-foreground text-right truncate">
+                  {a.answer}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-center text-muted-foreground/70 mt-[6px]">
+            No jinx — everyone thought different
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="rounded-[10px] bg-muted/40 px-[10px] py-[10px]">
         <p className="text-[9px] uppercase tracking-[0.12em] font-bold text-muted-foreground/60 text-center mb-[4px]">
