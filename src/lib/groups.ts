@@ -32,11 +32,13 @@ export interface GroupTodayHeadline {
   word_a: string | null;
   word_b: string | null;
   jinxAnswer: string | null;        // raw answer text when ≥2 members matched
-  jinxNames: [string, string] | null;
+  jinxNames: string[] | null;       // all members who said the jinx answer
   viewerPlayed: boolean;
   answeredCount: number;
   totalMembers: number;
   hasJinxToday: boolean;
+  /** All answers for the featured prompt — populated for small groups (≤3 members) when there's no jinx */
+  allAnswers?: { name: string; answer: string; isViewer: boolean }[];
 }
 
 export interface GroupWithActivity extends JinxGroup {
