@@ -197,49 +197,36 @@ const STEM_HARD_SKIP = new Set([
 ]);
 
 function restoreSilentE(stem: string): string {
-  // After stripping -ing or -ed, check if the original word likely had a silent e
-  // bake → bak (stripped 'ing' from baking) → bake (restore)
-  // Heuristic: if stem ends in consonant+vowel+consonant where the final consonant
-  // isn't doubled, OR ends in a specific pattern (-at, -it, -ot, -et, -ut + single consonant), restore.
-  // Conservative: only restore when stem ends in specific patterns.
+  // After stripping -ing or -ed, restore silent e for C-V-C patterns where
+  // English convention has a silent e (bake, write, ride, hide, drive, hope).
   if (stem.length < 3) return stem;
-  // Common silent-e endings: -at, -it, -ot, -ut, -iv, -us (but -us caught earlier)
   const last3 = stem.slice(-3);
   const consonants = 'bcdfghjklmnpqrstvwxz';
   const vowels = 'aeiou';
-  // pattern: [consonant][vowel][consonant] — restore e
-  // e.g. bak+ing → bak → bake. writ+ing → writ → write.
   if (
     consonants.includes(last3[0]) &&
     vowels.includes(last3[1]) &&
     consonants.includes(last3[2]) &&
     last3[2] !== last3[1] &&
-    // not a doubled consonant case (would be stop, plan, etc. → no e)
     stem[stem.length - 1] !== stem[stem.length - 2]
   ) {
-    // Heuristic: -iv → -ive (giving → giv → give)
-    if (last3 === 'giv' || last3 === 'liv' || last3 === 'hav') return stem + 'e';
-    // Generic case — only restore for known patterns to stay conservative
-    if (/[bcdfghjkmnprstvz]e$/.test(stem + 'e')) {
-      // Confirmed for verbs like bake, write, ride, hide, drive, hope, joke, vote
-      // Avoid: ban→bane, can→cane (these aren't real verb stems anyway)
-      // Length guard: only restore on stems ≥4 chars
-      if (stem.length >= 4) return stem + 'e';
+    // Only restore for common silent-e endings to stay conservative
+    const lastChar = stem[stem.length - 1];
+    if ('bcdkmprstvz'.includes(lastChar)) {
+      return stem + 'e';
     }
   }
   return stem;
 }
 
-function undoubleConsonant(stem: string): string {
-  // running → runn → run, stopped → stopp → stop
+function undoubleConsonant(stem: string): { stem: string; undoubled: boolean } {
   if (stem.length >= 3 && stem[stem.length - 1] === stem[stem.length - 2]) {
     const c = stem[stem.length - 1];
-    // Only undouble consonants typically doubled in English inflection
     if ('bdgmnprt'.includes(c)) {
-      return stem.slice(0, -1);
+      return { stem: stem.slice(0, -1), undoubled: true };
     }
   }
-  return stem;
+  return { stem, undoubled: false };
 }
 
 /**
