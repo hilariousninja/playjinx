@@ -80,7 +80,7 @@ export default function Archive() {
           const stats = await getStats(prompt.id);
           const total = prompt.total_players || stats.reduce((a, st) => a + st.count, 0);
           const canon = await getCanonicalAnswer(answer.normalized_answer);
-          let userStat = stats.find(st => st.normalized_answer === canon);
+          let userStat = stats.find(st => st.normalized_answer === canon || st.members?.includes(canon) || st.members?.includes(answer.normalized_answer));
 
           if (!userStat) {
             const { levenshtein } = await import('@/lib/normalize');
@@ -148,7 +148,7 @@ export default function Archive() {
 
         if (s.answer) {
           const canon = await getCanonicalAnswer(s.answer.normalized_answer);
-          let userStat = stats.find(st => st.normalized_answer === canon);
+          let userStat = stats.find(st => st.normalized_answer === canon || st.members?.includes(canon) || st.members?.includes(s.answer!.normalized_answer));
           if (!userStat) {
             const { levenshtein } = await import('@/lib/normalize');
             userStat = stats.find(st => {

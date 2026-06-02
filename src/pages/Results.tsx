@@ -62,7 +62,7 @@ export default function Results() {
 
           if (answer) {
             const canon = await getCanonicalAnswer(answer.normalized_answer);
-            let userStat = stats.find(s => s.normalized_answer === canon);
+            let userStat = stats.find(s => s.normalized_answer === canon || s.members?.includes(canon) || s.members?.includes(answer.normalized_answer));
             if (!userStat) {
               const { levenshtein } = await import('@/lib/normalize');
               userStat = stats.find(s => {

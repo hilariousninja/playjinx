@@ -77,7 +77,7 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
           {/* Top answers */}
           <div className="space-y-1.5">
             {topStats.map((s, i) => {
-              const isUser = userCanonical === s.normalized_answer;
+              const isUser = userCanonical === s.normalized_answer || (userCanonical != null && (s.members?.includes(userCanonical) ?? false));
               const barWidth = Math.max((s.percentage / maxPct) * 100, 4);
 
               return (
@@ -99,18 +99,26 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
                     }`}
                   />
                   <div className="relative flex items-center justify-between gap-2 py-2 px-2.5">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className={`font-display text-[10px] tabular-nums shrink-0 w-4 text-right ${
                         isUser ? 'text-primary font-bold' : 'text-muted-foreground/40'
                       }`}>
                         {s.rank}
                       </span>
-                      <span className={`font-display text-[13px] break-words min-w-0 ${
-                        isUser ? 'text-foreground font-bold' : 'text-foreground/60 font-medium'
-                      }`}>
-                        {s.normalized_answer}
-                        {isUser && <span className="text-[9px] text-primary font-bold ml-1.5 uppercase">You</span>}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className={`font-display text-[13px] break-words ${
+                          isUser ? 'text-foreground font-bold' : 'text-foreground/60 font-medium'
+                        }`}>
+                          {s.normalized_answer}
+                          {isUser && <span className="text-[9px] text-primary font-bold ml-1.5 uppercase">You</span>}
+                        </span>
+                        {s.surfaceForms && s.surfaceForms.length > 1 && (
+                          <p className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5 break-words">
+                            also: {s.surfaceForms.slice(1, 4).map(v => `${v.form} (${v.count})`).join(', ')}
+                            {s.surfaceForms.length > 4 ? '…' : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className={`text-[12px] tabular-nums font-display ${
@@ -135,19 +143,22 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
                 + {remaining.length} more answers
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {remaining.map(s => (
-                  <span
-                    key={s.normalized_answer}
-                    className={`text-[11px] px-2 py-0.5 rounded-full border ${
-                      userCanonical === s.normalized_answer
-                        ? 'border-primary/30 bg-primary/10 text-primary font-semibold'
-                        : 'border-border/50 bg-card text-muted-foreground/60'
-                    }`}
-                  >
-                    {s.normalized_answer}
-                    {userCanonical === s.normalized_answer && <span className="text-[8px] ml-1 uppercase">you</span>}
-                  </span>
-                ))}
+                {remaining.map(s => {
+                  const isUser = userCanonical === s.normalized_answer || (userCanonical != null && (s.members?.includes(userCanonical) ?? false));
+                  return (
+                    <span
+                      key={s.normalized_answer}
+                      className={`text-[11px] px-2 py-0.5 rounded-full border ${
+                        isUser
+                          ? 'border-primary/30 bg-primary/10 text-primary font-semibold'
+                          : 'border-border/50 bg-card text-muted-foreground/60'
+                      }`}
+                    >
+                      {s.normalized_answer}
+                      {isUser && <span className="text-[8px] ml-1 uppercase">you</span>}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -76,9 +76,9 @@ export default function ResultsView({ promptId }: Props) {
     setTotal(t);
     if (ua) {
       const canon = await getCanonicalAnswer(ua.normalized_answer);
-      const exactMatch = s.find(st => st.normalized_answer === canon);
-      if (exactMatch) {
-        setUserCanonical(canon);
+      const stemMatch = s.find(st => st.normalized_answer === canon || st.members?.includes(canon) || st.members?.includes(ua.normalized_answer));
+      if (stemMatch) {
+        setUserCanonical(stemMatch.normalized_answer);
       } else {
         const { levenshtein } = await import('@/lib/normalize');
         const fuzzyMatch = s.find(st => {
