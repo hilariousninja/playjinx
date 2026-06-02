@@ -234,36 +234,39 @@ function undoubleConsonant(stem: string): { stem: string; undoubled: boolean } {
  * Returns the stem, or the original word if no rule applied.
  */
 function stemWord(word: string): string {
+  // Irregulars first — explicit overrides win over both length guard and skip-list.
+  if (IRREGULAR_FORMS[word]) return IRREGULAR_FORMS[word];
+
   if (word.length < 5) return word;
   if (STEM_HARD_SKIP.has(word)) return word;
-
-  // Irregular forms — direct map
-  if (IRREGULAR_FORMS[word]) return IRREGULAR_FORMS[word];
 
   // -ing → root
   if (word.endsWith('ing') && word.length >= 5) {
     let stem = word.slice(0, -3);
-    stem = undoubleConsonant(stem);
-    stem = restoreSilentE(stem);
+    const undoubled = undoubleConsonant(stem);
+    stem = undoubled.stem;
+    // Skip silent-e restore when we just undoubled — doubled-consonant verbs
+    // (run, stop, swim) don't have a silent e.
+    if (!undoubled.undoubled) stem = restoreSilentE(stem);
     if (stem.length >= 3) return stem;
   }
 
-  // -ed → root (only when clearly verbal: length and not in skip-list)
+  // -ed → root
   if (word.endsWith('ed') && word.length >= 5) {
     let stem = word.slice(0, -2);
     // -ied → -y (carried → carry, studied → study)
     if (stem.endsWith('i')) {
       return stem.slice(0, -1) + 'y';
     }
-    stem = undoubleConsonant(stem);
-    stem = restoreSilentE(stem);
+    const undoubled = undoubleConsonant(stem);
+    stem = undoubled.stem;
+    if (!undoubled.undoubled) stem = restoreSilentE(stem);
     if (stem.length >= 3) return stem;
   }
 
   // -ness → root (happiness → happy, kindness → kind, sadness → sad)
   if (word.endsWith('ness') && word.length >= 6) {
     let stem = word.slice(0, -4);
-    // -iness → -y (happiness → happi → happy)
     if (stem.endsWith('i')) {
       return stem.slice(0, -1) + 'y';
     }
@@ -273,11 +276,9 @@ function stemWord(word: string): string {
   // -ly → root (quickly → quick, happily → happy, sadly → sad)
   if (word.endsWith('ly') && word.length >= 5) {
     let stem = word.slice(0, -2);
-    // -ily → -y (happily → happi → happy)
     if (stem.endsWith('i')) {
       return stem.slice(0, -1) + 'y';
     }
-    // -bly → -ble (terribly → terrible)
     if (stem.endsWith('b')) {
       return stem + 'le';
     }
@@ -290,11 +291,9 @@ function stemWord(word: string): string {
   }
   if (word.endsWith('ity') && word.length >= 6) {
     let stem = word.slice(0, -3);
-    // -bility → -ble (ability → able, possibility → possible)
     if (stem.endsWith('bil')) {
       return stem.slice(0, -3) + 'ble';
     }
-    // -ivity → -ive (creativity → creative)
     if (stem.endsWith('iv')) {
       return stem + 'e';
     }
@@ -305,10 +304,11 @@ function stemWord(word: string): string {
   if (word.endsWith('est') && word.length >= 6) {
     let stem = word.slice(0, -3);
     if (stem.endsWith('i')) {
-      return stem.slice(0, -1) + 'y'; // happiest → happi → happy
+      return stem.slice(0, -1) + 'y';
     }
-    stem = undoubleConsonant(stem);
-    stem = restoreSilentE(stem);
+    const undoubled = undoubleConsonant(stem);
+    stem = undoubled.stem;
+    if (!undoubled.undoubled) stem = restoreSilentE(stem);
     if (stem.length >= 3) return stem;
   }
 
