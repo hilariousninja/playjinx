@@ -43,7 +43,7 @@ export default function ArchivePlayCard({ summary: s, isToday, onAnswered, onSee
       const stats = await getStats(s.prompt.id);
       const total = s.prompt.total_players || stats.reduce((a, st) => a + st.count, 0);
       const canon = await getCanonicalAnswer(answer.normalized_answer);
-      let userStat = stats.find(st => st.normalized_answer === canon);
+      let userStat = stats.find(st => st.normalized_answer === canon || st.members?.includes(canon) || st.members?.includes(answer.normalized_answer));
       if (!userStat) {
         const { levenshtein } = await import('@/lib/normalize');
         userStat = stats.find(st => {
