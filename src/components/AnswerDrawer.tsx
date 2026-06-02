@@ -77,7 +77,7 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
           {/* Top answers */}
           <div className="space-y-1.5">
             {topStats.map((s, i) => {
-              const isUser = userCanonical === s.normalized_answer;
+              const isUser = userCanonical === s.normalized_answer || (userCanonical != null && (s.members?.includes(userCanonical) ?? false));
               const barWidth = Math.max((s.percentage / maxPct) * 100, 4);
 
               return (
@@ -143,19 +143,22 @@ export default function AnswerDrawer({ open, onClose, promptResult }: Props) {
                 + {remaining.length} more answers
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {remaining.map(s => (
-                  <span
-                    key={s.normalized_answer}
-                    className={`text-[11px] px-2 py-0.5 rounded-full border ${
-                      userCanonical === s.normalized_answer
-                        ? 'border-primary/30 bg-primary/10 text-primary font-semibold'
-                        : 'border-border/50 bg-card text-muted-foreground/60'
-                    }`}
-                  >
-                    {s.normalized_answer}
-                    {userCanonical === s.normalized_answer && <span className="text-[8px] ml-1 uppercase">you</span>}
-                  </span>
-                ))}
+                {remaining.map(s => {
+                  const isUser = userCanonical === s.normalized_answer || (userCanonical != null && (s.members?.includes(userCanonical) ?? false));
+                  return (
+                    <span
+                      key={s.normalized_answer}
+                      className={`text-[11px] px-2 py-0.5 rounded-full border ${
+                        isUser
+                          ? 'border-primary/30 bg-primary/10 text-primary font-semibold'
+                          : 'border-border/50 bg-card text-muted-foreground/60'
+                      }`}
+                    >
+                      {s.normalized_answer}
+                      {isUser && <span className="text-[8px] ml-1 uppercase">you</span>}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
