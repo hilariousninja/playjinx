@@ -1,122 +1,107 @@
-## Root-cause analysis
+# JINX — Wordle-Scale Audit
 
-This is not a normal content/layout bug. It is a mobile browser viewport bug made worse by the current app shell structure.
+Wordle won on five things: **(1)** 60-second loop, **(2)** identical puzzle for everyone, **(3)** a spoiler-free brag grid that paste into iMessage, **(4)** a daily reveal moment everyone hits at the same time, **(5)** zero account friction. JINX has 1 and 5 covered. Below is everything else, ranked by how much it's costing growth.
 
-### Why Chrome works but Firefox Android does not
+---
 
-Chrome Android updates `position: fixed`, safe-area insets, and dynamic viewport units more consistently when the address bar hides/shows. Firefox Android is much more likely to expose the browser canvas when the visual viewport changes during upward scroll or route/tab changes.
+## Tier 1 — Existential blockers (fix these or growth caps)
 
-So code that looks fine in Chrome can still show a blank strip in Firefox if the page mixes:
-- a viewport-attached bottom nav,
-- `vh` / `svh` / `dvh` shell sizing,
-- internal scroll containers,
-- route transitions that change document height,
-- and body/document background that is not guaranteed to paint the exposed area.
+### 1. The share artefact is a PNG, not a paste
+Wordle's grid works because you can paste 6 lines of emoji into any chat and it renders inline as a tease. JINX currently produces a 1080×1350 PNG that downloads, then asks the user to manually attach + paste a caption. Friction is ~5× higher and the receiver sees an image attachment (skippable) instead of an inline grid that begs for a reply.
 
-### What is currently wrong in this project
+**Fix:** Ship an emoji/text share format as the default:
+```
+JINX · Tue 27 May
+⚡⚡  ·  ·  ⚡⚡⚡
+2 JINX · 7-day streak
+playjinx.com
+```
+Keep the PNG as a secondary "save card" option. The emoji line must be spoiler-free (no answers, no word pairs) so it works in group chats without ruining the puzzle for friends.
 
-1. **The current fix masks the symptom instead of removing the cause**
-   - `MobileBottomNav` is `fixed bottom-0`.
-   - It also has a huge `after:h-40` pseudo-element below it.
-   - On Firefox Android, that pseudo-element can become part of the permanent painted region during viewport recalculation, which explains why the blank/bar issue became permanent instead of transient.
+### 2. There is no daily reveal moment
+Wordle/Connections/Strands all benefit from "everyone solves before lunch, then talks about it". JINX has rolling reveals — if I play at 7am I see almost no crowd, get no JINX, feel nothing, and don't come back. The "early results" warning is honest but it's a downer.
 
-2. **The app shell still uses viewport-height sizing**
-   - `.app-shell` uses `min-height: 100vh` and `min-height: 100svh`.
-   - Firefox Android can disagree about what those units mean while the address bar is visible vs hidden.
-   - Earlier forms/projects likely used simpler `min-h-screen` document scrolling without a custom fixed nav/shell combo, so Firefox had nothing complicated to reconcile.
+**Fix:** Pick a fixed **reveal time** per day (e.g. 8pm local, or 8pm UTC). Before reveal: hide percentages and ranks, show "🔒 247 players locked in — reveal in 4h 12m". Push the celebration into one window. This single change also creates a natural push-notification hook.
 
-3. **Different routes use different scroll models**
-   - Landing uses `main.flex-1.overflow-y-auto`.
-   - Play/Groups/Archive/Results use normal flex content.
-   - Some challenge/group routes still use `min-h-screen` instead of `.app-shell`.
-   - This inconsistency means switching bottom nav tabs changes the scroll container and page height model, which matches your report that it appears when changing tabs.
+### 3. Cold-start kills day-1 retention
+A solo new player on day 1: lands, plays 3 prompts, sees "0 JINX, sample too small", no friend in any group, leaves. They never come back because the entire payoff is social.
 
-4. **The fixed nav and shell padding are double-managing bottom space**
-   - `.app-shell` reserves bottom padding for the fixed nav.
-   - The nav itself also uses safe-area padding.
-   - The pseudo-element adds even more painted area below the nav.
-   - In Firefox Android, this combination is especially fragile when the URL bar reappears.
+**Fix:** Two pieces in tandem:
+- **Synthetic crowd on first session.** Show day-1 players the prior day's matured crowd distribution as their "result" (still showing their own answer's rank against it). They feel the mechanic instantly.
+- **Forced friend ask, with reward.** After first result: "Add 1 friend to see who in your life thinks like you. We'll text them the link." Default the CTA to share, not skip.
 
-5. **The page background is not applied at the true root level**
-   - `body` has the background, but `html` / `#root` are not explicitly painted.
-   - If Firefox exposes area outside the currently calculated app shell, that area can render as browser/default background rather than the app background.
+### 4. PWA / install / re-engagement is missing
+No manifest, no install prompt, no push, no email. Wordle survived because iMessage threads did the re-engagement work for it — but Wordle players were 40+ year-olds who already texted daily. JINX's audience won't reliably do that. You need owned re-engagement surfaces.
 
-## Proposed fix
+**Fix:** PWA manifest + install prompt after first JINX. Web Push for "Steph just played W4 E20" and "Your reveal is in 1 hour". Optional email digest for groups.
 
-### 1. Revert the risky Firefox mask
+---
 
-Remove the `after:h-40` bottom extension from `MobileBottomNav`. It was intended to hide transient exposure, but it can create or preserve the visible strip in Firefox.
+## Tier 2 — High-leverage polish (fix in the next 2 sprints)
 
-### 2. Stop relying on viewport-height app shell sizing for mobile
+### 5. Landing wastes the first moment
+Right now Landing is a card explaining the mechanic, then a CTA to /play, then Onboarding overlays /play with another 2-step explainer. That's **3 surfaces** before someone enters a word. Wordle gives you the grid on first paint.
 
-Change `.app-shell` to use natural document layout instead of `100vh` / `100svh` on mobile.
+**Fix:** Show the first prompt directly on Landing as a playable interactive card ("Try one"). Submitting it auto-routes to /play for the remaining two. Onboarding becomes a single tooltip on the first card, not a full-screen overlay.
 
-The mobile shell should be:
-- normal document flow,
-- `min-height: 100%` rather than viewport units,
-- no root scroll lock,
-- no forced internal scroll container.
+### 6. SEO and OG are broken
+- `index.html` still has `class="dark"` on the root html element while the app is Cream/Amber — flash of wrong theme.
+- The OG image is a Lovable preview URL placeholder, not a JINX-branded card. Every link shared to Twitter/Discord/Slack right now is undermining the brand.
+- Each day's puzzle has no shareable URL beyond `/c/:token`. There's no SEO catch for "what links cow and snow" type queries.
 
-### 3. Paint the real root background
+**Fix:** Branded OG image (use the existing share-card.ts renderer to generate a daily one server-side), strip `class="dark"`, add per-day public archive pages (`/archive/2026-05-27`) indexed and OG-cardable for organic search.
 
-Set `html`, `body`, and `#root` to `background: hsl(var(--background))` so any exposed browser/layout area is visually indistinguishable from the app.
+### 7. Scoring is fuzzy
+Wordle's "4/6" is parseable in a glance. JINX uses JINX-count, match-count, rank, percentage, provisional lead, top-answer — it's a thicket. A new player can't summarise their day in one number to a friend.
 
-This addresses the core Firefox symptom even if the browser temporarily exposes a strip during URL-bar transitions.
+**Fix:** Pick one hero number. "**2 JINX / 3**" is the simplest. Keep the rest in the drawer. Make the brag block read as "2 of 3 — synced with the crowd" not five badges.
 
-### 4. Use one consistent mobile route shell
+### 8. Group payoff lacks a "first" moment
+Groups are clearly the moat, and the recent feed work is great. But the first time two members JINX, it's just another card. That's the dopamine event of the whole product and it should feel like one.
 
-Create a consistent CSS rule for `.app-shell-main` or apply a consistent main wrapper pattern across mobile nav routes:
+**Fix:** When a JINX happens in a group, fire a celebratory full-bleed animation on first view ("⚡ JINX! Andy & Jourdain both said Milk"), with a one-tap share-to-group-chat. Track "first jinx of the week" specifically.
 
-- header: normal flow, 52px
-- content: normal document scroll
-- bottom nav: fixed only on mobile
-- content bottom padding: enough for nav + safe-area
+---
 
-Then update the affected routes to use that same content wrapper instead of a mix of `overflow-y-auto`, plain `flex-1`, and route-specific padding.
+## Tier 3 — Strategic surface area (medium-term)
 
-### 5. Keep the bottom nav fixed, but simple
+### 9. Asynchronous social is BeReal-shaped, not Wordle-shaped
+JINX's actual social loop resembles BeReal more than Wordle: small private groups, daily check-in, see what your people did. That's a stronger long-term position than competing on Wordle's solo bragging. Lean into it: the homepage for returning users should be the **Groups feed**, not Play. Play is the price of admission to see your group's results.
 
-Use a simple fixed bottom nav:
+**Fix:** For users in ≥1 group, default landing route is `/groups`. Today's prompts are surfaced as a card at the top of that feed. Play stops being the centre of gravity.
 
-```text
-position: fixed;
-bottom: 0;
-left/right: 0;
-height: 56px + safe area padding;
-background: app background;
+### 10. Streaks are local-only and fragile
+Streak lives in localStorage. Clear cookies = lost streak = lost player. We've already seen identity drift problems (the Jourdain bug). Streaks must survive device changes.
+
+**Fix:** Persist streak server-side keyed by canonical session, surface it on profile, and add a one-time "save your streak" prompt that offers magic-link email backup. This also gives an email list for digests.
+
+### 11. No moment of "I'm uniquely me"
+Wordle never had this; Connections does ("I got purple"). JINX could: when you're the only person with a given answer, that's interesting. Right now it's just rank #5 with 1 vote.
+
+**Fix:** "Unique" badge — "You were the only one who said *bellows*." That's shareable and identity-forming.
+
+### 12. Archive is dead inventory
+The Archive tab is a list of past puzzles. Replaying old puzzles solo has the same cold-start problem as day-1: no live crowd, no payoff.
+
+**Fix:** Use Archive as **onboarding tutorial**. Tutorial = play 3 archived prompts with mature crowd data so the mechanic clicks before day 1.
+
+---
+
+## Recommended order of operations
+
+```
+Sprint 1  (1 week)  → Tier 1: emoji share grid + reveal time + cold-start crowd seed
+Sprint 2  (1 week)  → Tier 1: PWA + push for groups; Tier 2: fix OG/index.html
+Sprint 3  (1 week)  → Tier 2: landing-as-first-prompt, hero scoring simplification
+Sprint 4+           → Tier 3: groups-first homepage, server-side streaks, unique badge
 ```
 
-No pseudo-element. No oversized below-nav area. No viewport unit dependency.
+If I had to pick **one** thing to ship first, it's the **emoji share grid + scheduled reveal time** as a pair. Together they create the Wordle-style "everyone hits at 8pm and posts a teaser" loop that nothing else in the audit substitutes for.
 
-## Files to change
+---
 
-- `src/index.css`
-  - remove mobile viewport-height shell sizing dependency
-  - remove shell-level fixed-nav padding if moved to main wrappers
-  - paint `html`, `body`, `#root`
-  - add one reusable mobile bottom-nav spacing rule
+## Open questions before building
 
-- `src/components/MobileBottomNav.tsx`
-  - remove the `after:*` mask
-  - keep fixed mobile nav simple and deterministic
-
-- Mobile routes using the bottom nav:
-  - `src/pages/Landing.tsx`
-  - `src/pages/Play.tsx`
-  - `src/pages/Groups.tsx`
-  - `src/pages/Archive.tsx`
-  - `src/pages/Results.tsx`
-  - `src/pages/GroupToday.tsx`
-  - `src/pages/GroupPair.tsx`
-
-These should all use the same document-scroll content spacing model.
-
-## Validation
-
-After implementation, test specifically:
-- Firefox Android behavior after changing bottom nav tabs
-- scrolling upward until the address bar becomes visible again
-- short pages like Landing/Groups empty state
-- long pages like Archive/Results
-
-Expected result: no permanent strip, and any transient browser viewport exposure is painted with the same app background rather than a blank bar.
+- Reveal time: global 8pm UTC, or per-timezone local 8pm? (Local is friendlier; global creates a shared moment.)
+- Do you want a magic-link email layer added now, or keep the session-id-only identity model?
+- Is competing on Wordle territory (solo brag) the goal, or doubling down on the BeReal-shaped private-group loop?
