@@ -424,15 +424,27 @@ Once `total_players > 0` for the day, the daily set is locked. The Creator dashb
 
 ### 7.4 Answer normalization
 
-Pipeline (in `src/lib/normalize.ts`):
-1. Trim whitespace.
-2. Lowercase.
-3. Collapse internal whitespace to single spaces.
-4. Depluralize (rule-based, not stemmed — `cats → cat`, but `bass → bass`).
-5. Apply admin-curated aliases (e.g. `nyc → new york`).
-6. Apply fuzzy typo-merge if within Levenshtein distance 1 of an existing high-frequency answer.
+Pipeline (in `src/lib/normalize.ts`), applied in four stages:
 
-The original raw answer is preserved in `raw_answer` for display in the player's own Results. Crowd-facing surfaces always show the normalised form.
+**Stage 1 — `normalizeAnswer()`** (surface cleanup):
+- Trim, lowercase, strip non-alphanumerics except spaces, collapse internal whitespace.
+- Depluralize single-word inputs via a rule-based stripper with a `DEPLURAL_SKIP` list (`tennis`, `analysis`, `gas`, …). Multi-word answers are never depluralized.
+
+**Stage 2 — Alias map:** admin-curated explicit mappings (`nyc → new york`, `soccer → football`). Aliases run on the normalized form, before stemming.
+
+**Stage 3 — Fuzzy typo-merge:** Levenshtein with conservative guards — minimum length ~7 chars, distance 1–2, and a count-ratio guard so a popular cluster cannot be swallowed by a low-frequency near-duplicate.
+
+**Stage 4 — `stemAnswer()` stem bucketing:** groups morphological variants under one cluster.
+- Regular suffix stripping: `-ing`, `-ed`, `-ness`, `-ly`, `-ity`, `-est`, `-er`, each with its own skip-list (e.g. `-er` skips `water`, `paper`, `sister`, `mother`…; `-ing` skips `king`, `string`, `morning`…). Silent-`e` restoration (`baking → bake`) and double-consonant undoubling (`running → run`).
+- ~80-entry `IRREGULAR_FORMS` map for past-tense verbs (`drove → drive`, `went → go`, `thought → think`) and comparative adjectives (`better → good`, `worst → bad`).
+- Multi-word answers are never stemmed (avoids mangling proper nouns and phrases).
+- `-tion`/`-sion` derivations are deliberately not stemmed — too many false positives (`motion`, `station`, `ocean`).
+
+**Display contract — the inviolable rule.** Each player's `raw_answer` is shown verbatim on **their own** result card. If they typed "driving" or "happiness", that is exactly what they see. The cluster label rendered to the crowd uses the **most-popular surface form** within the cluster. The AnswerDrawer surfaces the breakdown with a muted sub-line like `also: happiness (3), happily (1)` whenever a cluster spans multiple surface forms — grouping is transparent, never magic.
+
+**Data shape.** `AnswerStat` carries optional `members: string[]` (every normalized input bucketed into the cluster) and `surfaceForms: Array<{form, count}>`. Consumers do `s.members?.includes(userCanonical)` for stem-aware user→cluster lookup, falling back to Levenshtein for residual typos.
+
+**Out of scope.** Synonyms (`car`/`auto`) remain admin-curated via aliases, not auto-grouped.
 
 ### 7.5 Word freshness & lifecycle
 
@@ -638,7 +650,7 @@ Things we know we'll revisit.
 | **Prompt** | A two-word pair, e.g. MISTAKE + RIVER. |
 | **Answer** | A player's single-word response to a prompt. |
 | **Normalised answer** | The canonical form of an answer after the pipeline in §7.4. |
-| **Cluster** | A group of identical normalised answers for one prompt. |
+| **Cluster** | A group of answers sharing a stem or alias mapping for one prompt — variants are counted together, but each player still sees their own wording. |
 | **Jinx** | A cluster of ≥ 2 members in a group (or friends in a challenge) sharing an answer. |
 | **Pair** | A two-person relationship within a group. |
 | **Recurring group** | A persistent named group with an invite link (`/g/:slug-suffix`). |
