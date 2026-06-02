@@ -50,7 +50,7 @@ function depluralize(word: string): string {
       return base;
     }
     return word; // Don't mangle ambiguous -ses words
-  } else if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && word.length > 3) {
+  } else if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && !word.endsWith('is') && !word.endsWith('os') && word.length > 3) {
     return word.slice(0, -1);
   }
   return word;
