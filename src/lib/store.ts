@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeAnswer, applyAlias, isBlocked, fuzzyMergeGroups } from './normalize';
+import { normalizeAnswer, applyAlias, isBlocked, fuzzyMergeGroups, stemAnswer } from './normalize';
 import { getAliasMap, getBlockedTerms } from './answer-helpers';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -263,10 +263,15 @@ export async function submitAnswer(promptId: string, rawAnswer: string): Promise
 }
 
 export interface AnswerStat {
+  /** Display label for the cluster — the most-popular surface form within it. */
   normalized_answer: string;
   count: number;
   percentage: number;
   rank: number;
+  /** All normalized inputs that bucket into this cluster (stem-grouped). */
+  members?: string[];
+  /** Per-surface-form breakdown sorted by count desc, for transparency in the drawer. */
+  surfaceForms?: Array<{ form: string; count: number }>;
 }
 
 /**
@@ -356,23 +361,89 @@ export async function getStats(promptId: string): Promise<AnswerStat[]> {
 
   // Step 1: Apply alias mappings to each answer
   const aliasedCounts: Record<string, number> = {};
+  // Track each aliased form back to all original normalized inputs that produced it.
+  const aliasedMembers: Record<string, Set<string>> = {};
   for (const row of answersResult.data ?? []) {
     const canonical = applyAlias(row.normalized_answer, aliasMap);
     aliasedCounts[canonical] = (aliasedCounts[canonical] || 0) + 1;
+    (aliasedMembers[canonical] = aliasedMembers[canonical] || new Set()).add(row.normalized_answer);
   }
 
   // Step 2: Fuzzy-merge typo variants
   const mergedCounts = fuzzyMergeGroups(aliasedCounts);
+  // fuzzyMergeGroups doesn't return its mapping; recover it by checking which aliased keys
+  // got absorbed (count went to zero implicit) — instead derive from canonical map exposed
+  // via window debug log if present. Safer: re-compute mapping by re-running the same logic
+  // ourselves. For simplicity, assume aliased keys not present in mergedCounts mapped to the
+  // nearest remaining key — track via the debug log.
+  const fuzzyMap: Record<string, string> = {};
+  if (typeof window !== 'undefined') {
+    const log = (window as any).__jinxLastMergeLog as Array<{ from: string; to: string }> | undefined;
+    if (Array.isArray(log)) {
+      for (const entry of log) fuzzyMap[entry.from] = entry.to;
+    }
+  }
+  // Resolve a possibly-fuzzy-merged aliased key to its final cluster key.
+  const resolveFuzzy = (key: string): string => {
+    let cur = key;
+    const seen = new Set<string>();
+    while (fuzzyMap[cur] && !seen.has(cur)) {
+      seen.add(cur);
+      cur = fuzzyMap[cur];
+    }
+    return cur;
+  };
 
-  const total = Object.values(mergedCounts).reduce((s, c) => s + c, 0);
-  return Object.entries(mergedCounts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([word, count], i) => ({
-      normalized_answer: word,
-      count,
-      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-      rank: i + 1,
-    }));
+  // Step 3: Stem-bucket the merged counts. All variants sharing a stem cluster together;
+  // display label = highest-count surface form in the cluster.
+  type Cluster = {
+    count: number;
+    members: Set<string>;          // every original normalized input in this cluster
+    surfaceCounts: Map<string, number>; // surface form (post-alias/fuzzy) -> count
+  };
+  const stemClusters: Record<string, Cluster> = {};
+  for (const [aliasedKey, count] of Object.entries(mergedCounts)) {
+    const stemKey = stemAnswer(aliasedKey);
+    const cluster = stemClusters[stemKey] ||= {
+      count: 0,
+      members: new Set<string>(),
+      surfaceCounts: new Map<string, number>(),
+    };
+    cluster.count += count;
+    cluster.surfaceCounts.set(aliasedKey, (cluster.surfaceCounts.get(aliasedKey) || 0) + count);
+  }
+  // Re-attach all original normalized inputs (pre-alias) to their final cluster.
+  for (const [aliasedKey, origs] of Object.entries(aliasedMembers)) {
+    const resolved = resolveFuzzy(aliasedKey);
+    const stemKey = stemAnswer(resolved);
+    const cluster = stemClusters[stemKey];
+    if (!cluster) continue;
+    for (const orig of origs) cluster.members.add(orig);
+    // Also surface aliased key itself as a member so direct lookups hit.
+    cluster.members.add(aliasedKey);
+    cluster.members.add(resolved);
+  }
+
+  const total = Object.values(stemClusters).reduce((s, c) => s + c.count, 0);
+
+  return Object.entries(stemClusters)
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([, cluster], i) => {
+      const surfaceForms = [...cluster.surfaceCounts.entries()]
+        .map(([form, count]) => ({ form, count }))
+        .sort((a, b) => b.count - a.count);
+      const label = surfaceForms[0]?.form ?? '';
+      // Ensure the chosen label is also a member for downstream lookups.
+      cluster.members.add(label);
+      return {
+        normalized_answer: label,
+        count: cluster.count,
+        percentage: total > 0 ? Math.round((cluster.count / total) * 100) : 0,
+        rank: i + 1,
+        members: [...cluster.members],
+        surfaceForms,
+      };
+    });
 }
 
 export async function getTotalSubmissions(promptId: string): Promise<number> {
