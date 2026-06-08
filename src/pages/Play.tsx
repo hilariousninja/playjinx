@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import {
   ensureDailyPrompts, submitAnswer, getBatchUserAnswers,
   getTotalSubmissions, getCompletedPrompts, markPromptCompleted,
+  getTopAnswersForPrompt,
   type DbPrompt, type DbAnswer,
 } from '@/lib/store';
-import { validateInput } from '@/lib/normalize';
+import { validateInput, normalizeAnswer, suggestCorrection } from '@/lib/normalize';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
@@ -30,6 +31,8 @@ export default function Play() {
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
+  const [suggestions, setSuggestions] = useState<Record<string, { suggestion: string } | null>>({});
+  const [dismissedSuggest, setDismissedSuggest] = useState<Record<string, boolean>>({});
   const [activeIdx, setActiveIdx] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -74,8 +77,8 @@ export default function Play() {
     })();
   }, []);
 
-  const handleSubmit = useCallback(async (promptId: string) => {
-    const trimmed = (answers[promptId] || '').trim();
+  const handleSubmit = useCallback(async (promptId: string, overrideRaw?: string) => {
+    const trimmed = (overrideRaw ?? answers[promptId] ?? '').trim();
     const validationError = validateInput(trimmed);
     if (validationError) {
       setInputErrors(prev => ({ ...prev, [promptId]: validationError }));
@@ -83,8 +86,25 @@ export default function Play() {
     }
     if (submitted[promptId] || submittingId) return;
 
+    // "Did you mean?" check — only when the user hasn't already dismissed
+    // a suggestion for this prompt and we're not accepting an override.
+    if (!overrideRaw && !dismissedSuggest[promptId]) {
+      const candidate = normalizeAnswer(trimmed);
+      if (candidate && !candidate.includes(' ') && candidate.length >= 3) {
+        try {
+          const popular = await getTopAnswersForPrompt(promptId);
+          const hit = suggestCorrection(candidate, popular);
+          if (hit && hit.suggestion !== candidate) {
+            setSuggestions(prev => ({ ...prev, [promptId]: { suggestion: hit.suggestion } }));
+            return;
+          }
+        } catch {}
+      }
+    }
+
     setSubmittingId(promptId);
     setInputErrors(prev => ({ ...prev, [promptId]: '' }));
+    setSuggestions(prev => ({ ...prev, [promptId]: null }));
     try {
       const answer = await submitAnswer(promptId, trimmed);
       setSubmitted(prev => ({ ...prev, [promptId]: true }));
@@ -108,7 +128,7 @@ export default function Play() {
     } finally {
       setSubmittingId(null);
     }
-  }, [answers, submitted, submittingId, prompts, isMobile]);
+  }, [answers, submitted, submittingId, prompts, isMobile, dismissedSuggest]);
 
   const allDone = prompts.length > 0 && prompts.every(p => submitted[p.id]);
 
@@ -218,6 +238,8 @@ export default function Play() {
                         onChange={e => {
                           setAnswers(prev => ({ ...prev, [p.id]: e.target.value }));
                           setInputErrors(prev => ({ ...prev, [p.id]: '' }));
+                          setSuggestions(prev => ({ ...prev, [p.id]: null }));
+                          setDismissedSuggest(prev => ({ ...prev, [p.id]: false }));
                         }}
                         onKeyDown={e => e.key === 'Enter' && handleSubmit(p.id)}
                         placeholder="Your linking word"
@@ -225,6 +247,10 @@ export default function Play() {
                         maxLength={80}
                         disabled={!!submittingId}
                         autoFocus={i === activeIdx}
+                        spellCheck
+                        autoCorrect="on"
+                        autoCapitalize="off"
+                        autoComplete="off"
                       />
                     </div>
                     <button
@@ -235,9 +261,39 @@ export default function Play() {
                       {submittingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Submit'}
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-[6px] italic">
-                    Pick the one most people will say.
-                  </p>
+                  {suggestions[p.id] ? (
+                    <div className="mt-[8px] flex items-center gap-[8px] flex-wrap bg-primary/5 border border-primary/20 rounded-[8px] px-[10px] py-[7px]">
+                      <span className="text-[12px] text-foreground/80">
+                        Did you mean <strong className="font-semibold text-primary">{suggestions[p.id]!.suggestion}</strong>?
+                      </span>
+                      <div className="flex items-center gap-[6px] ml-auto">
+                        <button
+                          onClick={() => {
+                            const sug = suggestions[p.id]!.suggestion;
+                            setAnswers(prev => ({ ...prev, [p.id]: sug }));
+                            handleSubmit(p.id, sug);
+                          }}
+                          className="text-[11px] font-semibold text-white bg-primary px-[9px] py-[4px] rounded-[6px] active:scale-95 transition-transform"
+                        >
+                          Yes, use it
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDismissedSuggest(prev => ({ ...prev, [p.id]: true }));
+                            setSuggestions(prev => ({ ...prev, [p.id]: null }));
+                            handleSubmit(p.id, (answers[p.id] || '').trim());
+                          }}
+                          className="text-[11px] font-medium text-foreground/60 px-[6px] py-[4px] active:scale-95 transition-transform"
+                        >
+                          No, keep mine
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground mt-[6px] italic">
+                      Pick the one most people will say.
+                    </p>
+                  )}
                   {inputErrors[p.id] && (
                     <p className="text-[11px] text-destructive mt-1">{inputErrors[p.id]}</p>
                   )}

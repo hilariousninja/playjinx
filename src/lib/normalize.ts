@@ -492,3 +492,57 @@ export function isBlocked(normalized: string, blockedTerms: Set<string>): boolea
   }
   return false;
 }
+
+/**
+ * Suggest a likely-correction for a player's input by comparing against the
+ * prompt's established popular answers. Conservative: only fires when the
+ * input looks like a typo of a clearly-established crowd answer.
+ *
+ * Returns null when no high-confidence suggestion exists.
+ */
+export function suggestCorrection(
+  candidate: string,
+  popular: Array<{ normalized: string; count: number }>,
+): { suggestion: string; distance: number } | null {
+  if (!candidate || candidate.includes(' ')) return null;
+  if (candidate.length < 3) return null;
+
+  // If the candidate itself is already an established answer, don't second-guess.
+  const own = popular.find(p => p.normalized === candidate);
+  if (own && own.count >= 3) return null;
+
+  let best: { suggestion: string; distance: number; count: number } | null = null;
+
+  for (const p of popular) {
+    if (p.normalized === candidate) continue;
+    if (p.normalized.includes(' ')) continue;
+
+    // Threshold by candidate length — stricter than post-hoc merge.
+    let maxDist: number;
+    let minTargetCount: number;
+    if (candidate.length <= 5) {
+      maxDist = 1;
+      minTargetCount = 5;
+    } else if (candidate.length <= 8) {
+      maxDist = 2;
+      minTargetCount = 3;
+    } else {
+      maxDist = 2;
+      minTargetCount = 2;
+    }
+
+    if (p.count < minTargetCount) continue;
+    // Length sanity — don't suggest very different-length words.
+    if (Math.abs(p.normalized.length - candidate.length) > maxDist) continue;
+
+    const dist = levenshtein(candidate, p.normalized);
+    if (dist === 0 || dist > maxDist) continue;
+
+    if (!best || dist < best.distance || (dist === best.distance && p.count > best.count)) {
+      best = { suggestion: p.normalized, distance: dist, count: p.count };
+    }
+  }
+
+  if (!best) return null;
+  return { suggestion: best.suggestion, distance: best.distance };
+}

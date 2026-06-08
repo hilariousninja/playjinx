@@ -604,3 +604,39 @@ function hashCode(str: string): number {
   }
   return Math.abs(hash);
 }
+
+// Per-session cache: top normalized answers for a prompt, used by the
+// "did you mean?" suggestion check on submit.
+const topAnswersCache = new Map<string, Array<{ normalized: string; count: number }>>();
+
+export async function getTopAnswersForPrompt(
+  promptId: string,
+  limit = 20,
+): Promise<Array<{ normalized: string; count: number }>> {
+  const cached = topAnswersCache.get(promptId);
+  if (cached) return cached;
+
+  const { data, error } = await supabase
+    .from('answers')
+    .select('normalized_answer')
+    .eq('prompt_id', promptId);
+  if (error || !data) {
+    topAnswersCache.set(promptId, []);
+    return [];
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    const n = row.normalized_answer;
+    if (!n) continue;
+    counts[n] = (counts[n] || 0) + 1;
+  }
+  const sorted = Object.entries(counts)
+    .map(([normalized, count]) => ({ normalized, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+
+  topAnswersCache.set(promptId, sorted);
+  return sorted;
+}
+
