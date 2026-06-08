@@ -1,50 +1,59 @@
-# Integrate stem-grouping into design docs
+# Fix "Boul" + prevent future typos
 
-The normalization pipeline now has a fourth stage (morphological stem-bucketing) and the `AnswerStat` shape now exposes per-surface-form breakdowns. Update the three design tiers to reflect this, in proportion to each tier's depth.
+## 1. One-off fix: Steph's answer (today, RICE + ANGER)
 
-## Tier 1 — `docs/jinx-design-tier1-philosophy.md`
+Update the single row directly:
 
-One-line edit to the "Defining decisions" bullet (line 52) so the philosophy reflects that grouping is morphological, not just spelling-tolerant:
+- `answers.id` = `89b03cc3-aa12-482d-ab87-2c7c95743702`
+- `raw_answer`: `Boul` → `Boil`
+- `normalized_answer`: `boul` → `boil`
 
-- Before: "Answer normalization (trim, case, depluralization, fuzzy typo merge) is automatic — players never feel punished for spelling."
-- After: "Answer normalization (case, plurals, typos, and word forms like drive/driving/drove or happy/happiness) is automatic — players never feel punished for spelling or wording. Their own card always shows exactly what they typed."
+This re-buckets her into the "boil" cluster across Results / Group / Archive. The prompt's `unique_answers` count auto-updates via the existing `update_prompt_stats_on_answer` trigger (we'll fire it by touching the row).
 
-## Tier 2 — `docs/jinx-design-tier2-comprehensive.md`
+## 2. Native browser spellcheck (zero infra)
 
-Update the Core mechanics summary bullet (line 118) to add stem-grouping and the display invariant:
+In `src/pages/Play.tsx`, on the answer `<input>`:
 
-- Before: "Normalization: trim, lowercase, depluralize, fuzzy-merge near-duplicates."
-- After: "Normalization: trim, lowercase, depluralize, fuzzy-merge typos, then stem-bucket morphological variants (drive↔driving↔drove, happy↔happiness↔happily). Each player's card shows their raw input verbatim; only the cluster label uses the most-popular surface form."
+- Add `spellCheck={true}` (currently the default-off behavior on many mobile keyboards; explicit is safer).
+- Add `autoCorrect="on"` and `autoCapitalize="off"` so iOS/Android keyboards underline misspellings and offer corrections without auto-capitalizing the linking word.
+- Keep `autoComplete="off"` to avoid form-history pollution.
 
-## Tier 3 — `docs/jinx-design-tier3-exhaustive.md`
+That alone would have flagged "boul" with a red underline on Steph's keyboard.
 
-Full rewrite of §7.4 Answer normalization (lines 425–435). Replace 6-step pipeline with the current 4-stage pipeline + display contract + drawer transparency:
+## 3. Soft "Did you mean?" confirm before submit
 
-New section will document:
+A lightweight client-side check that runs only when the user hits Submit. No new tables, no server round-trip beyond what we already do.
 
-1. **Pipeline stages** (in order):
-   - Stage 1 — `normalizeAnswer()`: trim, lowercase, strip non-alphanumeric except spaces, collapse whitespace, depluralize single-word inputs via a rule-based stripper with a `DEPLURAL_SKIP` list (tennis, analysis, gas, …).
-   - Stage 2 — alias map: admin-curated explicit mappings (`nyc → new york`, `soccer → football`).
-   - Stage 3 — fuzzy typo-merge: Levenshtein with conservative guards (≥7 chars, distance 1–2, count-ratio guard so a popular word can't be swallowed by a near-duplicate).
-   - Stage 4 — **stem bucketing** (`stemAnswer()`): groups morphological variants under a shared cluster. Handles regular `-ing`/`-ed`/`-ness`/`-ly`/`-ity`/`-est`/`-er` with skip-lists per suffix, plus a ~80-entry irregular map for past-tense verbs (drove→drive, went→go, thought→think) and comparative adjectives (better→good, worst→bad). Multi-word answers are never stemmed (avoids mangling proper nouns).
+### How it works
+On submit, before calling `submitAnswer`:
 
-2. **Display contract** — the inviolable rule:
-   - Each player's `raw_answer` is shown verbatim on **their own** result card — "driving" stays "driving", "happiness" stays "happiness".
-   - The cluster label (the bar inside results, the row in the drawer) uses the **most-popular surface form** within the cluster.
-   - The AnswerDrawer surfaces the breakdown with a muted sub-line `also: happiness (3), happily (1)` when a cluster spans multiple surface forms, so the grouping is transparent, not magic.
+1. Normalize the input → `candidate` (e.g. `boul`).
+2. Skip the check entirely if `candidate` is ≤2 chars, multi-word, or already an exact match to a known answer for this prompt.
+3. Fetch the top ~15 normalized answers for this `prompt_id` (one cheap query, cached per prompt for the session).
+4. Find the best fuzzy match using existing `levenshtein()` with a STRICTER threshold than the post-hoc merger:
+   - 4–5 char words: distance = 1, and target must have ≥5 submissions (so "boul" matches "boil" only once "boil" is established).
+   - 6+ char words: distance ≤ 2.
+   - Never suggest when `candidate` itself already has ≥3 submissions (don't second-guess a real word).
+5. If a match is found, show an inline confirm UI directly under the input — no modal:
+   > Did you mean **boil**? &nbsp; `[Yes, use boil]`  `[No, submit "boul"]`
+6. "Yes" submits the suggested word (overwrites input). "No" submits raw as-is and remembers the dismissal for that prompt so we don't re-prompt.
 
-3. **Data shape** — `AnswerStat` now carries optional `members: string[]` (every normalized input in the cluster) and `surfaceForms: Array<{form, count}>`. Consumers do `s.members?.includes(canon)` for stem-aware user→cluster lookup, falling back to Levenshtein for residual typos.
+### Why this is safe
+- It's a suggestion, never an auto-correct. Player keeps full control (preserves the "you see your own raw input" contract).
+- The "target must have ≥5 submissions" guard means we only suggest established crowd answers, not random other typos.
+- Runs purely client-side using the stats we already fetch.
 
-4. **What stays out of scope** — synonyms (car/auto) remain admin-curated via aliases; `-tion`/`-sion` derivations are deliberately not stemmed (motion, station, ocean false positives).
+### Files touched
+- `src/lib/normalize.ts` — add `suggestCorrection(candidate, popularAnswers): { suggestion, distance } | null`.
+- `src/lib/store.ts` — add `getTopAnswersForPrompt(promptId, limit=15)` (returns `normalized_answer`s by frequency) with a session cache keyed by prompt id.
+- `src/pages/Play.tsx` — wire `spellCheck`/`autoCorrect` on the input; in `handleSubmit`, if no suggestion-state yet, run `suggestCorrection`; if it returns a hit, set local state and render the inline confirm row instead of submitting.
+- `src/test/stemmer.test.ts` (or a new `suggest.test.ts`) — add cases: `boul→boil`, `boat` (no suggestion when boat is itself popular), `xyz` (no suggestion when no close target), 7-char distance-2 case.
 
-Add one line to the glossary (line 641) clarifying:
+## 4. Out of scope (kept as-is)
+- The post-hoc `fuzzyMergeGroups` thresholds — leaving the ≤6-char skip intact so we don't accidentally merge bake/bike retroactively.
+- No new admin alias is added (per your choice). If "boul" recurs from others, Answer Hygiene workflow handles it.
 
-- **Cluster**: "A group of answers that share a stem or alias mapping for one prompt — variants are counted together, but each player still sees their own wording."
-
-## Files touched
-
-- `docs/jinx-design-tier1-philosophy.md` — 1 bullet
-- `docs/jinx-design-tier2-comprehensive.md` — 1 bullet
-- `docs/jinx-design-tier3-exhaustive.md` — §7.4 rewrite + glossary line
-
-No code changes. No memory file changes (the `mem://technical/answer-normalization` entry was already updated in the previous turn).
+## Technical notes
+- Direct row update uses the data-update tool, not a migration.
+- The Play page already passes input through `validateInput`; the new suggestion step slots in between validation and `submitAnswer`.
+- The per-prompt top-answers fetch is cached in-memory only — no localStorage, no extra DB load beyond a single SELECT the first time a user submits for that prompt.
