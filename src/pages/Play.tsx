@@ -31,6 +31,8 @@ export default function Play() {
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
+  const [suggestions, setSuggestions] = useState<Record<string, { suggestion: string } | null>>({});
+  const [dismissedSuggest, setDismissedSuggest] = useState<Record<string, boolean>>({});
   const [activeIdx, setActiveIdx] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
