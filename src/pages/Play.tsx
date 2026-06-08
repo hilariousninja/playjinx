@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import {
   ensureDailyPrompts, submitAnswer, getBatchUserAnswers,
   getTotalSubmissions, getCompletedPrompts, markPromptCompleted,
+  getTopAnswersForPrompt,
   type DbPrompt, type DbAnswer,
 } from '@/lib/store';
-import { validateInput } from '@/lib/normalize';
+import { validateInput, normalizeAnswer, suggestCorrection } from '@/lib/normalize';
 import AppHeader from '@/components/AppHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import Onboarding, { hasSeenOnboarding } from '@/components/Onboarding';
