@@ -77,8 +77,8 @@ export default function Play() {
     })();
   }, []);
 
-  const handleSubmit = useCallback(async (promptId: string) => {
-    const trimmed = (answers[promptId] || '').trim();
+  const handleSubmit = useCallback(async (promptId: string, overrideRaw?: string) => {
+    const trimmed = (overrideRaw ?? answers[promptId] ?? '').trim();
     const validationError = validateInput(trimmed);
     if (validationError) {
       setInputErrors(prev => ({ ...prev, [promptId]: validationError }));
@@ -86,8 +86,25 @@ export default function Play() {
     }
     if (submitted[promptId] || submittingId) return;
 
+    // "Did you mean?" check — only when the user hasn't already dismissed
+    // a suggestion for this prompt and we're not accepting an override.
+    if (!overrideRaw && !dismissedSuggest[promptId]) {
+      const candidate = normalizeAnswer(trimmed);
+      if (candidate && !candidate.includes(' ') && candidate.length >= 3) {
+        try {
+          const popular = await getTopAnswersForPrompt(promptId);
+          const hit = suggestCorrection(candidate, popular);
+          if (hit && hit.suggestion !== candidate) {
+            setSuggestions(prev => ({ ...prev, [promptId]: { suggestion: hit.suggestion } }));
+            return;
+          }
+        } catch {}
+      }
+    }
+
     setSubmittingId(promptId);
     setInputErrors(prev => ({ ...prev, [promptId]: '' }));
+    setSuggestions(prev => ({ ...prev, [promptId]: null }));
     try {
       const answer = await submitAnswer(promptId, trimmed);
       setSubmitted(prev => ({ ...prev, [promptId]: true }));
@@ -111,7 +128,7 @@ export default function Play() {
     } finally {
       setSubmittingId(null);
     }
-  }, [answers, submitted, submittingId, prompts, isMobile]);
+  }, [answers, submitted, submittingId, prompts, isMobile, dismissedSuggest]);
 
   const allDone = prompts.length > 0 && prompts.every(p => submitted[p.id]);
 
