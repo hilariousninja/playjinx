@@ -143,13 +143,17 @@ function JinxHero({
   inviteCode,
   myId,
 }: {
-  cluster: { answer: string; members: string[] };
+  cluster: { answer: string; members: string[]; variants?: { name: string; raw: string; normalized: string }[] };
   myName: string;
   nameToSid: Map<string, string>;
   inviteCode: string;
   myId: string;
 }) {
   const includesMe = cluster.members.includes(myName);
+  const variants = cluster.variants ?? [];
+  const uniqueNorms = new Set(variants.map(v => v.normalized));
+  const showVariants = variants.length >= 2 && uniqueNorms.size >= 2;
+
   return (
     <div className="px-[12px] pb-[12px]">
       <div className="rounded-[10px] bg-primary/8 border border-primary/20 px-[12px] py-[10px]">
@@ -159,22 +163,47 @@ function JinxHero({
             {includesMe ? 'You jinxed' : 'Jinx'}
           </span>
         </div>
-        <p className="text-[18px] font-display font-bold text-foreground leading-tight break-words mb-[8px]">
-          {cluster.answer}
-        </p>
-        <div className="flex flex-wrap gap-[5px]">
-          {cluster.members.map(name => (
-            <MemberChip
-              key={name}
-              name={name}
-              sid={nameToSid.get(name)}
-              inviteCode={inviteCode}
-              isMe={name === myName}
-              myId={myId}
-              tone="strong"
-            />
-          ))}
-        </div>
+        {showVariants ? (
+          <div className="space-y-[6px]">
+            {variants.map((v, i) => {
+              const isMe = v.name === myName;
+              return (
+                <div key={`${v.name}-${i}`} className="flex items-center justify-between gap-[8px]">
+                  <p className="text-[18px] font-display font-bold text-foreground leading-tight break-words min-w-0">
+                    {v.raw}
+                  </p>
+                  <MemberChip
+                    name={v.name}
+                    sid={nameToSid.get(v.name)}
+                    inviteCode={inviteCode}
+                    isMe={isMe}
+                    myId={myId}
+                    tone="strong"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            <p className="text-[18px] font-display font-bold text-foreground leading-tight break-words mb-[8px]">
+              {cluster.answer}
+            </p>
+            <div className="flex flex-wrap gap-[5px]">
+              {cluster.members.map(name => (
+                <MemberChip
+                  key={name}
+                  name={name}
+                  sid={nameToSid.get(name)}
+                  inviteCode={inviteCode}
+                  isMe={name === myName}
+                  myId={myId}
+                  tone="strong"
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
