@@ -1075,19 +1075,21 @@ export async function getPairEnrichment(
   const theirAnswers = answers.filter(a => a.session_id === otherSessionId);
   const mineByNorm = new Map<string, { raw: string; count: number }>();
   for (const a of myAnswers) {
-    const e = mineByNorm.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    const key = clusterKey(a.normalized_answer);
+    const e = mineByNorm.get(key) ?? { raw: a.raw_answer, count: 0 };
     e.count++;
-    mineByNorm.set(a.normalized_answer, e);
+    mineByNorm.set(key, e);
   }
   const theirsByNorm = new Map<string, { raw: string; count: number }>();
   for (const a of theirAnswers) {
-    const e = theirsByNorm.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    const key = clusterKey(a.normalized_answer);
+    const e = theirsByNorm.get(key) ?? { raw: a.raw_answer, count: 0 };
     e.count++;
-    theirsByNorm.set(a.normalized_answer, e);
+    theirsByNorm.set(key, e);
   }
   const signatures: PairSignature[] = [];
-  for (const [norm, mine] of mineByNorm) {
-    const theirs = theirsByNorm.get(norm);
+  for (const [key, mine] of mineByNorm) {
+    const theirs = theirsByNorm.get(key);
     if (!theirs) continue;
     signatures.push({ answer: mine.raw, occurrences: mine.count + theirs.count });
   }
