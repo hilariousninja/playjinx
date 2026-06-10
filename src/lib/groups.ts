@@ -528,7 +528,7 @@ export interface GroupDayPromptDetail {
   prompt_id: string;
   word_a: string;
   word_b: string;
-  clusters: { answer: string; members: string[] }[];
+  clusters: GroupCluster[];
   answeredMembers: string[]; // display names
 }
 
