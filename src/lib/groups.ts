@@ -776,15 +776,17 @@ export async function getGroupHistory(
 
       for (const sid of pa.keys()) answeredSessions.add(sid);
 
-      const clusterMap = new Map<string, { raw: string; members: string[] }>();
+      const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
       for (const [sid, ans] of pa.entries()) {
         const name = nameMap.get(sid) ?? 'Unknown';
-        const existing = clusterMap.get(ans.normalized) ?? { raw: ans.raw, members: [] };
+        const key = clusterKey(ans.normalized);
+        const existing = clusterMap.get(key) ?? { members: [], raws: [] };
         existing.members.push(name);
-        clusterMap.set(ans.normalized, existing);
+        existing.raws.push({ raw: ans.raw, normalized: ans.normalized });
+        clusterMap.set(key, existing);
       }
       const clusters = Array.from(clusterMap.values())
-        .map(c => ({ answer: c.raw, members: c.members }))
+        .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
         .sort((a, b) => b.members.length - a.members.length);
 
       promptDetails.push({
@@ -796,12 +798,16 @@ export async function getGroupHistory(
       const entries = Array.from(pa.entries());
       for (let i = 0; i < entries.length; i++) {
         for (let j = i + 1; j < entries.length; j++) {
-          if (entries[i][1].normalized === entries[j][1].normalized) {
+          if (clusterKey(entries[i][1].normalized) === clusterKey(entries[j][1].normalized)) {
             const nameA = nameMap.get(entries[i][0]) ?? 'Unknown';
             const nameB = nameMap.get(entries[j][0]) ?? 'Unknown';
+            const label = pickClusterLabel([
+              { raw: entries[i][1].raw, normalized: entries[i][1].normalized },
+              { raw: entries[j][1].raw, normalized: entries[j][1].normalized },
+            ]);
             jinxPairs.push({
               memberA: nameA, memberB: nameB,
-              answer: entries[i][1].raw,
+              answer: label,
               word_a: prompt.word_a, word_b: prompt.word_b,
             });
           }
