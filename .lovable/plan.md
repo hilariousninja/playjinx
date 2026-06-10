@@ -1,58 +1,61 @@
-# Fix: cook/cooking should JINX in Groups view (matches Archive)
+## Make Groups view show variation labels within a jinx cluster
 
-## The bug
+Right now the Groups view collapses `cook` + `cooking` to a single label (e.g. `Cook`) once we apply stem clustering. The Archive keeps each player's own raw answer visible — so it's clear *both* that you said different words *and* that they jinxed. The Groups view should do the same.
 
-Archive groups answers by **stem + fuzzy merge** (`cook`, `cooking` → one cluster), so you and Steph register as a JINX there.
+### What the user should see
 
-The Groups view (`/groups`, `/g/:inviteCode` Today, GroupFeedCard) buckets answers by **raw `normalized_answer` only**. `cook` and `cooking` stay in separate buckets → "No jinx — everyone thought different".
+For a jinxed cluster like Steph "cook" + You "cooking":
 
-## Fix
+- **JINX hero (GroupTodayFeed `JinxHero`)**:
+  - Replace the single big label with per-member rows showing each member's own raw_answer next to their chip.
+  - Example layout (kept compact, still inside the amber jinx tile):
+    ```text
+    ⚡ YOU JINXED
+    Steph    cook
+    You      cooking
+    ```
+  - If all members happen to share the exact same raw form, fall back to today's single hero label (no change).
 
-Apply the same stem-based clustering inside `src/lib/groups.ts` everywhere we currently bucket by `normalized_answer`. One shared helper, used in every group code path so Today / GroupFeedCard / GroupTodayFeed / History / pairwise jinx counts all agree with Archive.
+- **Groups list card headline (`getGroupsList`)**: keep the single cluster label (it's a one-line headline — too small for variations). No change.
 
-### New helper
+- **UniqueTile non-jinx rows**: already shows each member's own answer — no change.
 
-In `src/lib/groups.ts` (top-level, not exported unless needed):
+- **History day cards (`getGroupHistory` + `GroupHistory.tsx`)**: same treatment as JinxHero — when a pairwise jinx label is displayed and the two members' raws differ, show "Steph cook · You cooking" rather than a single label. Same fallback when raws match.
+
+- **GroupFeedCard winning-cluster headline**: this is a single-line celebratory card — keep the single `pickClusterLabel` label. No change.
+
+### Data changes in `src/lib/groups.ts`
+
+Extend the cluster shape used in `GroupDayResult.clusters` and `GroupDayPromptDetail.clusters`:
 
 ```ts
-import { stemAnswer } from '@/lib/normalize';
-
-// Returns the cluster key for a normalized answer. Multi-word answers
-// keep their full normalized form (we only stem single tokens, matching
-// ResultsView/archive behavior).
-function clusterKey(normalized: string): string {
-  if (!normalized) return normalized;
-  if (normalized.includes(' ')) return normalized;
-  return stemAnswer(normalized);
-}
+clusters: {
+  answer: string;                  // existing display label (most-popular raw)
+  members: string[];               // existing display names
+  variants: { name: string; raw: string }[]; // NEW: per-member raw answer for variation display
+}[]
 ```
 
-The cluster's **display label** stays the most-submitted raw answer in that cluster (so the card still shows "cook" if 2 said cook and 1 said cooking, "cooking" if reversed) — same rule Archive uses.
+Populate `variants` inside `getGroupDayResults` (~line 489) and `getGroupHistory` (~line 779) at the same time we build `clusterMap` — we already have `raw_answer` + `display_name` per answer. `variants` preserves the order matching `members` and is built straight from `promptAnswers`.
 
-### Touch points in `src/lib/groups.ts`
+Pairwise jinx headlines (`getGroupHistory`, `getPairData`, `getPairEnrichment`) likewise return both members' raw forms when they differ, so the day card can render "Steph cook · You cooking" instead of one collapsed label. Where the API currently returns `{ answer }`, change to `{ answer, rawA, rawB }` (or equivalent) and let the consumer decide to display them inline when they differ.
 
-Each of these currently keys a Map by `a.normalized_answer`. Switch the key to `clusterKey(a.normalized_answer)` and pick the display label by highest-count raw within the cluster:
+### UI changes
 
-1. `getGroupsList` (~line 331) — `clusters` map used to detect the "winning" JINX cluster on the Groups list card (the `Bed` / `Cook` headline).
-2. `getGroupDayResults` (~line 458) — `clusterMap` powering `GroupTodayFeed` (the screen showing PIZZA + STORM with hot/cook/cooking rows).
-3. `getGroupHistory` path (~line 751) — historical day cards' `clusterMap`.
-4. Pairwise jinx aggregation (~line 1037–1045 `mineByNorm` / `theirsByNorm`) — so the "X & Y both said it" count uses stems.
-5. Per-prompt pairwise comparison (~line 1156) — `mine` vs `others` equality check becomes `clusterKey(mine) === clusterKey(other)`.
+- **`src/components/GroupTodayFeed.tsx` `JinxHero`**: detect whether all `variants[].raw` (normalized lowercase) are identical.
+  - If identical → keep current single big label.
+  - If varied → render a compact stacked list: each row = `MemberChip` + member's own raw (display-cased) in the same big display font, right-aligned or inline. Reuse existing chip styling.
 
-Within each cluster, compute the display label as: pick the raw_answer whose normalized form has the highest submission count in the cluster; ties → the lexicographically shortest one (deterministic, matches Archive's preference for the shorter root form).
-
-### What changes visually
-
-Today, with the live data:
-- `/groups` Indo-Chinese Fusion card → headline goes from "No jinx — everyone thought different" to **"⚡ Cook · You & Steph both said it"**.
-- `/g/.../today` PIZZA + STORM → goes from 3 separate rows (hot/cook/cooking) to **2 clusters**: `cook` with Steph + Raj(you) (JINX), and `hot` with Ellie. "3 unique" becomes "2 unique · 1 jinx".
-- History pairwise jinx counts back-fill correctly because they re-aggregate on read.
+- **`src/components/GroupHistory.tsx`** (and any pairwise jinx render): when `rawA !== rawB`, render the two raws joined by a thin divider; otherwise render the single shared label.
 
 ### Out of scope
-- No DB migration. Stored `normalized_answer` is untouched; clustering is purely a read-time grouping (same as Archive).
-- No change to Play / submission flow.
-- No change to challenge-room (`RoomResults` / `challenge-room.ts`) — separate request if you want me to apply the same fix there.
+
+- No DB changes.
+- No change to challenge-room (`RoomResults`).
+- No change to Archive (`ResultsView`) — it already handles this.
+- Groups list card and GroupFeedCard headlines keep their single-label format.
 
 ### Verification
-- Manual: refresh `/groups` and `/g/w4-...` Today; PIZZA + STORM should show a JINX cluster with you + Steph.
-- Unit: add a `groups-cluster.test.ts` covering cook/cooking/cooked merging into one cluster and "bake"/"bike" staying separate (the stemmer already guards short-word false merges).
+
+- Manual: with current live data (Steph cook, You cooking) on `/g/.../today` — JINX strip should show both words stacked with chips.
+- Add `groups-cluster.test.ts` cases: cluster of `{cook, cooking}` exposes `variants` with both raws and `members.length === 2`; cluster of `{cook, cook}` exposes identical variants so UI uses single-label fallback.
