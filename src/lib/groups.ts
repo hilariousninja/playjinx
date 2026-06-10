@@ -1112,7 +1112,7 @@ export async function getPairEnrichment(
     if (p.date === today) continue; // skip today — keep reveal gating tight
     const e = byPrompt.get(p.id);
     if (!e?.mine || !e?.theirs) continue;
-    if (e.mine.norm === e.theirs.norm) continue;
+    if (clusterKey(e.mine.norm) === clusterKey(e.theirs.norm)) continue;
     divisive = {
       prompt_id: p.id, word_a: p.word_a, word_b: p.word_b,
       myAnswer: e.mine.raw, theirAnswer: e.theirs.raw, date: p.date,
