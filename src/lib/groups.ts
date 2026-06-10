@@ -3,8 +3,41 @@ import { getPlayerId } from './store';
 import { getDisplayName } from './challenge-room';
 import { getAllLastVisits } from './group-visits';
 import type { GroupAccent } from './group-visuals';
+import { stemAnswer } from './normalize';
 
 const MY_GROUPS_KEY = 'jinx_my_groups';
+
+/**
+ * Cluster key for bucketing answers in group views. Matches the archive's
+ * stem-based merging so cook/cooking/cooked land in one cluster. Multi-word
+ * answers keep their full normalized form (we only stem single tokens).
+ */
+function clusterKey(normalized: string): string {
+  if (!normalized) return normalized;
+  if (normalized.includes(' ')) return normalized;
+  return stemAnswer(normalized);
+}
+
+/**
+ * From a list of raw answers in a cluster, pick the canonical display label:
+ * the raw whose normalized form appears most often, ties broken by shortest
+ * then lexicographic. Matches archive's "shorter root wins" preference.
+ */
+function pickClusterLabel(rawAnswers: { raw: string; normalized: string }[]): string {
+  if (rawAnswers.length === 0) return '';
+  const counts = new Map<string, { raw: string; count: number }>();
+  for (const a of rawAnswers) {
+    const e = counts.get(a.normalized) ?? { raw: a.raw, count: 0 };
+    e.count++;
+    counts.set(a.normalized, e);
+  }
+  const sorted = Array.from(counts.values()).sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    if (a.raw.length !== b.raw.length) return a.raw.length - b.raw.length;
+    return a.raw.localeCompare(b.raw);
+  });
+  return sorted[0].raw;
+}
 
 // --- Types ---
 
@@ -328,19 +361,19 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
 
       for (const p of todayPrompts) {
         const pa = groupAnswers.filter(a => a.prompt_id === p.id);
-        const clusters = new Map<string, string[]>();
+        const clusters = new Map<string, { sids: string[]; raws: { raw: string; normalized: string }[] }>();
         for (const a of pa) {
-          const arr = clusters.get(a.normalized_answer) ?? [];
-          arr.push(a.session_id);
-          clusters.set(a.normalized_answer, arr);
+          const key = clusterKey(a.normalized_answer);
+          const entry = clusters.get(key) ?? { sids: [], raws: [] };
+          entry.sids.push(a.session_id);
+          entry.raws.push({ raw: a.raw_answer, normalized: a.normalized_answer });
+          clusters.set(key, entry);
         }
-        const winning = Array.from(clusters.entries()).find(([, sids]) => sids.length >= 2);
+        const winning = Array.from(clusters.values()).find(c => c.sids.length >= 2);
         if (winning) {
-          const [, sids] = winning;
-          const raw = pa.find(a => a.normalized_answer === winning[0])?.raw_answer ?? winning[0];
           featured = p;
-          jinxAnswer = raw;
-          jinxNames = sids.map(sid => nameMap.get(sid) ?? 'Player');
+          jinxAnswer = pickClusterLabel(winning.raws);
+          jinxNames = winning.sids.map(sid => nameMap.get(sid) ?? 'Player');
           break;
         }
       }
@@ -453,15 +486,17 @@ export async function getGroupDayResults(groupId: string, date?: string): Promis
         normalized_answer: a.normalized_answer,
       }));
 
-    const clusterMap = new Map<string, string[]>();
+    const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
     for (const a of promptAnswers) {
-      const existing = clusterMap.get(a.normalized_answer) ?? [];
-      existing.push(a.display_name);
-      clusterMap.set(a.normalized_answer, existing);
+      const key = clusterKey(a.normalized_answer);
+      const existing = clusterMap.get(key) ?? { members: [], raws: [] };
+      existing.members.push(a.display_name);
+      existing.raws.push({ raw: a.raw_answer, normalized: a.normalized_answer });
+      clusterMap.set(key, existing);
     }
 
-    const clusters = Array.from(clusterMap.entries())
-      .map(([answer, members]) => ({ answer, members }))
+    const clusters = Array.from(clusterMap.values())
+      .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
       .sort((a, b) => b.members.length - a.members.length);
 
     return {
@@ -741,15 +776,17 @@ export async function getGroupHistory(
 
       for (const sid of pa.keys()) answeredSessions.add(sid);
 
-      const clusterMap = new Map<string, { raw: string; members: string[] }>();
+      const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
       for (const [sid, ans] of pa.entries()) {
         const name = nameMap.get(sid) ?? 'Unknown';
-        const existing = clusterMap.get(ans.normalized) ?? { raw: ans.raw, members: [] };
+        const key = clusterKey(ans.normalized);
+        const existing = clusterMap.get(key) ?? { members: [], raws: [] };
         existing.members.push(name);
-        clusterMap.set(ans.normalized, existing);
+        existing.raws.push({ raw: ans.raw, normalized: ans.normalized });
+        clusterMap.set(key, existing);
       }
       const clusters = Array.from(clusterMap.values())
-        .map(c => ({ answer: c.raw, members: c.members }))
+        .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
         .sort((a, b) => b.members.length - a.members.length);
 
       promptDetails.push({
@@ -761,12 +798,16 @@ export async function getGroupHistory(
       const entries = Array.from(pa.entries());
       for (let i = 0; i < entries.length; i++) {
         for (let j = i + 1; j < entries.length; j++) {
-          if (entries[i][1].normalized === entries[j][1].normalized) {
+          if (clusterKey(entries[i][1].normalized) === clusterKey(entries[j][1].normalized)) {
             const nameA = nameMap.get(entries[i][0]) ?? 'Unknown';
             const nameB = nameMap.get(entries[j][0]) ?? 'Unknown';
+            const label = pickClusterLabel([
+              { raw: entries[i][1].raw, normalized: entries[i][1].normalized },
+              { raw: entries[j][1].raw, normalized: entries[j][1].normalized },
+            ]);
             jinxPairs.push({
               memberA: nameA, memberB: nameB,
-              answer: entries[i][1].raw,
+              answer: label,
               word_a: prompt.word_a, word_b: prompt.word_b,
             });
           }
@@ -907,7 +948,7 @@ export async function getPairData(groupId: string, otherSessionId: string): Prom
     const entry = byPrompt.get(p.id);
     if (!entry?.mine || !entry?.theirs) continue;
     daysBothPlayed.add(p.date);
-    if (entry.mine.norm === entry.theirs.norm) {
+    if (clusterKey(entry.mine.norm) === clusterKey(entry.theirs.norm)) {
       totalJinxes++;
       if (recentJinxes.length < 10) {
         recentJinxes.push({
@@ -947,7 +988,7 @@ export async function getPairData(groupId: string, otherSessionId: string): Prom
       const entry = byPrompt.get(p.id);
       const myA = entry?.mine?.raw ?? null;
       const theirA = entry?.theirs?.raw ?? null;
-      const matched = !!entry?.mine && !!entry?.theirs && entry.mine.norm === entry.theirs.norm;
+      const matched = !!entry?.mine && !!entry?.theirs && clusterKey(entry.mine.norm) === clusterKey(entry.theirs.norm);
       return {
         prompt_id: p.id, word_a: p.word_a, word_b: p.word_b,
         myAnswer: myA, theirAnswer: theirA, matched,
@@ -1034,19 +1075,21 @@ export async function getPairEnrichment(
   const theirAnswers = answers.filter(a => a.session_id === otherSessionId);
   const mineByNorm = new Map<string, { raw: string; count: number }>();
   for (const a of myAnswers) {
-    const e = mineByNorm.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    const key = clusterKey(a.normalized_answer);
+    const e = mineByNorm.get(key) ?? { raw: a.raw_answer, count: 0 };
     e.count++;
-    mineByNorm.set(a.normalized_answer, e);
+    mineByNorm.set(key, e);
   }
   const theirsByNorm = new Map<string, { raw: string; count: number }>();
   for (const a of theirAnswers) {
-    const e = theirsByNorm.get(a.normalized_answer) ?? { raw: a.raw_answer, count: 0 };
+    const key = clusterKey(a.normalized_answer);
+    const e = theirsByNorm.get(key) ?? { raw: a.raw_answer, count: 0 };
     e.count++;
-    theirsByNorm.set(a.normalized_answer, e);
+    theirsByNorm.set(key, e);
   }
   const signatures: PairSignature[] = [];
-  for (const [norm, mine] of mineByNorm) {
-    const theirs = theirsByNorm.get(norm);
+  for (const [key, mine] of mineByNorm) {
+    const theirs = theirsByNorm.get(key);
     if (!theirs) continue;
     signatures.push({ answer: mine.raw, occurrences: mine.count + theirs.count });
   }
@@ -1069,7 +1112,7 @@ export async function getPairEnrichment(
     if (p.date === today) continue; // skip today — keep reveal gating tight
     const e = byPrompt.get(p.id);
     if (!e?.mine || !e?.theirs) continue;
-    if (e.mine.norm === e.theirs.norm) continue;
+    if (clusterKey(e.mine.norm) === clusterKey(e.theirs.norm)) continue;
     divisive = {
       prompt_id: p.id, word_a: p.word_a, word_b: p.word_b,
       myAnswer: e.mine.raw, theirAnswer: e.theirs.raw, date: p.date,
@@ -1086,7 +1129,7 @@ export async function getPairEnrichment(
     if (!p || !e.mine || !e.theirs) continue;
     const state = dayState.get(p.date) ?? { both: false, matched: false };
     state.both = true;
-    if (e.mine.norm === e.theirs.norm) state.matched = true;
+    if (clusterKey(e.mine.norm) === clusterKey(e.theirs.norm)) state.matched = true;
     dayState.set(p.date, state);
   }
   for (const s of dayState.values()) {
@@ -1169,7 +1212,7 @@ async function computeViewerPairs(groupId: string): Promise<ViewerPair[]> {
       const t = tallies.get(sid);
       if (!t) continue;
       t.days.add(date);
-      if (norm === entry.mine) {
+      if (clusterKey(norm) === clusterKey(entry.mine)) {
         t.jinx++;
         if (!t.lastJinx || date > t.lastJinx) t.lastJinx = date;
       }
