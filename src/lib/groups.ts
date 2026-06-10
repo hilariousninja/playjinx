@@ -988,7 +988,7 @@ export async function getPairData(groupId: string, otherSessionId: string): Prom
       const entry = byPrompt.get(p.id);
       const myA = entry?.mine?.raw ?? null;
       const theirA = entry?.theirs?.raw ?? null;
-      const matched = !!entry?.mine && !!entry?.theirs && entry.mine.norm === entry.theirs.norm;
+      const matched = !!entry?.mine && !!entry?.theirs && clusterKey(entry.mine.norm) === clusterKey(entry.theirs.norm);
       return {
         prompt_id: p.id, word_a: p.word_a, word_b: p.word_b,
         myAnswer: myA, theirAnswer: theirA, matched,
