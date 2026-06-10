@@ -498,17 +498,18 @@ export async function getGroupDayResults(groupId: string, date?: string): Promis
         normalized_answer: a.normalized_answer,
       }));
 
-    const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
+    const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[]; variants: GroupClusterVariant[] }>();
     for (const a of promptAnswers) {
       const key = clusterKey(a.normalized_answer);
-      const existing = clusterMap.get(key) ?? { members: [], raws: [] };
+      const existing = clusterMap.get(key) ?? { members: [], raws: [], variants: [] };
       existing.members.push(a.display_name);
       existing.raws.push({ raw: a.raw_answer, normalized: a.normalized_answer });
+      existing.variants.push({ name: a.display_name, raw: a.raw_answer, normalized: a.normalized_answer });
       clusterMap.set(key, existing);
     }
 
-    const clusters = Array.from(clusterMap.values())
-      .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
+    const clusters: GroupCluster[] = Array.from(clusterMap.values())
+      .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members, variants: c.variants }))
       .sort((a, b) => b.members.length - a.members.length);
 
     return {
