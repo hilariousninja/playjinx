@@ -789,17 +789,18 @@ export async function getGroupHistory(
 
       for (const sid of pa.keys()) answeredSessions.add(sid);
 
-      const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
+      const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[]; variants: GroupClusterVariant[] }>();
       for (const [sid, ans] of pa.entries()) {
         const name = nameMap.get(sid) ?? 'Unknown';
         const key = clusterKey(ans.normalized);
-        const existing = clusterMap.get(key) ?? { members: [], raws: [] };
+        const existing = clusterMap.get(key) ?? { members: [], raws: [], variants: [] };
         existing.members.push(name);
         existing.raws.push({ raw: ans.raw, normalized: ans.normalized });
+        existing.variants.push({ name, raw: ans.raw, normalized: ans.normalized });
         clusterMap.set(key, existing);
       }
-      const clusters = Array.from(clusterMap.values())
-        .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
+      const clusters: GroupCluster[] = Array.from(clusterMap.values())
+        .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members, variants: c.variants }))
         .sort((a, b) => b.members.length - a.members.length);
 
       promptDetails.push({
