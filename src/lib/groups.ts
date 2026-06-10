@@ -438,12 +438,24 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
 
 // --- Group Results ---
 
+export interface GroupClusterVariant {
+  name: string;
+  raw: string;
+  normalized: string;
+}
+
+export interface GroupCluster {
+  answer: string;
+  members: string[];
+  variants: GroupClusterVariant[];
+}
+
 export interface GroupDayResult {
   prompt_id: string;
   word_a: string;
   word_b: string;
   answers: { session_id: string; display_name: string; raw_answer: string; normalized_answer: string }[];
-  clusters: { answer: string; members: string[] }[];
+  clusters: GroupCluster[];
 }
 
 export async function getGroupDayResults(groupId: string, date?: string): Promise<GroupDayResult[]> {
