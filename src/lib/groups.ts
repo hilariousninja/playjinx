@@ -361,19 +361,19 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
 
       for (const p of todayPrompts) {
         const pa = groupAnswers.filter(a => a.prompt_id === p.id);
-        const clusters = new Map<string, string[]>();
+        const clusters = new Map<string, { sids: string[]; raws: { raw: string; normalized: string }[] }>();
         for (const a of pa) {
-          const arr = clusters.get(a.normalized_answer) ?? [];
-          arr.push(a.session_id);
-          clusters.set(a.normalized_answer, arr);
+          const key = clusterKey(a.normalized_answer);
+          const entry = clusters.get(key) ?? { sids: [], raws: [] };
+          entry.sids.push(a.session_id);
+          entry.raws.push({ raw: a.raw_answer, normalized: a.normalized_answer });
+          clusters.set(key, entry);
         }
-        const winning = Array.from(clusters.entries()).find(([, sids]) => sids.length >= 2);
+        const winning = Array.from(clusters.values()).find(c => c.sids.length >= 2);
         if (winning) {
-          const [, sids] = winning;
-          const raw = pa.find(a => a.normalized_answer === winning[0])?.raw_answer ?? winning[0];
           featured = p;
-          jinxAnswer = raw;
-          jinxNames = sids.map(sid => nameMap.get(sid) ?? 'Player');
+          jinxAnswer = pickClusterLabel(winning.raws);
+          jinxNames = winning.sids.map(sid => nameMap.get(sid) ?? 'Player');
           break;
         }
       }
