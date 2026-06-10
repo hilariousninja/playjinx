@@ -3,8 +3,41 @@ import { getPlayerId } from './store';
 import { getDisplayName } from './challenge-room';
 import { getAllLastVisits } from './group-visits';
 import type { GroupAccent } from './group-visuals';
+import { stemAnswer } from './normalize';
 
 const MY_GROUPS_KEY = 'jinx_my_groups';
+
+/**
+ * Cluster key for bucketing answers in group views. Matches the archive's
+ * stem-based merging so cook/cooking/cooked land in one cluster. Multi-word
+ * answers keep their full normalized form (we only stem single tokens).
+ */
+function clusterKey(normalized: string): string {
+  if (!normalized) return normalized;
+  if (normalized.includes(' ')) return normalized;
+  return stemAnswer(normalized);
+}
+
+/**
+ * From a list of raw answers in a cluster, pick the canonical display label:
+ * the raw whose normalized form appears most often, ties broken by shortest
+ * then lexicographic. Matches archive's "shorter root wins" preference.
+ */
+function pickClusterLabel(rawAnswers: { raw: string; normalized: string }[]): string {
+  if (rawAnswers.length === 0) return '';
+  const counts = new Map<string, { raw: string; count: number }>();
+  for (const a of rawAnswers) {
+    const e = counts.get(a.normalized) ?? { raw: a.raw, count: 0 };
+    e.count++;
+    counts.set(a.normalized, e);
+  }
+  const sorted = Array.from(counts.values()).sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    if (a.raw.length !== b.raw.length) return a.raw.length - b.raw.length;
+    return a.raw.localeCompare(b.raw);
+  });
+  return sorted[0].raw;
+}
 
 // --- Types ---
 
