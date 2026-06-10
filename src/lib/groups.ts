@@ -948,7 +948,7 @@ export async function getPairData(groupId: string, otherSessionId: string): Prom
     const entry = byPrompt.get(p.id);
     if (!entry?.mine || !entry?.theirs) continue;
     daysBothPlayed.add(p.date);
-    if (entry.mine.norm === entry.theirs.norm) {
+    if (clusterKey(entry.mine.norm) === clusterKey(entry.theirs.norm)) {
       totalJinxes++;
       if (recentJinxes.length < 10) {
         recentJinxes.push({
