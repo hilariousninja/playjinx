@@ -438,12 +438,24 @@ export async function getMyGroups(): Promise<GroupWithActivity[]> {
 
 // --- Group Results ---
 
+export interface GroupClusterVariant {
+  name: string;
+  raw: string;
+  normalized: string;
+}
+
+export interface GroupCluster {
+  answer: string;
+  members: string[];
+  variants: GroupClusterVariant[];
+}
+
 export interface GroupDayResult {
   prompt_id: string;
   word_a: string;
   word_b: string;
   answers: { session_id: string; display_name: string; raw_answer: string; normalized_answer: string }[];
-  clusters: { answer: string; members: string[] }[];
+  clusters: GroupCluster[];
 }
 
 export async function getGroupDayResults(groupId: string, date?: string): Promise<GroupDayResult[]> {
@@ -486,17 +498,18 @@ export async function getGroupDayResults(groupId: string, date?: string): Promis
         normalized_answer: a.normalized_answer,
       }));
 
-    const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
+    const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[]; variants: GroupClusterVariant[] }>();
     for (const a of promptAnswers) {
       const key = clusterKey(a.normalized_answer);
-      const existing = clusterMap.get(key) ?? { members: [], raws: [] };
+      const existing = clusterMap.get(key) ?? { members: [], raws: [], variants: [] };
       existing.members.push(a.display_name);
       existing.raws.push({ raw: a.raw_answer, normalized: a.normalized_answer });
+      existing.variants.push({ name: a.display_name, raw: a.raw_answer, normalized: a.normalized_answer });
       clusterMap.set(key, existing);
     }
 
-    const clusters = Array.from(clusterMap.values())
-      .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
+    const clusters: GroupCluster[] = Array.from(clusterMap.values())
+      .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members, variants: c.variants }))
       .sort((a, b) => b.members.length - a.members.length);
 
     return {
@@ -515,7 +528,7 @@ export interface GroupDayPromptDetail {
   prompt_id: string;
   word_a: string;
   word_b: string;
-  clusters: { answer: string; members: string[] }[];
+  clusters: GroupCluster[];
   answeredMembers: string[]; // display names
 }
 
@@ -776,17 +789,18 @@ export async function getGroupHistory(
 
       for (const sid of pa.keys()) answeredSessions.add(sid);
 
-      const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[] }>();
+      const clusterMap = new Map<string, { members: string[]; raws: { raw: string; normalized: string }[]; variants: GroupClusterVariant[] }>();
       for (const [sid, ans] of pa.entries()) {
         const name = nameMap.get(sid) ?? 'Unknown';
         const key = clusterKey(ans.normalized);
-        const existing = clusterMap.get(key) ?? { members: [], raws: [] };
+        const existing = clusterMap.get(key) ?? { members: [], raws: [], variants: [] };
         existing.members.push(name);
         existing.raws.push({ raw: ans.raw, normalized: ans.normalized });
+        existing.variants.push({ name, raw: ans.raw, normalized: ans.normalized });
         clusterMap.set(key, existing);
       }
-      const clusters = Array.from(clusterMap.values())
-        .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members }))
+      const clusters: GroupCluster[] = Array.from(clusterMap.values())
+        .map(c => ({ answer: pickClusterLabel(c.raws), members: c.members, variants: c.variants }))
         .sort((a, b) => b.members.length - a.members.length);
 
       promptDetails.push({

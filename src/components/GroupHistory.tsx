@@ -268,35 +268,67 @@ function DayCard({ day, index, isExpanded, onToggle, formatDate, myName, iPlayed
                     ) : p.clusters.map(cluster => {
                       const isJinx = cluster.members.length >= 2;
                       const isMine = !!myName && cluster.members.includes(myName);
+                      const variants = cluster.variants ?? [];
+                      const uniqueNorms = new Set(variants.map(v => v.normalized));
+                      const showVariants = isJinx && variants.length >= 2 && uniqueNorms.size >= 2;
                       return (
                         <div
                           key={cluster.answer}
-                          className={`flex items-start justify-between gap-2 px-[8px] py-[5px] rounded-[6px] ${
+                          className={`px-[8px] py-[5px] rounded-[6px] ${
                             isJinx ? 'bg-primary/8' : 'bg-background/60'
                           }`}
                         >
-                          <div className="flex items-center gap-[5px] min-w-0 flex-1">
-                            {isJinx && <Zap className="h-2.5 w-2.5 text-primary shrink-0 mt-[2px]" />}
-                            <span className={`text-[11px] font-semibold break-words ${
-                              isMine ? 'text-foreground' : 'text-foreground/75'
-                            }`}>
-                              {cluster.answer}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-[3px] justify-end shrink-0 max-w-[55%]">
-                            {cluster.members.map(name => (
-                              <span
-                                key={name}
-                                className={`text-[9px] px-[5px] py-[1px] rounded-full ${
-                                  name === myName
-                                    ? 'bg-primary/15 text-primary font-bold'
-                                    : 'bg-muted text-muted-foreground'
-                                }`}
-                              >
-                                {name}
-                              </span>
-                            ))}
-                          </div>
+                          {showVariants ? (
+                            <div className="space-y-[3px]">
+                              <div className="flex items-center gap-[5px]">
+                                <Zap className="h-2.5 w-2.5 text-primary shrink-0" />
+                                <span className="text-[9px] font-bold text-primary uppercase tracking-[0.1em]">Jinx</span>
+                              </div>
+                              {variants.map((v, i) => (
+                                <div key={`${v.name}-${i}`} className="flex items-center justify-between gap-2">
+                                  <span className={`text-[11px] font-semibold break-words ${
+                                    v.name === myName ? 'text-foreground' : 'text-foreground/75'
+                                  }`}>
+                                    {v.raw}
+                                  </span>
+                                  <span
+                                    className={`text-[9px] px-[5px] py-[1px] rounded-full shrink-0 ${
+                                      v.name === myName
+                                        ? 'bg-primary/15 text-primary font-bold'
+                                        : 'bg-muted text-muted-foreground'
+                                    }`}
+                                  >
+                                    {v.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-[5px] min-w-0 flex-1">
+                                {isJinx && <Zap className="h-2.5 w-2.5 text-primary shrink-0 mt-[2px]" />}
+                                <span className={`text-[11px] font-semibold break-words ${
+                                  isMine ? 'text-foreground' : 'text-foreground/75'
+                                }`}>
+                                  {cluster.answer}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-[3px] justify-end shrink-0 max-w-[55%]">
+                                {cluster.members.map(name => (
+                                  <span
+                                    key={name}
+                                    className={`text-[9px] px-[5px] py-[1px] rounded-full ${
+                                      name === myName
+                                        ? 'bg-primary/15 text-primary font-bold'
+                                        : 'bg-muted text-muted-foreground'
+                                    }`}
+                                  >
+                                    {name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
