@@ -1212,7 +1212,7 @@ async function computeViewerPairs(groupId: string): Promise<ViewerPair[]> {
       const t = tallies.get(sid);
       if (!t) continue;
       t.days.add(date);
-      if (norm === entry.mine) {
+      if (clusterKey(norm) === clusterKey(entry.mine)) {
         t.jinx++;
         if (!t.lastJinx || date > t.lastJinx) t.lastJinx = date;
       }
