@@ -1129,7 +1129,7 @@ export async function getPairEnrichment(
     if (!p || !e.mine || !e.theirs) continue;
     const state = dayState.get(p.date) ?? { both: false, matched: false };
     state.both = true;
-    if (e.mine.norm === e.theirs.norm) state.matched = true;
+    if (clusterKey(e.mine.norm) === clusterKey(e.theirs.norm)) state.matched = true;
     dayState.set(p.date, state);
   }
   for (const s of dayState.values()) {
